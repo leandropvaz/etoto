@@ -1,0 +1,314 @@
+@using EToto.Application.Dto
+@using EToto.Application.Services
+@using EToto.Domain.Enums
+@using EToto.Web.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject RelatorioUsuariosService Relatorio
+@inject PlantasService PlantaService
+@inject LanguageService Lang
+@inject NavigationManager Nav
+@implements IDisposable
+
+<section class="content pt-3">
+    <div class="container-fluid">
+
+        <div class="card card-primary card-outline mb-3">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-file-export mr-1"></i>
+                    @Lang["report.users.title"]
+                </h3>
+                <small class="text-muted ml-2">— @Lang["report.users.subtitle"]</small>
+            </div>
+            <div class="card-body p-3">
+                <div class="row align-items-end">
+                    <div class="col-12 col-md-3">
+                        <label>@Lang["report.users.filter.plant"]</label>
+                        <select class="form-control form-control-sm" @bind="Filtro.PlantaId">
+                            <option value="">@Lang["report.users.filter.all"]</option>
+                            @foreach (var p in Plantas)
+                            {
+                                <option value="@p.Id">@p.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label>@Lang["report.users.filter.profile"]</label>
+                        <select class="form-control form-control-sm" @bind="Filtro.Perfil">
+                            <option value="">@Lang["report.users.filter.all"]</option>
+                            <option value="1">Usuário</option>
+                            <option value="2">Administrador</option>
+                            <option value="3">Super Gestor</option>
+                            <option value="4">Líder de Bloqueio</option>
+                            <option value="5">Comando Central</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label>@Lang["report.users.filter.bond"]</label>
+                        <select class="form-control form-control-sm" @bind="Filtro.TipoVinculo">
+                            <option value="">@Lang["report.users.filter.all"]</option>
+                            <option value="1">@Lang["users.bond_employee"]</option>
+                            <option value="2">@Lang["users.bond_contractor"]</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label>@Lang["report.users.filter.status"]</label>
+                        <select class="form-control form-control-sm" @bind="Filtro.StatusValidade">
+                            <option value="">@Lang["report.users.filter.all"]</option>
+                            <option value="1">@Lang["report.users.status_active"]</option>
+                            <option value="2">@Lang["report.users.status_expiring"]</option>
+                            <option value="3">@Lang["report.users.status_expired"]</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3 text-md-right mt-2 mt-md-0">
+                        <button class="btn btn-primary btn-sm mr-1" disabled="@Carregando" @onclick="AplicarAsync">
+                            @if (Carregando)
+                            {
+                                <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["common.processing"]</span>
+                            }
+                            else
+                            {
+                                <span><i class="fas fa-search"></i> @Lang["audit.filter.apply"]</span>
+                            }
+                        </button>
+                        <a class="btn btn-success btn-sm mr-1 @(Itens.Count == 0 ? "disabled" : "")"
+                           target="_blank"
+                           href="@MontarUrl("/api/relatorio-usuarios/excel")">
+                            <i class="fas fa-file-excel"></i> @Lang["report.users.export_excel"]
+                        </a>
+                        <a class="btn btn-danger btn-sm @(Itens.Count == 0 ? "disabled" : "")"
+                           target="_blank"
+                           href="@MontarUrl("/api/relatorio-usuarios/pdf")">
+                            <i class="fas fa-file-pdf"></i> @Lang["report.users.export_pdf"]
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-info card-outline">
+            <div class="card-body p-2">
+
+                @* Busca rápida na grade *@
+                <div class="d-flex justify-content-end align-items-center mb-2">
+                    <small class="text-muted mr-2">@ItensFiltrados.Count / @Itens.Count</small>
+                    <div class="input-group input-group-sm" style="width: 280px;">
+                        <input type="text" class="form-control"
+                               placeholder="@Lang["report.users.search_placeholder"]"
+                               @bind="BuscaRapida" @bind:event="oninput" />
+                        <div class="input-group-append">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm mb-0 report-table selectable-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 16%;">@Lang["report.users.col_user"]</th>
+                                <th style="width: 12%;">@Lang["report.users.col_profiles"]</th>
+                                <th style="width: 15%;">@Lang["report.users.col_plants"]</th>
+                                <th style="width: 12%;">@Lang["report.users.col_bond"]</th>
+                                <th style="width: 12%;">@Lang["report.users.col_validity"]</th>
+                                <th style="width: 12%;">@Lang["report.users.col_training"]</th>
+                                <th style="width: 10%;">@Lang["report.users.col_last_login"]</th>
+                                <th style="width: 11%;">@Lang["report.users.col_responsibles"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Carregando)
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-3">
+                                        <i class="fas fa-sync-alt fa-spin mr-2"></i>@Lang["common.loading"]
+                                    </td>
+                                </tr>
+                            }
+                            else if (ItensFiltrados.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-3">
+                                        @Lang["report.users.no_results"]
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var u in ItensFiltrados)
+                                {
+                                    <tr class="@RowClass(u)" @onclick="() => SelecionarLinha(u.Id)">
+                                        <td>
+                                            <div class="font-weight-bold">@u.NomeCompleto</div>
+                                            <small class="text-muted">@u.Login</small>
+                                        </td>
+                                        <td>@string.Join(", ", u.PerfisNomes)</td>
+                                        <td>@(u.PlantasNomes.Count > 0 ? string.Join(", ", u.PlantasNomes) : Lang["users.no_plant"])</td>
+                                        <td>
+                                            @if (u.TipoVinculo == 2)
+                                            {
+                                                <div>@Lang["users.bond_contractor"]</div>
+                                                @if (!string.IsNullOrWhiteSpace(u.NomeEmpresa))
+                                                {
+                                                    <small class="text-muted">@u.NomeEmpresa</small>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">@Lang["users.bond_employee"]</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (u.DataValidadeAcesso.HasValue)
+                                            {
+                                                <span class="badge @BadgeClass(u.StatusValidadeAcesso) badge-sm">
+                                                    @u.DataValidadeAcesso.Value.ToLocalTime().ToString("dd/MM/yyyy")
+                                                </span>
+                                            }
+                                            else { <span class="text-muted">—</span> }
+                                        </td>
+                                        <td>
+                                            @if (!u.ExigeTreinamento)
+                                            {
+                                                <span class="text-muted small">@Lang["report.users.not_required"]</span>
+                                            }
+                                            else if (u.DataValidadeTreinamento.HasValue)
+                                            {
+                                                <span class="badge @BadgeClass(u.StatusValidadeTreinamento) badge-sm">
+                                                    @u.DataValidadeTreinamento.Value.ToLocalTime().ToString("dd/MM/yyyy")
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark badge-sm">
+                                                    @Lang["users.audit_unknown"]
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @(u.DataUltimoLogin?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")
+                                        </td>
+                                        <td>
+                                            <small class="text-muted d-block">
+                                                @Lang["report.users.created_by_short"]: @(u.CriadoPorNome ?? "—")
+                                            </small>
+                                            @if (u.AlteradoEm.HasValue)
+                                            {
+                                                <small class="text-muted d-block">
+                                                    @Lang["report.users.updated_by_short"]: @(u.AlteradoPorNome ?? "—")
+                                                </small>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">@Itens.Count @Lang["users.found"]</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .report-table th, .report-table td { font-size: 0.78rem; padding: 0.3rem 0.4rem; }
+</style>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private RelatorioUsuariosFiltro Filtro { get; set; } = new();
+    private List<RelatorioUsuarioItemDto> Itens { get; set; } = new();
+    private List<PlantasDto> Plantas { get; set; } = new();
+
+    // Busca rápida na grade (nome, login, plantas, empresa).
+    private string BuscaRapida { get; set; } = string.Empty;
+    private List<RelatorioUsuarioItemDto> ItensFiltrados =>
+        string.IsNullOrWhiteSpace(BuscaRapida)
+            ? Itens
+            : Itens.Where(u =>
+                (u.NomeCompleto ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase) ||
+                (u.Login ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase) ||
+                (u.NomeEmpresa ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase) ||
+                u.PlantasNomes.Any(p => (p ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase)) ||
+                u.PerfisNomes.Any(p => (p ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase)))
+              .ToList();
+
+    // #9: indicador de carregamento
+    private bool Carregando { get; set; } = true;
+
+    // Linha selecionada no datagrid
+    private int? LinhaSelecionadaId { get; set; }
+    private void SelecionarLinha(int id) => LinhaSelecionadaId = LinhaSelecionadaId == id ? null : id;
+
+    protected override void OnInitialized() => Lang.OnLanguageChanged += StateHasChanged;
+    public void Dispose() => Lang.OnLanguageChanged -= StateHasChanged;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+        if (!user.IsInRole("Administrador") && !user.IsInRole("SuperGestor"))
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+
+        Plantas = (await PlantaService.ListarAsync()).OrderBy(p => p.Nome).ToList();
+        await CarregarAsync();
+    }
+
+    private async Task CarregarAsync()
+    {
+        try
+        {
+            Carregando = true;
+            Itens = await Relatorio.GerarAsync(Filtro);
+        }
+        finally
+        {
+            Carregando = false;
+        }
+    }
+
+    private Task AplicarAsync() => CarregarAsync();
+
+    private string MontarUrl(string baseUrl)
+    {
+        var parts = new List<string>();
+        if (Filtro.PlantaId.HasValue) parts.Add($"plantaId={Filtro.PlantaId}");
+        if (Filtro.Perfil.HasValue) parts.Add($"perfil={Filtro.Perfil}");
+        if (Filtro.TipoVinculo.HasValue) parts.Add($"tipoVinculo={Filtro.TipoVinculo}");
+        if (Filtro.StatusValidade.HasValue) parts.Add($"status={Filtro.StatusValidade}");
+        return parts.Count == 0 ? baseUrl : $"{baseUrl}?{string.Join("&", parts)}";
+    }
+
+    private string RowClass(RelatorioUsuarioItemDto u)
+    {
+        var pior = Math.Max(u.StatusValidadeAcesso,
+            u.ExigeTreinamento ? u.StatusValidadeTreinamento : 0);
+        var status = pior switch
+        {
+            3 => "table-danger",
+            2 => "table-warning",
+            _ => ""
+        };
+        return LinhaSelecionadaId == u.Id ? $"{status} row-selected".Trim() : status;
+    }
+
+    private static string BadgeClass(int status) => status switch
+    {
+        3 => "bg-danger text-white",
+        2 => "bg-warning text-dark",
+        1 => "bg-success text-white",
+        _ => "bg-secondary text-white"
+    };
+}

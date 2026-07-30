@@ -1,0 +1,26 @@
+@using EToto.Web.Services
+@inherits LayoutComponentBase
+@inject LanguageService Lang
+@implements IDisposable
+
+<div style="background-color: #ede8e2; position: relative; min-height: 100vh;">
+
+    <!-- Seletor de idioma no canto superior direito -->
+    <div style="position: fixed; top: 12px; right: 16px; z-index: 1050;">
+        <LanguageSwitcher />
+    </div>
+
+    @Body
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+}

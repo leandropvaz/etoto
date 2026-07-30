@@ -1,0 +1,329 @@
+@page "/"
+@rendermode InteractiveServer
+
+@using EToto.Web.Dto
+@using EToto.Web.Services
+@using EToto.Application.Dto
+@using EToto.Application.Services
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.Extensions.Options
+
+@inject NavigationManager Nav
+@inject AuthService AuthService
+@inject PlantasService PlantaService
+@inject IOptions<LototoConfig> Config
+@inject LanguageService Lang
+@inject AmbienteInfo Ambiente
+@implements IDisposable
+
+@layout EmptyLayout
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="row w-100 justify-content-center">
+        <div class="col-11 col-sm-7 col-md-5 col-lg-4">
+            <div class="card shadow login-card">
+                <div class="card-body p-3 p-sm-4">
+
+                    <!-- Logo -->
+                    <img src="/images/etoto.png"
+                         alt="E-toto"
+                         class="mb-3 d-block mx-auto login-logo" />
+
+                    <div class="login-title-wrapper text-center mb-3">
+                        <i class="nav-icon fas fa-tools login-title-icon"></i>
+                        <span class="login-title-text">E-toto</span>
+                    </div>
+
+                    @if (Ambiente.EhHomologacao)
+                    {
+                        <div class="text-center mb-3">
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-flask mr-1"></i>@Lang["env.homologacao"]
+                            </span>
+                        </div>
+                    }
+
+                    <!-- Formulário de Login -->
+                    <EditForm Model="@vm" OnValidSubmit="LoginAsync">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-2 text-start">
+                            <label class="form-label login-label">@Lang["login.login"]</label>
+                            <InputText @bind-Value="vm.Login"
+                                       class="form-control form-control-sm login-input"
+                                       @oninput="OnLoginChanged" />
+                            <ValidationMessage For="@(() => vm.Login)" />
+                        </div>
+
+                        <div class="mb-2 text-start">
+                            <label class="form-label login-label">
+                                @Lang["login.password"]
+                                @if (PermiteLoginSemSenha)
+                                {
+                                    <span class="badge badge-info badge-senha-desabilitada">
+                                        <i class="fas fa-lock-open"></i> @Lang["login.direct_access"]
+                                    </span>
+                                }
+                            </label>
+                            <InputText @bind-Value="vm.Senha"
+                                       type="password"
+                                       class="form-control form-control-sm login-input"
+                                       disabled="@PermiteLoginSemSenha"
+                                       placeholder="@(PermiteLoginSemSenha ? Lang["login.field_blocked"] : "")" />
+                        </div>
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label login-label">@Lang["login.plant"]</label>
+                            <InputSelect @bind-Value="vm.PlantaId"
+                                         class="form-control form-control-sm login-input">
+                                <option value="">@Lang["login.select"]</option>
+                                @foreach (var planta in Plantas)
+                                {
+                                    <option value="@planta.Id">
+                                        @planta.Nome (@planta.Codigo)
+                                    </option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <button class="btn btn-primary w-100 btn-sm btn-login" disabled="@Entrando">
+                            @if (Entrando)
+                            {
+                                <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["login.signing_in"]</span>
+                            }
+                            else
+                            {
+                                @Lang["login.enter"]
+                            }
+                        </button>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-warning mt-2 py-2 px-2 login-alert">
+                                @errorMessage
+                            </div>
+                        }
+
+                        @* #2/#3: avisos de validade (acesso/treinamento). Mostrados APÓS o login, com Continuar. *@
+                        @if (warningMessages.Count > 0)
+                        {
+                            <div class="alert alert-info mt-2 py-2 px-2 login-alert">
+                                @foreach (var msg in warningMessages)
+                                {
+                                    <div><i class="fas fa-exclamation-triangle mr-1"></i>@msg</div>
+                                }
+                            </div>
+                            <button type="button" class="btn btn-outline-primary w-100 btn-sm mt-2 btn-login"
+                                    @onclick="ProsseguirAposAvisoAsync">
+                                @Lang["login.continue"]
+                            </button>
+                        }
+                    </EditForm>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-title-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .login-title-text {
+        font-weight: 500;
+        font-size: 1rem;
+        letter-spacing: 1px;
+        color: #444;
+    }
+
+    .login-title-icon {
+        font-size: 0.9rem;
+        opacity: 0.7;
+    }
+
+    .login-card {
+        background-color: #ede8e2;
+        border-radius: 14px;
+        font-size: 0.85rem;
+    }
+
+    .login-logo {
+        max-width: 170px;
+        height: auto;
+    }
+
+    .login-label {
+        font-size: 0.78rem;
+        margin-bottom: 0.1rem;
+    }
+
+    .login-input {
+        font-size: 0.80rem;
+        height: calc(1.4rem + 2px);
+        padding: 0.2rem 0.4rem;
+    }
+
+        .login-input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+    .badge-senha-desabilitada {
+        font-size: 0.65rem;
+        font-weight: 500;
+        padding: 0.15rem 0.4rem;
+        margin-left: 0.3rem;
+        background-color: #17a2b8;
+        color: white;
+        border-radius: 0.25rem;
+        vertical-align: middle;
+    }
+
+        .badge-senha-desabilitada i {
+            font-size: 0.6rem;
+            margin-right: 0.15rem;
+        }
+
+    .btn-login {
+        font-size: 0.85rem;
+        padding-top: 0.35rem;
+        padding-bottom: 0.35rem;
+    }
+
+    .login-alert {
+        font-size: 0.78rem;
+    }
+</style>
+
+@code {
+    private LoginDto vm = new();
+    private string errorMessage = string.Empty;
+    private List<string> warningMessages = new();
+    private string _pendingDestino = string.Empty;
+
+    // #10: feedback visual durante a autenticação.
+    private bool Entrando { get; set; }
+
+    private List<PlantasDto> Plantas { get; set; } = new();
+    private string? _returnUrl;
+
+    private bool PermiteLoginSemSenha =>
+        Config.Value.PermiteSemSenha(vm.Login);
+
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        vm = new LoginDto();
+
+        // lê ReturnUrl se veio (?ReturnUrl=/home)
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("ReturnUrl", out var values))
+        {
+            _returnUrl = values.FirstOrDefault();
+        }
+
+        var dtos = await PlantaService.ListarAsync();
+        Plantas = dtos.OrderBy(p => p.Nome).ToList();
+    }
+
+    private void OnLoginChanged(ChangeEventArgs e)
+    {
+        vm.Login = e.Value?.ToString() ?? string.Empty;
+
+        // Limpa a senha quando bloquear o campo
+        if (PermiteLoginSemSenha)
+        {
+            vm.Senha = string.Empty;
+        }
+
+        StateHasChanged(); // Força re-render para bloquear/desbloquear o campo
+    }
+
+    private async Task LoginAsync()
+    {
+        if (Entrando) return; // evita duplo clique
+        Entrando = true;
+        errorMessage = string.Empty;
+        warningMessages.Clear();
+
+        LoginResult resultado;
+        try
+        {
+            // planta passa a ser opcional aqui
+            int? plantaId = vm.PlantaId;
+            if (plantaId == 0)
+                plantaId = null;
+
+            resultado = await AuthService.LoginAsync(vm.Login, vm.Senha, plantaId);
+        }
+        catch
+        {
+            Entrando = false;
+            throw;
+        }
+
+        if (!resultado.Success)
+        {
+            // #2: acesso vencido (Terceiro).
+            if (resultado.AcessoVencido)
+                errorMessage = Lang["login.access_expired"];
+            // #3: treinamento vencido.
+            else if (resultado.TreinamentoVencido)
+                errorMessage = Lang["login.training_expired"];
+            else
+                errorMessage = resultado.ErrorMessage ?? Lang["login.auth_error"];
+            Entrando = false;
+            return;
+        }
+
+        var destino = string.IsNullOrWhiteSpace(_returnUrl) ? "/home" : _returnUrl;
+
+        // #2/#3: agrega banners de validade (acesso e/ou treinamento) e exige "Continuar".
+        if (resultado.DiasParaVencer.HasValue)
+        {
+            warningMessages.Add(resultado.DiasParaVencer.Value == 0
+                ? Lang["login.access_expiring_today"]
+                : string.Format(Lang["login.access_expiring_in_days"], resultado.DiasParaVencer.Value));
+        }
+        if (resultado.DiasParaVencerTreinamento.HasValue)
+        {
+            warningMessages.Add(resultado.DiasParaVencerTreinamento.Value == 0
+                ? Lang["login.training_expiring_today"]
+                : string.Format(Lang["login.training_expiring_in_days"], resultado.DiasParaVencerTreinamento.Value));
+        }
+
+        if (warningMessages.Count > 0)
+        {
+            _pendingDestino = destino;
+            Entrando = false;
+            return;
+        }
+
+        // sucesso pleno: leva pra próxima página com NavigateTo(forceLoad).
+        // Entrando segue true até o reload terminar — botão fica em "Entrando..." durante a transição.
+        Nav.NavigateTo(destino, forceLoad: true);
+    }
+
+    private Task ProsseguirAposAvisoAsync()
+    {
+        var destino = string.IsNullOrWhiteSpace(_pendingDestino) ? "/home" : _pendingDestino;
+        Nav.NavigateTo(destino, forceLoad: true);
+        return Task.CompletedTask;
+    }
+}

@@ -1,0 +1,344 @@
+@page "/ple/print/{PleId:guid}"
+@using EToto.Application.Dto
+@using EToto.Application.Interfaces
+@using EToto.Domain.Enums
+@using EToto.Web.Services
+@layout EToto.Web.Components.Layout.EmptyLayout
+@inject IPleAppService PleService
+@inject LanguageService Lang
+@inject IJSRuntime Js
+@inject IWebHostEnvironment Env
+
+@if (ple == null)
+{
+    <div style="text-align:center;padding:80px;font-family:Arial;">Carregando...</div>
+}
+else
+{
+    @RenderVia("1ª VIA - Líder", false)
+    @RenderVia("2ª VIA - Sala de Operações", true)
+
+    <div class="np" style="text-align:center;padding:16px;background:#444;">
+        <button onclick="window.print()" style="padding:10px 36px;font-size:15px;background:#e00;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:700;">
+            IMPRIMIR / SALVAR COMO PDF
+        </button>
+        <p style="margin-top:6px;color:#ccc;font-size:11px;">Margens: <b>Nenhuma</b> — Marcar <b>"Imagens em segundo plano"</b></p>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid PleId { get; set; }
+    private PleDto? ple;
+    private string? logoB64;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ple = await PleService.GetByIdWithHistoricoAsync(PleId);
+        // Logo inline base64
+        var p = Path.Combine(Env.WebRootPath, "images", "etoto.png");
+        if (File.Exists(p))
+            logoB64 = $"data:image/png;base64,{Convert.ToBase64String(await File.ReadAllBytesAsync(p))}";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && ple != null)
+            await Js.InvokeVoidAsync("eval", $"document.title='{ple.Numero}'");
+    }
+
+    // Quantas linhas vazias na tabela de equipamentos para preencher a página
+    private int LinhasEq => Math.Max(0, 18 - (ple?.Equipamentos.Count ?? 0));
+    // Quantas linhas vazias nos cadeados
+    private int LinhasCad => 8;
+
+    private RenderFragment RenderVia(string viaLabel, bool isVia2) => __builder =>
+    {
+        <div class="pg">
+
+            @* ═══ BARRA VERMELHA TOPO ═══ *@
+            <div class="bar-red"></div>
+
+            @* ═══ CABEÇALHO COM LOGO ═══ *@
+            <div class="hdr">
+                @if (logoB64 != null)
+                {
+                    <img src="@logoB64" class="hdr-img" />
+                }
+                else
+                {
+                    <span style="font-weight:900;font-size:14pt;color:#1a6ca4;">E-toto</span>
+                }
+                <span class="hdr-lototo">LOTOTO</span>
+            </div>
+
+            @* ═══ SUBTÍTULO ═══ *@
+            <table class="tbl sub">
+                <tr>
+                    <td class="sub-t">AUTORIZAÇÃO DE ISOLAMENTO DE ENERGIAS PERIGOSAS</td>
+                    <td class="sub-v">@(isVia2 ? "2ª VIA" : "1ª VIA")</td>
+                </tr>
+            </table>
+
+            @* ═══ DADOS GERAIS ═══ *@
+            <table class="tbl">
+                <tr>
+                    <td style="width:40%"><b>Nome da unidade</b> @ple!.PlantaNome</td>
+                    <td style="width:30%"><b>Área Fabril:</b> @ple.PlantaNome</td>
+                    <td style="width:30%" class="num-box" rowspan="2"><span class="num-lbl">Nº Autorização</span><br/><span class="num-val">@ple.Numero</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Data:</b> @ple.DataInicio.ToString("dd/MM/yyyy") &nbsp;&nbsp;&nbsp; <b>Previsão Fim:</b> @(ple.DataFim?.ToString("dd/MM/yyyy") ?? "—")</td>
+                </tr>
+            </table>
+
+            @* ═══ EQUIPAMENTOS ═══ *@
+            <table class="tbl eq">
+                <thead>
+                    <tr class="eq-hdr">
+                        <th style="width:16%">TAG</th>
+                        <th style="width:34%">EQUIPAMENTO</th>
+                        <th style="width:25%">TIPO DE ENERGIA</th>
+                        <th style="width:25%">DISPOSITIVO DE BLOQUEIO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in ple.Equipamentos)
+                    {
+                        <tr><td class="mono">@e.Tag</td><td>@e.Nome</td><td>@e.TipoEnergia</td><td>@e.DispositivoBloqueio</td></tr>
+                    }
+                    @for (int i = 0; i < LinhasEq; i++)
+                    {
+                        <tr class="vazio"><td></td><td></td><td></td><td></td></tr>
+                    }
+                </tbody>
+            </table>
+
+            @* ═══ LÍDER DO BLOQUEIO ═══ *@
+            <table class="tbl ldr">
+                <tr><td colspan="2"><b>LÍDER DO BLOQUEIO:</b></td></tr>
+                <tr>
+                    <td><b>Nome:</b> @ple.CriadoPorNome</td>
+                    <td style="text-align:right;width:35%"><b>Nº Cadeado(s):</b> ___________</td>
+                </tr>
+                <tr><td colspan="2"><b>Data/hora:</b> @ple.DataInicio.ToString("dd/MM/yyyy")</td></tr>
+            </table>
+
+            @* ═══ CADEADOS / LIDERADOS ═══ *@
+            <table class="tbl cad">
+                <thead>
+                    <tr>
+                        <th rowspan="2">CADEADO Nº.</th>
+                        <th rowspan="2">EMPRESA</th>
+                        <th rowspan="2">NOME do LIDERADO DO BLOQUEIO</th>
+                        <th colspan="2" class="hdr-bloq">VISTO BLOQUEIO</th>
+                        <th colspan="2" class="hdr-desb">VISTO DESBLOQUEIO</th>
+                    </tr>
+                    <tr>
+                        <th class="hdr-bloq">Assinatura</th><th class="hdr-bloq">Data/hora</th>
+                        <th class="hdr-desb">Assinatura</th><th class="hdr-desb">Data/hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!isVia2)
+                    {
+                        @for (int i = 0; i < LinhasCad; i++)
+                        {
+                            <tr class="vazio"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="nota-cel">
+                                <div class="nota-titulo">NOTA</div>
+                                <div class="nota-corpo">Este campo deve ser preenchido apenas na 1ª via do documento pelo líder de bloqueio, coletando as assinaturas no momento da execução do bloqueio e desbloqueio do equipamento. Quando de sua devolução o responsável pelo comando central (ou operador da máquina) deverá conferir se todos os campos estão devidamente assinados recebendo a liberação do equipamento.</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @* ═══ BLOQUEIO / TESTE / DESBLOQUEIO ═══ *@
+            <table class="tbl ops">
+                <tr>
+                    <td class="ops-lbl" rowspan="2"><b>BLOQUEIO</b><br/><span class="ops-txt">Caso o equipamento já esteja bloqueado, é obrigatório a assinatura do responsável pelo equipamento. Ficando dispensado a assinatura do eletricista. Colocar observação "Equipamento Bloqueado".</span></td>
+                    <td class="ops-ass"><b>Ass. Comando Central/Sala de Operações</b></td>
+                    <td class="ops-dh"><b>Data/Hora:</b></td>
+                </tr>
+                <tr><td class="ops-ass"><b>Ass. Eletricista</b></td><td class="ops-dh"><b>Data/Hora</b></td></tr>
+                <tr>
+                    <td class="ops-lbl"><b>TESTE DE EFETIVIDADE</b></td>
+                    <td class="ops-ass"><b>Ass. Líder de bloqueio</b></td>
+                    <td class="ops-dh"><b>Data/Hora:</b></td>
+                </tr>
+                <tr>
+                    <td class="ops-lbl" rowspan="3"><b>DESBLOQUEIO</b><br/><span class="ops-txt">Caso o equipamento tenha que permanecer bloqueado por outra equipe, não é necessário a assinatura do eletricista. Colocar observação "Equipamento Bloqueado".</span></td>
+                    <td class="ops-ass"><b>Ass. Eletricista</b></td>
+                    <td class="ops-dh"><b>Data/Hora</b></td>
+                </tr>
+                <tr><td class="ops-ass"><b>Ass. Líder de bloqueio</b></td><td class="ops-dh"><b>Data/Hora:</b></td></tr>
+                <tr><td class="ops-ass"><b>Ass. Comando Central/Sala de Operações</b></td><td class="ops-dh"><b>Data/Hora:</b></td></tr>
+            </table>
+
+            @* ═══ AVISO ═══ *@
+            <div class="aviso">Após o término do trabalho a 1ª via e a 2ª via deste documento devem ser juntadas e arquivadas no quadro LOTOTO na sala de comando de operações obrigatoriamente para seu controle.</div>
+
+            @* ═══ RODAPÉ ═══ *@
+            <div class="rodape">
+                <i>REVISÃO : 001</i>
+                <i>PÁGINA 1 E 2</i>
+                <i>@ple.Numero</i>
+                <i>@viaLabel</i>
+            </div>
+        </div>
+    };
+}
+
+<style>
+    *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+    }
+    body > div > div[style*="position: fixed"] { display: none !important; }
+    body > div > div[style*="background-color"] { background: none !important; min-height: auto !important; padding: 0 !important; }
+
+    @@page { size: A4; margin: 0; }
+    @@media print {
+        .np { display: none !important; }
+    }
+    @@media screen {
+        body { background: #555 !important; }
+        .pg { max-width: 780px; margin: 8px auto !important; box-shadow: 0 2px 12px rgba(0,0,0,0.5); }
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       PÁGINA
+       ════════════════════════════════════════════════════════════ */
+    .pg {
+        width: 100%;
+        background: #fff;
+        padding: 0 10mm 4mm 10mm;
+        page-break-after: always;
+        font-size: 7pt;
+        color: #000;
+        line-height: 1.2;
+    }
+    .pg:last-of-type { page-break-after: avoid; }
+
+    /* ════ BARRA VERMELHA ════ */
+    .bar-red {
+        height: 7px;
+        background: #cc0000 !important;
+        margin: 0 -10mm;
+    }
+
+    /* ════ CABEÇALHO ════ */
+    .hdr {
+        display: flex;
+        align-items: center;
+        padding: 5px 0 3px;
+    }
+    .hdr-img { height: 42px; }
+    .hdr-lototo {
+        flex: 1;
+        text-align: center;
+        font-size: 32pt;
+        font-weight: 900;
+        letter-spacing: 5px;
+        color: #000;
+    }
+
+    /* ════ TABELA BASE ════ */
+    .tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .tbl td, .tbl th {
+        border: 1px solid #000;
+        padding: 1px 4px;
+        vertical-align: middle;
+        font-size: 7pt;
+    }
+
+    /* ════ SUBTÍTULO ════ */
+    .sub td { border-width: 2px !important; }
+    .sub-t { text-align: center; font-size: 9pt; font-weight: 900; }
+    .sub-v { width: 55px; text-align: center; font-size: 10pt; font-weight: 900; }
+
+    /* ════ Nº AUTORIZAÇÃO ════ */
+    .num-box { text-align: center; vertical-align: middle; }
+    .num-lbl { font-size: 7pt; font-weight: 700; }
+    .num-val { font-size: 11pt; font-weight: 900; color: #cc0000 !important; }
+
+    /* ════ EQUIPAMENTOS ════ */
+    .eq th {
+        background: #d9d9d9 !important;
+        font-size: 7pt;
+        font-weight: 900;
+        text-align: center;
+        padding: 2px 3px;
+    }
+    .eq td { padding: 1px 4px; height: 14px; }
+    .eq .vazio td { height: 14px; }
+    .mono { font-weight: 900; font-family: 'Courier New', monospace; font-size: 7.5pt; }
+
+    /* ════ LÍDER ════ */
+    .ldr td { padding: 1px 4px; font-size: 7pt; }
+
+    /* ════ CADEADOS ════ */
+    .cad th {
+        background: #d9d9d9 !important;
+        font-size: 6pt;
+        font-weight: 900;
+        text-align: center;
+        padding: 1px 2px;
+    }
+    .hdr-bloq { background: #dce6f1 !important; }
+    .hdr-desb { background: #d8e4bc !important; }
+    .cad td { height: 14px; padding: 1px 3px; }
+    .cad .vazio td { height: 14px; }
+    .nota-cel { padding: 8px 12px !important; text-align: center; vertical-align: middle; height: auto; }
+    .nota-titulo { font-size: 20pt; font-weight: 900; letter-spacing: 3px; margin-bottom: 4px; }
+    .nota-corpo { font-size: 7pt; line-height: 1.4; text-align: justify; }
+
+    /* ════ OPERAÇÕES ════ */
+    .ops td { font-size: 6.5pt; height: 16px; padding: 1px 4px; }
+    .ops-lbl {
+        width: 28%;
+        background: #fff2cc !important;
+        vertical-align: top;
+        padding: 2px 4px !important;
+    }
+    .ops-txt { font-size: 5.5pt; font-weight: 400; line-height: 1.15; }
+    .ops-ass { width: 48%; }
+    .ops-dh { width: 24%; }
+
+    /* ════ AVISO ════ */
+    .aviso {
+        border: 1px solid #000;
+        padding: 1px 4px;
+        font-size: 6pt;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+
+    /* ════ RODAPÉ ════ */
+    .rodape {
+        display: flex;
+        justify-content: space-between;
+        font-size: 5.5pt;
+        color: #999;
+        margin-top: 1px;
+        padding-top: 1px;
+        border-top: 0.5px solid #ccc;
+    }
+</style>

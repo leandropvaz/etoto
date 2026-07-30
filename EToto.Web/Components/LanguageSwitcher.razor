@@ -1,0 +1,94 @@
+@rendermode InteractiveServer
+@using EToto.Web.Services
+@inject LanguageService Lang
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="lang-switcher d-flex align-items-center" style="gap: 4px;">
+    <button class="lang-flag-btn @(Lang.CurrentLanguage == "pt-BR" ? "lang-flag-active" : "")"
+            title="Português (Brasil)"
+            @onclick='() => SetLanguageAsync("pt-BR")'>
+        <span class="fi fi-br flag-icon"></span>
+    </button>
+    <button class="lang-flag-btn @(Lang.CurrentLanguage == "en-US" ? "lang-flag-active" : "")"
+            title="English (US)"
+            @onclick='() => SetLanguageAsync("en-US")'>
+        <span class="fi fi-us flag-icon"></span>
+    </button>
+</div>
+
+<style>
+    .lang-flag-btn {
+        background: transparent;
+        border: 2px solid transparent;
+        border-radius: 4px;
+        width: 34px;
+        height: 26px;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+        opacity: 0.55;
+        line-height: 1;
+        overflow: hidden;
+    }
+
+    .lang-flag-btn:hover {
+        opacity: 1;
+        transform: scale(1.12);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .lang-flag-btn.lang-flag-active {
+        opacity: 1;
+        border-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
+        transform: scale(1.08);
+    }
+
+    .flag-icon {
+        width: 24px;
+        height: 18px;
+        display: block;
+        border-radius: 2px;
+        background-size: cover;
+    }
+</style>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var saved = await JS.InvokeAsync<string?>("localStorage.getItem", "lototo_lang");
+            if (!string.IsNullOrEmpty(saved) && saved != Lang.CurrentLanguage)
+            {
+                Lang.SetLanguage(saved);
+            }
+        }
+        catch { /* ignora durante pré-renderização */ }
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+
+    private async Task SetLanguageAsync(string lang)
+    {
+        Lang.SetLanguage(lang);
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "lototo_lang", lang);
+        }
+        catch { /* ignora */ }
+    }
+}

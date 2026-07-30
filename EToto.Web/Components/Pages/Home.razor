@@ -1,0 +1,1033 @@
+@page "/home"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using EToto.Application.Dto
+@using EToto.Application.Interfaces
+@using EToto.Web.Services
+@using System.Globalization
+@using System.Text
+@inject IEquipamentoAppService EquipamentoAppService
+@inject IPleAppService PleService
+@inject PlantasService PlantaService
+@inject IJSRuntime Js
+@inject LanguageService Lang
+@layout MainLayout
+@inject NavigationManager Nav
+@implements IDisposable
+
+<section class="content pt-3">
+    <div class="container-fluid">
+
+        <!-- TÍTULO / CONTEXTO PLANTA -->
+        <div class="row mb-2">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0 conteudo-titulo">
+                        <i class="fas fa-bolt mr-1"></i>
+                        @Lang["home.title"]
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <!-- CARD FILTROS -->
+            <div class="col-12">
+                <div class="card card-primary card-outline mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title card-title-compact">
+                            <i class="fas fa-search mr-1"></i>
+                            @Lang["home.filters"]
+                        </h3>
+                    </div>
+                    <div class="card-body filtros-body">
+                        @* Filtro de planta - exibido para SuperGestor OU usuários com múltiplas plantas *@
+                        @if (IsSuperGestor || PlantasDoUsuario.Count > 1)
+                        {
+                            <div class="form-row mb-1">
+                                <div class="form-group col-12 col-md-4">
+                                    <label class="filtro-label">@Lang["home.plant"]</label>
+                                    <select class="form-control form-control-sm filtro-input"
+                                            @bind="FiltroPlantaId">
+                                        <option value="">@(IsSuperGestor ? Lang["home.select_plant"] : Lang["home.all_my_plants"])</option>
+                                        @foreach (var planta in PlantasDoUsuario)
+                                        {
+                                            <option value="@planta.Id">@planta.Nome (@planta.Codigo)</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="form-row">
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.tag"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroTag"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.tag_placeholder"]" />
+                            </div>
+
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.name_desc"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroNomeEquipamento"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.name_placeholder"]" />
+                            </div>
+
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.energy_type"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroTipoEnergia"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.energy_type_placeholder"]" />
+                            </div>
+
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.energy_desc"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroDescricaoEnergia"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.energy_desc_placeholder"]" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.isolation_tag"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroTagDispositivo"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.isolation_tag_ph"]" />
+                            </div>
+
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.device_location"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroLocalizacaoDispositivo"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.device_location_ph"]" />
+                            </div>
+
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.isolation_device"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroDispositivoIsolamento"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.isolation_device_ph"]" />
+                            </div>
+
+                            <div class="form-group col-12 col-md-3">
+                                <label class="filtro-label">@Lang["home.lockout"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroBloqueio"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.lockout_ph"]" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-12 col-md-6">
+                                <label class="filtro-label">@Lang["home.zero_energy"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroVerificacaoEnergiaZero"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.zero_energy_ph"]" />
+                            </div>
+
+                            <div class="form-group col-12 col-md-6">
+                                <label class="filtro-label">@Lang["home.test"]</label>
+                                <input class="form-control form-control-sm filtro-input"
+                                       @bind="FiltroTeste"
+                                       @bind:event="oninput"
+                                       placeholder="@Lang["home.test_ph"]" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-1">
+                            <button type="button"
+                                    class="btn btn-default btn-sm btn-compact mr-2"
+                                    @onclick="LimparFiltros">
+                                <i class="fas fa-eraser mr-1"></i> @Lang["common.clear"]
+                            </button>
+                            <button type="button"
+                                    class="btn btn-primary btn-sm btn-compact"
+                                    disabled="@CarregandoEquipamentos"
+                                    @onclick="BuscarAsync">
+                                <i class="fas fa-search mr-1"></i>
+                                @(CarregandoEquipamentos ? Lang["home.searching"] : Lang["common.search"])
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD RESULTADOS -->
+            <div class="col-12">
+                <div class="card card-info card-outline">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title card-title-compact">
+                            <i class="fas fa-list mr-1"></i>
+                            @Lang["home.results"]
+                        </h3>
+
+                        <div class="card-tools">
+                            <small class="text-muted resultados-info">
+                                @if (Resultados?.Any() == true)
+                                {
+                                    @($"{Resultados.Count} {Lang["home.equipment_found"]}")
+                                }
+                                else if (!CarregandoEquipamentos && TodosEquipamentos.Any())
+                                {
+                                    @Lang["home.not_found_filter"]
+                                }
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-2">
+                        <div class="table-container">
+                            <table class="table table-bordered table-hover table-sm mb-0 equip-table">
+                                <thead class="sticky-header">
+                                    <tr class="thead-light">
+                                        @if (IsSuperGestor || PlantasDoUsuario.Count > 1)
+                                        {
+                                            <th rowspan="2" style="width: 8%;" class="text-center align-middle">@Lang["home.table.plant"]</th>
+                                        }
+                                        <th colspan="6" class="text-center">@Lang["home.table.identification"]</th>
+                                        <th colspan="6" class="text-center">@Lang["home.table.energy_control"]</th>
+                                    </tr>
+                                    <tr class="thead-light">
+                                        <th style="width: 8%;">@Lang["home.table.tag"]</th>
+                                        <th style="width: 20%;">@Lang["home.table.equipment"]</th>
+                                        <th style="width: 5%;">@Lang["home.table.number"]</th>
+                                        <th style="width: 9%;">@Lang["home.table.energy_type"]</th>
+                                        <th style="width: 5%;">@Lang["home.table.img"]</th>
+                                        <th style="width: 16%;">@Lang["home.table.energy_desc"]</th>
+
+                                        <th style="width: 9%;">@Lang["home.table.isolation_tag"]</th>
+                                        <th style="width: 12%;">@Lang["home.table.loc_device"]</th>
+                                        <th style="width: 9%;">@Lang["home.table.device"]</th>
+                                        <th style="width: 7%;">@Lang["home.table.lockout"]</th>
+                                        <th style="width: 12%;">@Lang["home.table.zero_energy"]</th>
+                                        <th style="width: 12%;">@Lang["home.table.test"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (CarregandoEquipamentos)
+                                    {
+                                        <tr>
+                                            <td colspan="@(IsSuperGestor || PlantasDoUsuario.Count > 1 ? 13 : 12)" class="text-center text-muted py-3">
+                                                <i class="fas fa-sync-alt fa-spin mr-2"></i>
+                                                @Lang["home.loading"]
+                                            </td>
+                                        </tr>
+                                    }
+                                    else if (Resultados?.Any() == true)
+                                    {
+                                        @foreach (var e in Resultados)
+                                        {
+                                            <tr class="@(e.IsDeleted ? "table-danger" : "")">
+                                                @if (IsSuperGestor || PlantasDoUsuario.Count > 1)
+                                                {
+                                                    <td><small>@ObterNomePlanta(e.PlantId)</small></td>
+                                                }
+                                                <td>
+                                                    @e.Tag
+                                                    @if (equipamentosComPle.ContainsKey(e.Id))
+                                                    {
+                                                        var pleStatus = equipamentosComPle[e.Id];
+                                                        var pleBloqueioAtivo = pleStatus == EToto.Domain.Enums.StatusPle.EmAndamento || pleStatus == EToto.Domain.Enums.StatusPle.InicioDesbloqueio;
+                                                        var badgeMsg = pleBloqueioAtivo ? Lang["ple.maintenance_badge_active"] : Lang["ple.maintenance_badge"];
+                                                        var badgeCss = pleBloqueioAtivo ? "badge-danger" : "badge-warning";
+                                                        <span class="badge @badgeCss ml-1 ple-blink" title="@badgeMsg">
+                                                            <i class="fas fa-lock"></i>
+                                                        </span>
+                                                    }
+                                                </td>
+                                                <td>@e.EquipmentName</td>
+                                                <td>@e.LineNumber</td>
+                                                <td style="@GetEstiloTipoEnergia(e.EnergyType)" class="energy-type-cell">
+                                                    <span class="energy-type-text">@e.EnergyType</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    @if (!string.IsNullOrEmpty(e.ImageBlobUrl))
+                                                    {
+                                                        <button class="btn btn-xs btn-outline-secondary"
+                                                                title="@Lang["home.view_image"]"
+                                                                @onclick="() => AbrirModalImagem(e)">
+                                                            <i class="fas fa-image"></i>
+                                                        </button>
+                                                    }
+                                                </td>
+                                                <td>@e.HazardDescription</td>
+
+                                                <td>@e.IsolationDeviceTag</td>
+                                                <td>@e.IsolationDeviceLocation</td>
+                                                <td>@e.IsolationDeviceDescription</td>
+                                                <td>@e.LockoutType</td>
+
+                                                <td>@e.ZeroEnergyVerification</td>
+                                                <td>@e.Test</td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="@(IsSuperGestor || PlantasDoUsuario.Count > 1 ? 13 : 12)" class="text-center text-muted py-3">
+                                                @Lang["home.no_records"]
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        @* MODAL IMAGEM *@
+        @if (MostrarModalImagem)
+        {
+            <div class="modal fade show"
+                 tabindex="-1"
+                 role="dialog"
+                 style="display:block;"
+                 aria-modal="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-image" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-pw-blue text-white py-2">
+                            <h5 class="modal-title mb-0">
+                                <i class="fas fa-image mr-1"></i>
+                                @ImagemModalTitulo
+                            </h5>
+                            <button type="button"
+                                    class="close text-white"
+                                    aria-label="Close"
+                                    @onclick="FecharModalImagem">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="d-flex flex-column flex-md-row align-items-start modal-image-content">
+                                <div class="modal-image-wrapper text-center mb-3 mb-md-0 flex-fill">
+                                    @if (!string.IsNullOrEmpty(ImagemModalUrl))
+                                    {
+                                        <img src="@ImagemModalUrl" class="img-fluid rounded shadow-sm" />
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted">@Lang["home.image_unavailable"]</p>
+                                    }
+                                </div>
+                                <div class="modal-notes-wrapper ml-md-3">
+                                    <h6 class="mb-2 text-muted">
+                                        <i class="fas fa-sticky-note mr-1"></i>
+                                        @Lang["home.notes"]
+                                    </h6>
+                                    @if (!string.IsNullOrWhiteSpace(ImagemModalNotas))
+                                    {
+                                        <div class="image-notes-bubble">
+                                            @ImagemModalNotas
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">
+                                            @Lang["home.no_notes"]
+                                        </p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer py-2">
+                            <button type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    @onclick="FecharModalImagem">
+                                @Lang["common.close"]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show"></div>
+        }
+
+    </div>
+</section>
+
+<style>
+    .image-notes-bubble {
+        background-color: #fff3cd;
+        border: 1px solid #f1c453;
+        border-radius: 0.75rem;
+        padding: 0.65rem 0.9rem;
+        font-size: 0.8rem;
+        line-height: 1.3rem;
+        position: relative;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+        .image-notes-bubble::before {
+            content: "";
+            position: absolute;
+            left: -10px;
+            top: 18px;
+            border-width: 8px 10px 8px 0;
+            border-style: solid;
+            border-color: transparent #f1c453 transparent transparent;
+        }
+
+    .conteudo-titulo {
+        font-size: 1.1rem !important;
+        font-weight: 600;
+    }
+
+    .card-title-compact {
+        font-size: 0.9rem !important;
+    }
+
+    .card-header {
+        padding: 0.45rem 0.9rem !important;
+    }
+
+    .filtros-body {
+        padding: 0.55rem 0.9rem !important;
+    }
+
+    .filtro-label {
+        font-size: 0.78rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+
+    .filtro-input,
+    .form-control-sm {
+        font-size: 0.78rem !important;
+        height: calc(1.4rem + 2px) !important;
+        padding: 0.18rem 0.4rem !important;
+    }
+
+    .form-group {
+        margin-bottom: 0.35rem !important;
+    }
+
+    .btn-compact {
+        font-size: 0.78rem !important;
+        padding: 0.25rem 0.55rem !important;
+    }
+
+    .resultados-info {
+        font-size: 0.76rem !important;
+    }
+
+    .table-container {
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    .equip-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .equip-table th,
+        .equip-table td {
+            font-size: 0.78rem;
+            padding: 0.25rem 0.45rem;
+            vertical-align: top;
+        }
+
+        .equip-table thead.sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f8f9fa;
+        }
+
+            .equip-table thead.sticky-header th {
+                font-size: 0.75rem;
+                white-space: nowrap;
+                background-color: #f8f9fa;
+                box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+            }
+
+    .energy-type-cell {
+        font-weight: 600;
+        text-align: center;
+        border-left: 4px solid transparent;
+    }
+
+    .energy-type-text {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.75rem;
+    }
+
+    .modal-image .modal-content {
+        border-radius: 0.75rem;
+        overflow-x: hidden;
+    }
+
+    .modal-image .modal-dialog {
+        max-width: 900px;
+        width: 100%;
+        margin: 1.75rem auto;
+    }
+
+    .modal-image-content {
+        gap: 1.5rem;
+        width: 100%;
+    }
+
+    .modal-image-wrapper {
+        max-width: 100%;
+    }
+
+        .modal-image-wrapper img {
+            max-height: 420px;
+            object-fit: contain;
+        }
+
+    .modal-notes-wrapper {
+        max-width: 320px;
+        width: 100%;
+    }
+
+    @@media (max-width: 768px) {
+        .modal-image .modal-dialog {
+            max-width: 95%;
+            margin: 1rem auto;
+        }
+
+        .modal-image-content {
+            flex-direction: column !important;
+            gap: 1rem;
+        }
+
+        .modal-notes-wrapper {
+            max-width: 100%;
+            width: 100%;
+            margin-left: 0 !important;
+            margin-top: 0.75rem;
+        }
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private bool IsSuperGestor { get; set; }
+    private List<int> PlantasIdsDoUsuario { get; set; } = new();
+    private List<PlantasDto> PlantasDoUsuario { get; set; } = new();
+
+    // Filtros
+    private int? FiltroPlantaId { get; set; }
+    private string? _filtroTag;
+    private string? _filtroNomeEquipamento;
+    private string? _filtroTipoEnergia;
+    private string? _filtroDescricaoEnergia;
+    private string? _filtroTagDispositivo;
+    private string? _filtroLocalizacaoDispositivo;
+    private string? _filtroDispositivoIsolamento;
+    private string? _filtroBloqueio;
+    private string? _filtroVerificacaoEnergiaZero;
+    private string? _filtroTeste;
+
+    private string? FiltroTag
+    {
+        get => _filtroTag;
+        set
+        {
+            if (_filtroTag == value) return;
+            _filtroTag = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroNomeEquipamento
+    {
+        get => _filtroNomeEquipamento;
+        set
+        {
+            if (_filtroNomeEquipamento == value) return;
+            _filtroNomeEquipamento = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroTipoEnergia
+    {
+        get => _filtroTipoEnergia;
+        set
+        {
+            if (_filtroTipoEnergia == value) return;
+            _filtroTipoEnergia = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroDescricaoEnergia
+    {
+        get => _filtroDescricaoEnergia;
+        set
+        {
+            if (_filtroDescricaoEnergia == value) return;
+            _filtroDescricaoEnergia = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroTagDispositivo
+    {
+        get => _filtroTagDispositivo;
+        set
+        {
+            if (_filtroTagDispositivo == value) return;
+            _filtroTagDispositivo = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroLocalizacaoDispositivo
+    {
+        get => _filtroLocalizacaoDispositivo;
+        set
+        {
+            if (_filtroLocalizacaoDispositivo == value) return;
+            _filtroLocalizacaoDispositivo = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroDispositivoIsolamento
+    {
+        get => _filtroDispositivoIsolamento;
+        set
+        {
+            if (_filtroDispositivoIsolamento == value) return;
+            _filtroDispositivoIsolamento = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroBloqueio
+    {
+        get => _filtroBloqueio;
+        set
+        {
+            if (_filtroBloqueio == value) return;
+            _filtroBloqueio = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroVerificacaoEnergiaZero
+    {
+        get => _filtroVerificacaoEnergiaZero;
+        set
+        {
+            if (_filtroVerificacaoEnergiaZero == value) return;
+            _filtroVerificacaoEnergiaZero = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private string? FiltroTeste
+    {
+        get => _filtroTeste;
+        set
+        {
+            if (_filtroTeste == value) return;
+            _filtroTeste = value;
+            OnFiltroChanged();
+        }
+    }
+
+    private List<EquipamentoDto> TodosEquipamentos { get; set; } = new();
+    private List<EquipamentoDto> Resultados { get; set; } = new();
+    private bool CarregandoEquipamentos { get; set; }
+    private Dictionary<Guid, EToto.Domain.Enums.StatusPle> equipamentosComPle = new();
+
+    private bool MostrarModalImagem;
+    private string? ImagemModalUrl;
+    private string? ImagemModalTitulo;
+    private string? ImagemModalNotas;
+
+    private bool _mostrarToastNaoAutenticado;
+    private bool _mostrarToastSemPlanta;
+    private bool _mostrarToastErroCarregar;
+
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            _mostrarToastNaoAutenticado = true;
+            return;
+        }
+
+        IsSuperGestor = user.IsInRole("SuperGestor");
+
+        var todasPlantas = (await PlantaService.ListarAsync()).OrderBy(p => p.Nome).ToList();
+
+        if (IsSuperGestor)
+        {
+            PlantasDoUsuario = todasPlantas;
+            FiltroPlantaId = null;
+        }
+        else
+        {
+            // ✅ Obter múltiplas plantas das claims
+            var plantasIdsStr = user.Claims
+                .Where(c => c.Type == "PlantasIds")
+                .Select(c => c.Value)
+                .ToList();
+
+            foreach (var idStr in plantasIdsStr)
+            {
+                if (int.TryParse(idStr, out var plantaId))
+                {
+                    PlantasIdsDoUsuario.Add(plantaId);
+                }
+            }
+
+            // Fallback para claim única (retrocompat)
+            if (!PlantasIdsDoUsuario.Any())
+            {
+                var plantClaim = user.Claims.FirstOrDefault(c => c.Type == "PlantaId");
+                if (plantClaim != null && int.TryParse(plantClaim.Value, out var plantId))
+                {
+                    PlantasIdsDoUsuario.Add(plantId);
+                }
+            }
+
+            if (!PlantasIdsDoUsuario.Any())
+            {
+                _mostrarToastSemPlanta = true;
+                return;
+            }
+
+            PlantasDoUsuario = todasPlantas.Where(p => PlantasIdsDoUsuario.Contains(p.Id)).ToList();
+
+            if (PlantasDoUsuario.Count == 1)
+            {
+                FiltroPlantaId = PlantasDoUsuario[0].Id;
+            }
+        }
+
+        await CarregarEquipamentosAsync();
+        AplicarFiltros();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        if (_mostrarToastNaoAutenticado)
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+        }
+        else if (_mostrarToastSemPlanta && !IsSuperGestor)
+        {
+            await Js.InvokeVoidAsync("adminlteToasts.show", "error", Lang["common.error"], Lang["home.toast.no_plant_claim"]);
+        }
+        else if (_mostrarToastErroCarregar)
+        {
+            await Js.InvokeVoidAsync("adminlteToasts.show", "error", Lang["common.error"], Lang["home.toast.load_error"]);
+        }
+    }
+
+    private async Task CarregarEquipamentosAsync()
+    {
+        CarregandoEquipamentos = true;
+        TodosEquipamentos = new();
+
+        try
+        {
+            if (IsSuperGestor)
+            {
+                // SuperGestor não carrega automaticamente - precisa selecionar planta
+                return;
+            }
+
+            // Carregar equipamentos de todas as plantas do usuário
+            foreach (var plantaId in PlantasIdsDoUsuario)
+            {
+                var equipamentos = await EquipamentoAppService.GetByPlantAsync(plantaId);
+                TodosEquipamentos.AddRange(equipamentos.Where(e => !e.IsDeleted));
+
+                var pleAtivosStatus = await PleService.GetEquipamentosComPleAtivoStatusAsync(plantaId);
+                foreach (var kv in pleAtivosStatus) equipamentosComPle[kv.Key] = kv.Value;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _mostrarToastErroCarregar = true;
+        }
+        finally
+        {
+            CarregandoEquipamentos = false;
+        }
+    }
+
+    private async Task BuscarAsync()
+    {
+        if (IsSuperGestor)
+        {
+            if (!FiltroPlantaId.HasValue || FiltroPlantaId <= 0)
+            {
+                await Js.InvokeVoidAsync("adminlteToasts.show",
+                    "warning",
+                    Lang["common.attention"],
+                    Lang["home.toast.select_plant"]);
+                return;
+            }
+
+            CarregandoEquipamentos = true;
+            try
+            {
+                TodosEquipamentos = (await EquipamentoAppService.GetByPlantAsync(FiltroPlantaId.Value))
+                    .Where(e => !e.IsDeleted)
+                    .ToList();
+
+                equipamentosComPle = await PleService.GetEquipamentosComPleAtivoStatusAsync(FiltroPlantaId.Value);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                _mostrarToastErroCarregar = true;
+            }
+            finally
+            {
+                CarregandoEquipamentos = false;
+            }
+        }
+
+        AplicarFiltros();
+    }
+
+    private void OnFiltroChanged()
+    {
+        if (TodosEquipamentos == null || TodosEquipamentos.Count == 0)
+            return;
+
+        AplicarFiltros();
+    }
+
+    private static string RemoverAcentos(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+            return string.Empty;
+
+        var normalized = texto.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+
+        foreach (var c in normalized)
+        {
+            var categoria = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (categoria != UnicodeCategory.NonSpacingMark)
+            {
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString().Normalize(NormalizationForm.FormC);
+    }
+
+    private static bool ContainsIgnoreCaseAndAccents(string? source, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(value))
+            return false;
+
+        var s1 = RemoverAcentos(source).ToUpperInvariant();
+        var s2 = RemoverAcentos(value).ToUpperInvariant();
+
+        return s1.Contains(s2);
+    }
+
+    private static bool FiltroValido(string? filtro)
+    {
+        return !string.IsNullOrWhiteSpace(filtro) && filtro.Trim().Length >= 3;
+    }
+
+    private void AplicarFiltros()
+    {
+        var query = TodosEquipamentos.AsQueryable();
+
+        // Filtro de planta (se selecionado e usuário tem múltiplas)
+        if (FiltroPlantaId.HasValue && FiltroPlantaId > 0)
+        {
+            query = query.Where(e => e.PlantId == FiltroPlantaId.Value);
+        }
+
+        if (FiltroValido(FiltroTag))
+        {
+            var filtro = FiltroTag!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.Tag, filtro));
+        }
+
+        if (FiltroValido(FiltroNomeEquipamento))
+        {
+            var filtro = FiltroNomeEquipamento!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.EquipmentName, filtro));
+        }
+
+        if (FiltroValido(FiltroTipoEnergia))
+        {
+            var filtro = FiltroTipoEnergia!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.EnergyType, filtro));
+        }
+
+        if (FiltroValido(FiltroDescricaoEnergia))
+        {
+            var filtro = FiltroDescricaoEnergia!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.HazardDescription, filtro));
+        }
+
+        if (FiltroValido(FiltroTagDispositivo))
+        {
+            var filtro = FiltroTagDispositivo!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.IsolationDeviceTag, filtro));
+        }
+
+        if (FiltroValido(FiltroLocalizacaoDispositivo))
+        {
+            var filtro = FiltroLocalizacaoDispositivo!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.IsolationDeviceLocation, filtro));
+        }
+
+        if (FiltroValido(FiltroDispositivoIsolamento))
+        {
+            var filtro = FiltroDispositivoIsolamento!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.IsolationDeviceDescription, filtro));
+        }
+
+        if (FiltroValido(FiltroBloqueio))
+        {
+            var filtro = FiltroBloqueio!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.LockoutType, filtro));
+        }
+
+        if (FiltroValido(FiltroVerificacaoEnergiaZero))
+        {
+            var filtro = FiltroVerificacaoEnergiaZero!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.ZeroEnergyVerification, filtro));
+        }
+
+        if (FiltroValido(FiltroTeste))
+        {
+            var filtro = FiltroTeste!.Trim();
+            query = query.Where(e => ContainsIgnoreCaseAndAccents(e.Test, filtro));
+        }
+
+        Resultados = query.ToList();
+    }
+
+    private void LimparFiltros()
+    {
+        if (PlantasDoUsuario.Count > 1 && !IsSuperGestor)
+        {
+            FiltroPlantaId = null; // Limpa seleção de planta para usuários multiplanta
+        }
+
+        FiltroTag = null;
+        FiltroNomeEquipamento = null;
+        FiltroTipoEnergia = null;
+        FiltroDescricaoEnergia = null;
+        FiltroTagDispositivo = null;
+        FiltroLocalizacaoDispositivo = null;
+        FiltroDispositivoIsolamento = null;
+        FiltroBloqueio = null;
+        FiltroVerificacaoEnergiaZero = null;
+        FiltroTeste = null;
+
+        AplicarFiltros();
+    }
+
+    private void AbrirModalImagem(EquipamentoDto eq)
+    {
+        ImagemModalUrl = eq.ImageBlobUrl;
+        ImagemModalTitulo = $"{eq.Tag} - {eq.EquipmentName}";
+        ImagemModalNotas = eq.ImageNotes;
+        MostrarModalImagem = true;
+    }
+
+    private void FecharModalImagem()
+    {
+        MostrarModalImagem = false;
+        ImagemModalUrl = null;
+        ImagemModalTitulo = null;
+        ImagemModalNotas = null;
+    }
+
+    private string ObterNomePlanta(int plantaId)
+    {
+        var planta = PlantasDoUsuario.FirstOrDefault(p => p.Id == plantaId);
+        return planta != null ? $"{planta.Nome} ({planta.Codigo})" : "N/A";
+    }
+
+    private string GetEstiloTipoEnergia(string? tipoEnergia)
+    {
+        if (string.IsNullOrWhiteSpace(tipoEnergia))
+            return string.Empty;
+
+        // Se houver múltiplas energias separadas por "/", pegar apenas a primeira
+        var primeiraPalavra = tipoEnergia.Split('/')[0].Trim();
+        var tipo = RemoverAcentos(primeiraPalavra).ToUpperInvariant().Trim();
+
+        var corFundo = tipo switch
+        {
+            var t when t.Contains("ELETRICA") || t.Contains("ELETRIC") => "#FF2929",
+            var t when t.Contains("GRAVITACIONAL") => "#D4C19C",
+            var t when t.Contains("PNEUMATICA") => "#4BDFF3",
+            var t when t.Contains("MECANICA") => "#8C8C8C",
+            var t when t.Contains("GAS") || t.Contains("GÁS") => "#E9E6D7",
+            var t when t.Contains("HIDRAULICA") => "#0041DA",
+            var t when t.Contains("QUIMICA") => "#FFC301",
+            var t when t.Contains("RADIACAO") || t.Contains("RADIAÇÃO") => "#FFFF00",
+            var t when t.Contains("TERMICA") || t.Contains("TÉRMICA") => "#DAEFF3",
+            _ => "transparent"
+        };
+
+        var corTexto = corFundo switch
+        {
+            "#FF2929" => "white",
+            "#0041DA" => "white",
+            "#8C8C8C" => "white",
+            _ => "#333"
+        };
+
+        if (corFundo == "transparent")
+            return string.Empty;
+
+        return $"background-color: {corFundo}; color: {corTexto}; font-weight: 600; border-left-color: {corFundo};";
+    }
+}

@@ -1,0 +1,40 @@
+﻿@page "/Error"
+@using System.Diagnostics
+<PageTitle>Erro</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <h5 class="mb-0">Ocorreu um erro inesperado</h5>
+                </div>
+
+                <div class="card-body">
+                    <p>
+                        Lamentamos, mas algo correu mal ao processar o seu pedido.
+                    </p>
+                    <p>
+                        Por favor tente novamente dentro de alguns instantes.
+                        Se o problema persistir, entre em contacto com o suporte técnico.
+                    </p>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

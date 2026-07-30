@@ -1,0 +1,754 @@
+@page "/plantas"
+@using System.ComponentModel.DataAnnotations
+@using EToto.Application.Dto
+@using EToto.Web.Services
+@inject PlantasService PlantaService
+@inject IJSRuntime Js
+@inject LanguageService Lang
+@* @attribute [Authorize(Roles = "Administrador,SuperGestor")] *@
+@layout MainLayout
+@inject NavigationManager Nav
+@implements IDisposable
+
+<section class="content pt-3">
+    <div class="container-fluid">
+
+        <div class="row">
+
+            <!-- COLUNA ESQUERDA: FORMULÁRIO CADASTRO/EDIÇÃO -->
+            <div class="col-12 col-lg-4">
+                <div class="card card-primary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-industry mr-1"></i>
+                            @(IsEditMode ? Lang["plants.edit"] : Lang["plants.register"])
+                        </h3>
+
+                        @if (IsEditMode)
+                        {
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" title="@Lang["common.cancel_edit_title"]" @onclick="CancelarEdicao">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="card-body">
+                        <EditForm Model="@PlantaForm" OnValidSubmit="SalvarPlantaAsync" FormName="PlantaForm" Enhance="false">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger mb-2" />
+
+                            <!-- Nome -->
+                            <div class="form-group">
+                                <label>@Lang["plants.name"]</label>
+                                <InputText class="form-control" @bind-Value="PlantaForm.Nome" />
+                                <ValidationMessage For="@(() => PlantaForm.Nome)" class="text-danger" />
+                            </div>
+
+                            <!-- Código -->
+                            <div class="form-group">
+                                <label>@Lang["plants.code"]</label>
+                                <InputText class="form-control" @bind-Value="PlantaForm.Codigo" />
+                                <small class="form-text text-muted">Ex.: U01, U02, MATZ, SLAG…</small>
+                                <ValidationMessage For="@(() => PlantaForm.Codigo)" class="text-danger" />
+                            </div>
+
+                            <!-- Localização (select simples com estados) -->
+                            <div class="form-group">
+                                <label>@Lang["plants.location"]</label>
+                                <InputSelect class="form-control" @bind-Value="PlantaForm.Localizacao">
+                                    <option value="">@Lang["common.select_state"]</option>
+                                    <option value="Acre">Acre</option>
+                                    <option value="Alagoas">Alagoas</option>
+                                    <option value="Amapá">Amapá</option>
+                                    <option value="Amazonas">Amazonas</option>
+                                    <option value="Bahia">Bahia</option>
+                                    <option value="Ceará">Ceará</option>
+                                    <option value="Distrito Federal">Distrito Federal</option>
+                                    <option value="Espírito Santo">Espírito Santo</option>
+                                    <option value="Goiás">Goiás</option>
+                                    <option value="Maranhão">Maranhão</option>
+                                    <option value="Mato Grosso">Mato Grosso</option>
+                                    <option value="Mato Grosso do Sul">Mato Grosso do Sul</option>
+                                    <option value="Minas Gerais">Minas Gerais</option>
+                                    <option value="Pará">Pará</option>
+                                    <option value="Paraíba">Paraíba</option>
+                                    <option value="Paraná">Paraná</option>
+                                    <option value="Pernambuco">Pernambuco</option>
+                                    <option value="Piauí">Piauí</option>
+                                    <option value="Rio de Janeiro">Rio de Janeiro</option>
+                                    <option value="Rio Grande do Norte">Rio Grande do Norte</option>
+                                    <option value="Rio Grande do Sul">Rio Grande do Sul</option>
+                                    <option value="Rondônia">Rondônia</option>
+                                    <option value="Roraima">Roraima</option>
+                                    <option value="Santa Catarina">Santa Catarina</option>
+                                    <option value="São Paulo">São Paulo</option>
+                                    <option value="Sergipe">Sergipe</option>
+                                    <option value="Tocantins">Tocantins</option>
+
+                                </InputSelect>
+                                <ValidationMessage For="@(() => PlantaForm.Localizacao)" class="text-danger" />
+                            </div>
+
+                            <!-- Ativa -->
+                            <div class="form-group">
+                                <div class="icheck-primary d-inline">
+                                    <InputCheckbox id="plantaAtiva" class="form-check-input" @bind-Value="PlantaForm.Ativa" />
+                                    <label for="plantaAtiva">@Lang["plants.active"]</label>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <button type="submit" class="btn btn-primary" disabled="@Salvando">
+                                    @if (Salvando)
+                                    {
+                                        <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["common.processing"]</span>
+                                    }
+                                    else
+                                    {
+                                        @(IsEditMode ? Lang["common.save"] : Lang["common.register"])
+                                    }
+                                </button>
+
+                                @if (IsEditMode)
+                                {
+                                    <button type="button" class="btn btn-danger" disabled="@(Salvando || Excluindo)" @onclick="AbrirModalExcluir">
+                                        <i class="fas fa-trash-alt mr-1"></i> @Lang["common.delete"]
+                                    </button>
+                                }
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUNA DIREITA: PESQUISA + LISTA PAGINADA -->
+            <div class="col-12 col-lg-8">
+
+                <!-- CARD DE FILTRO / AÇÕES -->
+                <div class="card card-info card-outline mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-search mr-1"></i>
+                            @Lang["plants.search"]
+                        </h3>
+
+                        <div class="card-tools">
+                            <!-- Pesquisar -->
+                            <div class="input-group input-group-sm" style="width: 260px;">
+                                <input type="text"
+                                       name="table_search"
+                                       class="form-control float-right"
+                                       placeholder="@Lang["plants.search_placeholder"]"
+                                       @bind="TermoPesquisa"
+                                       @bind:event="oninput" />
+
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-default" title="@Lang["common.clear"]" @onclick="LimparPesquisa">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-2">
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="text-muted">
+                                    @if (PlantasFiltradas?.Any() == true)
+                                    {
+                                        @($"{PlantasFiltradas.Count} {Lang["plants.found"]}")
+                                    }
+                                    else
+                                    {
+                                        @Lang["plants.not_found"]
+                                    }
+                                </small>
+                            </div>
+
+                            <div class="btn-group btn-group-sm">
+                                <select class="form-control form-control-sm ml-2" style="width: 80px;"
+                                        @bind="TamanhoPagina">
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- TABELA (AdminLTE) -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover table-sm mb-0 plantas-table selectable-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width: 15%;">@Lang["plants.col_code"]</th>
+                                        <th style="width: 30%;">@Lang["plants.col_name"]</th>
+                                        <th style="width: 30%;">@Lang["plants.col_location"]</th>
+                                        <th style="width: 10%;" class="text-center">@Lang["plants.col_active"]</th>
+                                        <th style="width: 15%;" class="text-center">@Lang["common.actions"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Carregando)
+                                    {
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-3">
+                                                <i class="fas fa-sync-alt fa-spin mr-2"></i>@Lang["common.loading"]
+                                            </td>
+                                        </tr>
+                                    }
+                                    else if (PlantasPaginadas.Any())
+                                    {
+                                        @foreach (var p in PlantasPaginadas)
+                                        {
+                                            <tr class="@(LinhaSelecionadaId == p.Id ? "row-selected" : "")"
+                                                @onclick="() => SelecionarLinha(p.Id)">
+                                                <td>@p.Codigo</td>
+                                                <td>@p.Nome</td>
+                                                <td>@p.Localizacao</td>
+                                                <td class="text-center">
+                                                    @if (p.Ativa)
+                                                    {
+                                                        <span class="badge bg-success badge-sm">@Lang["plants.active_badge"]</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary badge-sm">@Lang["plants.inactive_badge"]</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-xs btn-outline-primary"
+                                                            title="@Lang["common.edit"]"
+                                                            @onclick="() => IniciarEdicao(p.Id)">
+                                                        <i class="fas fa-edit"></i> @Lang["common.edit"]
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-3">
+                                                @Lang["plants.no_records"]
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+
+                    <!-- Paginação estilo AdminLTE -->
+                    <div class="card-footer clearfix">
+                        <span class="text-muted">
+                            @Lang["common.page"] @PaginaAtual @Lang["common.of"] @TotalPaginas
+                        </span>
+
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <li class="page-item @(PaginaAtual == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="PaginaAnterior">«</button>
+                            </li>
+
+                            @foreach (var pagina in GetPaginasVisiveis())
+                            {
+                                @if (pagina.HasValue)
+                                {
+                                    <li class="page-item @(PaginaAtual == pagina.Value ? "active" : "")">
+                                        <button class="page-link" @onclick="() => IrParaPagina(pagina.Value)">@pagina.Value</button>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                }
+                            }
+
+                            <li class="page-item @(PaginaAtual == TotalPaginas ? "disabled" : "")">
+                                <button class="page-link" @onclick="ProximaPagina">»</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        @* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO *@
+        @if (MostrarModalExcluir)
+        {
+            <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;" aria-modal="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content confirm-modal">
+
+                        <!-- Cabeçalho -->
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title mb-0">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                @Lang["common.confirm_delete"]
+                            </h5>
+                            <button type="button"
+                                    class="close text-white"
+                                    aria-label="Close"
+                                    @onclick="FecharModalExcluir">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <!-- Corpo -->
+                        <div class="modal-body">
+                            <p class="mb-2">
+                                @Lang["plants.delete_confirm_text"]
+                                <strong>@PlantaForm.Nome</strong>?
+                            </p>
+                        </div>
+
+                        <!-- Rodapé -->
+                        <div class="modal-footer d-flex justify-content-between">
+                            <button type="button"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    disabled="@Excluindo"
+                                    @onclick="FecharModalExcluir">
+                                <i class="fas fa-times mr-1"></i> @Lang["common.no"]
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-danger btn-sm"
+                                    disabled="@Excluindo"
+                                    @onclick="ConfirmarExclusaoAsync">
+                                @if (Excluindo)
+                                {
+                                    <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["common.processing"]</span>
+                                }
+                                else
+                                {
+                                    <span><i class="fas fa-trash-alt mr-1"></i>@Lang["common.yes_delete"]</span>
+                                }
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-backdrop fade show"></div>
+        }
+
+
+    </div>
+</section>
+
+<style>
+    /* Cabeçalhos dos cards menores */
+    .card-title {
+        font-size: 0.9rem !important;
+    }
+
+    .card-header {
+        padding: 0.45rem 0.9rem !important;
+    }
+
+    .card-body {
+        padding: 0.6rem 0.9rem !important;
+    }
+
+    /* Labels e textos auxiliares menores */
+    label {
+        font-size: 0.78rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+
+    .form-text,
+    small.text-muted {
+        font-size: 0.75rem !important;
+    }
+
+    /* Inputs mais compactos */
+    .form-control {
+        font-size: 0.8rem !important;
+        height: calc(1.45rem + 2px);
+        padding: 0.2rem 0.45rem;
+    }
+
+    .form-control-sm {
+        font-size: 0.78rem !important;
+        height: calc(1.35rem + 2px);
+        padding: 0.18rem 0.4rem;
+    }
+
+    .form-group {
+        margin-bottom: 0.4rem !important;
+    }
+
+    /* Botões compactos */
+    .btn,
+    .btn-sm {
+        font-size: 0.78rem !important;
+        padding: 0.25rem 0.55rem !important;
+    }
+
+    .btn-xs {
+        font-size: 0.72rem !important;
+        padding: 0.15rem 0.4rem !important;
+    }
+
+    /* Tabela mais enxuta */
+    .plantas-table th,
+    .plantas-table td {
+        font-size: 0.78rem;
+        padding: 0.23rem 0.4rem;
+    }
+
+    .plantas-table thead th {
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+
+    /* Paginação menor */
+    .pagination .page-link {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* Modal confirmação */
+    .confirm-modal {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+        .confirm-modal .modal-header {
+            border-bottom: none;
+            padding: 12px 16px;
+        }
+
+        .confirm-modal .modal-body {
+            font-size: 0.92rem;
+            padding: 16px;
+        }
+
+        .confirm-modal .modal-footer {
+            border-top: none;
+            padding: 12px 16px;
+        }
+</style>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+    public class PlantaViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "O nome da planta é obrigatório.")]
+        public string Nome { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "O código é obrigatório.")]
+        public string Codigo { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "A localização é obrigatória.")]
+        public string Localizacao { get; set; } = string.Empty;
+
+        public bool Ativa { get; set; } = true;
+    }
+
+    private PlantaViewModel PlantaForm { get; set; } = new();
+
+    private List<PlantaViewModel> TodasAsPlantas { get; set; } = new();
+
+    private string TermoPesquisa { get; set; } = string.Empty;
+    private int PaginaAtual { get; set; } = 1;
+    private int TamanhoPagina { get; set; } = 10;
+
+    private bool IsEditMode { get; set; } = false;
+    // #9: indicadores de carregamento
+    private bool Carregando { get; set; } = true;
+    private bool Salvando { get; set; }
+    private bool Excluindo { get; set; }
+
+    // Linha selecionada no datagrid
+    private int? LinhaSelecionadaId { get; set; }
+    private void SelecionarLinha(int id) => LinhaSelecionadaId = LinhaSelecionadaId == id ? null : id;
+    private int? PlantaEmEdicaoId { get; set; }
+
+    private bool MostrarModalExcluir { get; set; } = false;
+
+    private List<PlantaViewModel> PlantasFiltradas =>
+        string.IsNullOrWhiteSpace(TermoPesquisa)
+            ? TodasAsPlantas
+            : TodasAsPlantas
+                .Where(p =>
+                    (p.Nome ?? "").Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Codigo ?? "").Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Localizacao ?? "").Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+    private IEnumerable<PlantaViewModel> PlantasPaginadas =>
+        PlantasFiltradas
+            .Skip((PaginaAtual - 1) * TamanhoPagina)
+            .Take(TamanhoPagina);
+
+    private int TotalPaginas =>
+        PlantasFiltradas.Count == 0
+            ? 1
+            : (int)Math.Ceiling(PlantasFiltradas.Count / (double)TamanhoPagina);
+
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+        }
+
+        try { await CarregarPlantasAsync(); }
+        finally { Carregando = false; }
+    }
+
+    private async Task CarregarPlantasAsync()
+    {
+        var dtos = await PlantaService.ListarAsync();
+
+        TodasAsPlantas = dtos
+            .Select(p => new PlantaViewModel
+            {
+                Id = p.Id,
+                Nome = p.Nome,
+                Codigo = p.Codigo,
+                Localizacao = p.Localizacao,
+                Ativa = p.Ativa
+            })
+            .ToList();
+
+        PaginaAtual = 1;
+    }
+
+    private async Task ShowToastSucessoAsync(string mensagem)
+    {
+        await Js.InvokeVoidAsync("adminlteToasts.show", "success", Lang["common.success"], mensagem);
+    }
+
+    private async Task ShowToastErroAsync(string mensagem)
+    {
+        await Js.InvokeVoidAsync("adminlteToasts.show", "error", Lang["common.error"], mensagem);
+    }
+
+    private async Task SalvarPlantaAsync()
+    {
+        var isEdicao = IsEditMode && PlantaEmEdicaoId.HasValue;
+
+        try
+        {
+            Salvando = true;
+            if (isEdicao)
+            {
+                var dto = new PlantasDto
+                {
+                    Id = PlantaEmEdicaoId.Value,
+                    Nome = PlantaForm.Nome,
+                    Codigo = PlantaForm.Codigo,
+                    Localizacao = PlantaForm.Localizacao,
+                    Ativa = PlantaForm.Ativa
+                };
+
+                await PlantaService.AtualizarAsync(dto);
+            }
+            else
+            {
+                var dto = new PlantasDto
+                {
+                    Nome = PlantaForm.Nome,
+                    Codigo = PlantaForm.Codigo,
+                    Localizacao = PlantaForm.Localizacao,
+                    Ativa = PlantaForm.Ativa
+                };
+
+                await PlantaService.CriarAsync(dto);
+            }
+
+            PlantaForm = new PlantaViewModel();
+            IsEditMode = false;
+            PlantaEmEdicaoId = null;
+
+            await CarregarPlantasAsync();
+
+            await ShowToastSucessoAsync(isEdicao
+                ? Lang["plants.toast.saved"]
+                : Lang["plants.toast.registered"]);
+        }
+        catch (Exception ex)
+        {
+            await ShowToastErroAsync(Lang["plants.toast.save_error"]);
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            Salvando = false;
+        }
+    }
+
+    private void IniciarEdicao(int id)
+    {
+        var planta = TodasAsPlantas.FirstOrDefault(p => p.Id == id);
+        if (planta is null) return;
+
+        IsEditMode = true;
+        PlantaEmEdicaoId = id;
+
+        PlantaForm = new PlantaViewModel
+        {
+            Id = planta.Id,
+            Nome = planta.Nome,
+            Codigo = planta.Codigo,
+            Localizacao = planta.Localizacao,
+            Ativa = planta.Ativa
+        };
+    }
+
+    private void AbrirModalExcluir()
+    {
+        if (!IsEditMode || !PlantaEmEdicaoId.HasValue)
+            return;
+
+        MostrarModalExcluir = true;
+    }
+
+    private void FecharModalExcluir()
+    {
+        MostrarModalExcluir = false;
+    }
+
+    private async Task ConfirmarExclusaoAsync()
+    {
+        if (!IsEditMode || !PlantaEmEdicaoId.HasValue)
+        {
+            MostrarModalExcluir = false;
+            return;
+        }
+
+        try
+        {
+            Excluindo = true;
+            await PlantaService.RemoverAsync(PlantaEmEdicaoId.Value);
+
+            PlantaForm = new PlantaViewModel();
+            IsEditMode = false;
+            PlantaEmEdicaoId = null;
+
+            await CarregarPlantasAsync();
+
+            await ShowToastSucessoAsync(Lang["plants.toast.deleted"]);
+        }
+        catch (Exception ex)
+        {
+            await ShowToastErroAsync(Lang["plants.toast.delete_error"]);
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            Excluindo = false;
+            MostrarModalExcluir = false;
+        }
+    }
+
+    private void CancelarEdicao()
+    {
+        IsEditMode = false;
+        PlantaEmEdicaoId = null;
+        PlantaForm = new PlantaViewModel();
+    }
+
+    private void LimparPesquisa()
+    {
+        TermoPesquisa = string.Empty;
+        PaginaAtual = 1;
+    }
+
+    private void PaginaAnterior()
+    {
+        if (PaginaAtual > 1)
+            PaginaAtual--;
+    }
+
+    private void ProximaPagina()
+    {
+        if (PaginaAtual < TotalPaginas)
+            PaginaAtual++;
+    }
+
+    private void IrParaPagina(int pagina)
+    {
+        if (pagina >= 1 && pagina <= TotalPaginas)
+            PaginaAtual = pagina;
+    }
+
+    private List<int?> GetPaginasVisiveis()
+    {
+        var paginas = new List<int?>();
+        const int delta = 2;
+
+        if (TotalPaginas <= 7)
+        {
+            for (int i = 1; i <= TotalPaginas; i++)
+            {
+                paginas.Add(i);
+            }
+        }
+        else
+        {
+            paginas.Add(1);
+
+            int start = Math.Max(2, PaginaAtual - delta);
+            int end = Math.Min(TotalPaginas - 1, PaginaAtual + delta);
+
+            if (start > 2)
+            {
+                paginas.Add(null);
+            }
+
+            for (int i = start; i <= end; i++)
+            {
+                paginas.Add(i);
+            }
+
+            if (end < TotalPaginas - 1)
+            {
+                paginas.Add(null);
+            }
+
+            paginas.Add(TotalPaginas);
+        }
+
+        return paginas;
+    }
+
+    private Task ExportarCsvAsync()
+    {
+        Console.WriteLine("Exportar CSV ainda não implementado.");
+        return Task.CompletedTask;
+    }
+
+    private Task ExportarExcelAsync()
+    {
+        Console.WriteLine("Exportar Excel ainda não implementado.");
+        return Task.CompletedTask;
+    }
+}

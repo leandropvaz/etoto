@@ -1,0 +1,523 @@
+@page "/avaliacao-risco"
+@using EToto.Application.Dto
+@using EToto.Application.Helpers
+@using EToto.Application.Interfaces
+@using EToto.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using EToto.Web.Services
+@inject IAvaliacaoRiscoAppService ArService
+@inject IEquipamentoAppService EquipamentoService
+@inject IPleAppService PleService
+@inject PlantasService PlantaService
+@inject IJSRuntime Js
+@inject LanguageService Lang
+@implements IDisposable
+
+@layout MainLayout
+
+<section class="content pt-3">
+<div class="container-fluid">
+
+    @* ═══ DETALHE ═══ *@
+    @if (showDetail && sel != null)
+    {
+        <div class="row mb-3">
+        <div class="col-12">
+        <div class="card card-outline @(sel.Status == StatusAvaliacaoRisco.Ativa ? "card-info" : "card-secondary")">
+            <div class="card-header py-2 d-flex align-items-center">
+                <h3 class="card-title mb-0 mr-3"><i class="fas fa-exclamation-triangle mr-1"></i> @sel.Numero</h3>
+                <div class="d-flex flex-grow-1 justify-content-center flex-wrap" style="gap:4px;">
+                    @if (CanCreate)
+                    {
+                        @if (sel.Status == StatusAvaliacaoRisco.Ativa)
+                        {
+                            <button class="btn btn-xs btn-primary" @onclick="() => EditAr(sel)"><i class="fas fa-edit mr-1"></i> @Lang["common.edit"]</button>
+                            <button class="btn btn-xs btn-secondary" @onclick="OpenInativarModal"><i class="fas fa-power-off mr-1"></i> @Lang["ar.action.deactivate"]</button>
+                            <button class="btn btn-xs btn-outline-danger" @onclick="OpenDeleteModal"><i class="fas fa-trash mr-1"></i> @Lang["ar.action.delete"]</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-xs btn-success" @onclick="() => AlterarStatus(StatusAvaliacaoRisco.Ativa)"><i class="fas fa-check mr-1"></i> @Lang["ar.action.activate"]</button>
+                        }
+                    }
+                    <button class="btn btn-xs btn-info" @onclick="() => PrintAr(sel.Id)"><i class="fas fa-print mr-1"></i> @Lang["ar.action.print"]</button>
+                </div>
+                <button class="btn btn-xs btn-secondary ml-3" @onclick="CloseDetail"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-bordered mb-3" style="font-size:0.8rem;">
+                    <tbody>
+                        <tr><th class="bg-light" style="width:15%;">@Lang["ar.number"]</th><td style="width:35%;">@sel.Numero</td><th class="bg-light" style="width:15%;">@Lang["ar.status"]</th><td>@StatusBadge(sel.Status)</td></tr>
+                        <tr><th class="bg-light">@Lang["ar.department"]</th><td>@sel.Departamento</td><th class="bg-light">@Lang["ar.operation"]</th><td>@sel.Operacao</td></tr>
+                        <tr><th class="bg-light">@Lang["ar.task"]</th><td>@sel.Tarefa</td><th class="bg-light">@Lang["ar.date"]</th><td>@sel.Data.ToString("dd/MM/yyyy")</td></tr>
+                        <tr><th class="bg-light">@Lang["ar.created_by"]</th><td>@sel.CriadoPorNome <small class="text-muted">@sel.DataCriacao.ToString("dd/MM HH:mm")</small></td><th class="bg-light">@Lang["ar.observations"]</th><td>@(sel.Observacoes ?? "-")</td></tr>
+                        @if (sel.Equipamentos.Any())
+                        {
+                            <tr><th class="bg-light">@Lang["ple.equipment"]</th><td colspan="3">@foreach (var eq in sel.Equipamentos) { <span class="badge badge-info mr-1">@eq.Tag</span> }</td></tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (sel.Itens.Any())
+                {
+                    <div class="table-responsive">
+                    <table class="table table-bordered table-sm" style="font-size:0.75rem;">
+                        <thead class="bg-pw-blue"><tr><th>#</th><th>@Lang["ar.item.task"]</th><th>@Lang["ar.item.hazard"]</th><th>@Lang["ar.item.exposed"]</th><th>@Lang["ar.item.severity_before"]</th><th>@Lang["ar.item.probability_before"]</th><th>@Lang["ar.item.risk_before"]</th><th>@Lang["ar.item.measures"]</th><th>@Lang["ar.item.severity_after"]</th><th>@Lang["ar.item.probability_after"]</th><th>@Lang["ar.item.risk_after"]</th></tr></thead>
+                        <tbody>
+                            @foreach (var it in sel.Itens)
+                            {
+                                <tr><td>@it.Ordem</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td>@it.GravidadeAntes</td><td>@it.ProbabilidadeAntes</td><td style="@RiscoStyle(it.NivelRiscoAntes)">@it.NivelRiscoAntes</td><td>@it.MedidasProtecao</td><td>@it.GravidadeDepois</td><td>@it.ProbabilidadeDepois</td><td style="@RiscoStyle(it.NivelRiscoDepois)">@it.NivelRiscoDepois</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                }
+
+                @* ── Timeline Horizontal ── *@
+                @if (sel.Historico.Any())
+                {
+                    var hist = sel.Historico.OrderBy(x => x.DataAcao).ToList();
+                    <h6 class="mb-2 text-center mt-3"><i class="fas fa-stream mr-1"></i> @Lang["ple.history"]</h6>
+                    <div class="d-flex flex-nowrap overflow-auto pb-2 justify-content-center align-items-start">
+                        @for (int i = 0; i < hist.Count; i++)
+                        {
+                            var h = hist[i]; var isLast = i == hist.Count - 1;
+                            <div class="text-center flex-shrink-0" style="width:100px;">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center @TlBg(h.Acao)" style="width:30px;height:30px;">
+                                    <i class="fas @TlIcon(h.Acao) text-white" style="font-size:0.7rem;"></i>
+                                </div>
+                                <div class="mt-1"><strong style="font-size:0.7rem;" class="@TlColor(h.Acao)">@TlLabel(h.Acao)</strong><br/><small class="text-muted" style="font-size:0.65rem;">@h.UsuarioNome</small><br/><small class="text-muted" style="font-size:0.6rem;">@h.DataAcao.ToString("dd/MM HH:mm")</small></div>
+                            </div>
+                            @if (!isLast) { <div class="flex-shrink-0 align-self-center" style="width:40px;height:2px;background:#adb5bd;margin-top:-30px;"></div> }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        </div>
+        </div>
+    }
+
+    @* ═══ LISTAGEM (global — sem filtro planta) ═══ *@
+    <div class="row">
+    <div class="col-12">
+    <div class="card card-info card-outline">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-list mr-1"></i> @Lang["ar.list"] @if (arList.Any()) { <span class="badge badge-primary ml-2">@filtered.Count</span> }</h3>
+            <div class="card-tools">
+                @if (CanCreate) { <button class="btn btn-sm btn-primary" @onclick="OpenWizard"><i class="fas fa-plus mr-1"></i> @Lang["ar.new"]</button> }
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-2">
+                <div class="col-12 col-md-3 mb-1">
+                    <select class="form-control" @bind="filtroStatus">
+                        <option value="">@Lang["ar.filter.all_status"]</option>
+                        <option value="Ativa">@Lang["ar.status.ativa"]</option>
+                        <option value="Inativa">@Lang["ar.status.inativa"]</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2 mb-1">
+                    <input type="date" class="form-control" value="@filtroDataDe?.ToString("yyyy-MM-dd")" @onchange="e => OnDataDeChanged(e)" placeholder="De" />
+                </div>
+                <div class="col-6 col-md-2 mb-1">
+                    <input type="date" class="form-control" value="@filtroDataAte?.ToString("yyyy-MM-dd")" @onchange="e => OnDataAteChanged(e)" placeholder="Até" />
+                </div>
+                <div class="col-12 col-md-5 mb-1">
+                    <input type="text" class="form-control" placeholder="@Lang["ar.filter.search"]" @bind="filtroTexto" @bind:event="oninput" />
+                </div>
+            </div>
+
+            @if (loading) { <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div> }
+            else if (!filtered.Any()) { <p class="text-muted text-center py-3">Nenhuma avaliação encontrada.</p> }
+            else
+            {
+                <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm">
+                    <thead class="bg-pw-blue"><tr><th>@Lang["ar.number"]</th><th>@Lang["ar.department"]</th><th>@Lang["ar.operation"]</th><th>@Lang["ar.task"]</th><th>@Lang["ar.date"]</th><th>@Lang["ar.status"]</th><th>@Lang["ar.created_by"]</th><th style="width:36px;"></th></tr></thead>
+                    <tbody>
+                        @foreach (var a in filtered)
+                        {
+                            <tr @onclick="() => ViewAr(a.Id)" style="cursor:pointer;" class="@(sel?.Id == a.Id ? "table-active" : "")">
+                                <td>@a.Numero</td><td>@a.Departamento</td><td>@a.Operacao</td><td>@a.Tarefa</td>
+                                <td>@a.Data.ToString("dd/MM/yyyy")</td><td>@StatusBadge(a.Status)</td><td>@a.CriadoPorNome</td>
+                                <td class="text-center"><button class="btn btn-xs btn-outline-info" @onclick:stopPropagation @onclick="() => ViewAr(a.Id)"><i class="fas fa-eye"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                </div>
+            }
+        </div>
+    </div>
+    </div>
+    </div>
+</div>
+</section>
+
+@* ═══ MODAL WIZARD ═══ *@
+@if (showWizard)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);z-index:1050;">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+        <div class="modal-header bg-pw-blue-light py-2">
+            <h5 class="modal-title text-white"><i class="fas fa-exclamation-triangle mr-1"></i> @(editingAr != null ? Lang["ar.edit"] : Lang["ar.new"]) <span class="badge badge-light ml-2">@wizStep / 3</span></h5>
+            <button type="button" class="close text-white" @onclick="() => showWizard = false"><span>&times;</span></button>
+        </div>
+        <div class="modal-body" style="min-height:300px;">
+            <div class="d-flex justify-content-center mb-3">
+                @for (int s = 1; s <= 3; s++) { var step = s; <div class="text-center mx-3"><div class="rounded-circle d-inline-flex align-items-center justify-content-center @(wizStep >= step ? "bg-primary text-white" : "bg-light text-muted border")" style="width:30px;height:30px;font-weight:700;font-size:0.8rem;">@step</div><div class="small mt-1 @(wizStep >= step ? "text-primary font-weight-bold" : "text-muted")">@(step == 1 ? Lang["ar.step1"] : step == 2 ? Lang["ar.step2"] : Lang["ar.step3"])</div></div> @if (s < 3) { <div class="align-self-center" style="width:40px;border-top:2px solid @(wizStep > s ? "#007bff" : "#dee2e6");margin-top:-12px;"></div> } }
+            </div>
+
+            @if (wizStep == 1)
+            {
+                <div class="row">
+                    <div class="col-12 col-md-4"><label>@Lang["ar.department"]</label><input type="text" class="form-control" @bind="form.Departamento" /></div>
+                    <div class="col-12 col-md-4"><label>@Lang["ar.operation"]</label><input type="text" class="form-control" @bind="form.Operacao" /></div>
+                    <div class="col-6 col-md-2"><label>@Lang["ar.date"]</label><input type="date" class="form-control" @bind="form.Data" /></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12 col-md-6"><label>@Lang["ar.task"]</label><input type="text" class="form-control" @bind="form.Tarefa" /></div>
+                    <div class="col-12 col-md-6"><label>@Lang["ar.observations"]</label><input type="text" class="form-control" @bind="form.Observacoes" /></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12 col-md-4">
+                        <label><i class="fas fa-industry mr-1 text-info"></i> @Lang["ple.plant"]</label>
+                        @if (plantas.Count == 1)
+                        {
+                            <input type="text" class="form-control" value="@plantas[0].Nome (@plantas[0].Codigo)" disabled />
+                        }
+                        else
+                        {
+                            <select class="form-control" @onchange="PlantaWizChanged">
+                                <option value="">@Lang["ar.select_plant"]</option>
+                                @foreach (var p in plantas) { <option value="@p.Id" selected="@(wizPlantaId == p.Id)">@p.Nome (@p.Codigo)</option> }
+                            </select>
+                        }
+                    </div>
+                    <div class="col-12 col-md-8">
+                        <label><i class="fas fa-tools mr-1 text-info"></i> @Lang["ple.equipment"] <small class="text-muted">(opcional)</small></label>
+                        <input type="text" class="form-control form-control-sm mb-1" placeholder="Filtrar..." @bind="eqSearch" @bind:event="oninput" />
+                        <div class="border rounded" style="max-height:140px;overflow-y:auto;background:#fff;">
+                            @if (wizPlantaId > 0 && eqPlanta.Any())
+                            {
+                                <label class="d-flex align-items-center px-2 py-1 mb-0 bg-light font-weight-bold" style="border-bottom:1px solid #ddd;cursor:pointer;">
+                                    <input type="checkbox" class="mr-2" checked="@allEqSelected" @onchange="ToggleAllEq" /> @Lang["common.select_all"]
+                                </label>
+                                @foreach (var eq in filteredEq)
+                                {
+                                    <label class="d-flex align-items-center px-2 py-1 mb-0 @(form.EquipamentoIds.Contains(eq.Id) ? "bg-light" : "")" style="cursor:pointer;border-bottom:1px solid #f0f0f0;">
+                                        <input type="checkbox" class="mr-2" checked="@form.EquipamentoIds.Contains(eq.Id)" @onchange="(e) => ToggleEq(eq.Id, (bool)e.Value!)" />
+                                        <strong class="text-primary mr-1">@eq.Tag</strong> <span class="small text-truncate mr-2">@eq.EquipmentName</span>
+                                        @if (eqBloqueados.ContainsKey(eq.Id))
+                                        {
+                                            var bs = eqBloqueados[eq.Id];
+                                            <span class="badge @(bs == EToto.Domain.Enums.StatusPle.EmAndamento ? "badge-danger" : "badge-warning") ml-auto ple-blink" title="@(bs == EToto.Domain.Enums.StatusPle.EmAndamento ? Lang["ple.maintenance_badge_active"] : Lang["ple.maintenance_badge"])"><i class="fas fa-lock"></i></span>
+                                        }
+                                    </label>
+                                }
+                            }
+                            else if (wizPlantaId > 0)
+                            {
+                                <div class="p-2 text-muted small">Nenhum equipamento</div>
+                            }
+                            else
+                            {
+                                <div class="p-2 text-muted small">Selecione uma planta</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (wizStep == 2)
+            {
+                @for (int idx = 0; idx < formItens.Count; idx++)
+                {
+                    var i = idx; var item = formItens[i];
+                    <div class="card card-outline card-info mb-2">
+                        <div class="card-header py-1 d-flex justify-content-between align-items-center">
+                            <span class="font-weight-bold small">Item @(i + 1)</span>
+                            @if (formItens.Count > 1) { <button class="btn btn-xs btn-danger" @onclick="() => formItens.RemoveAt(i)"><i class="fas fa-trash"></i></button> }
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row">
+                                <div class="col-12 col-md-5"><label class="small">@Lang["ar.item.task"]</label><input type="text" class="form-control" @bind="item.Tarefa" /></div>
+                                <div class="col-12 col-md-5"><label class="small">@Lang["ar.item.hazard"]</label><input type="text" class="form-control" @bind="item.Perigo" /></div>
+                                <div class="col-6 col-md-2"><label class="small">@Lang["ar.item.exposed"]</label><input type="number" class="form-control" @bind="item.NumeroExpostos" min="1" /></div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12 col-md-6 p-2" style="background:#f0f7ff;border-radius:4px;">
+                                    <small class="font-weight-bold text-info d-block mb-1">@Lang["ar.item.before_reduction"]</small>
+                                    <div class="row">
+                                        <div class="col-4"><select class="form-control form-control-sm" @bind="item.GravidadeAntes"><option value="">Grav.</option>@foreach (var s in sev) { <option value="@s">@s</option> }</select></div>
+                                        <div class="col-4"><select class="form-control form-control-sm" @bind="item.ProbabilidadeAntes"><option value="">Prob.</option>@foreach (var p in prb) { <option value="@p">@p</option> }</select></div>
+                                        <div class="col-4"><input type="text" class="form-control form-control-sm" readonly value="@CalcRisco(item.GravidadeAntes, item.ProbabilidadeAntes)" style="@RiscoStyle(CalcRisco(item.GravidadeAntes, item.ProbabilidadeAntes))" /></div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6 p-2" style="background:#f0fff4;border-radius:4px;">
+                                    <small class="font-weight-bold text-success d-block mb-1">@Lang["ar.item.after_reduction"]</small>
+                                    <div class="row">
+                                        <div class="col-4"><select class="form-control form-control-sm" @bind="item.GravidadeDepois"><option value="">Grav.</option>@foreach (var s in sev) { <option value="@s">@s</option> }</select></div>
+                                        <div class="col-4"><select class="form-control form-control-sm" @bind="item.ProbabilidadeDepois"><option value="">Prob.</option>@foreach (var p in prb) { <option value="@p">@p</option> }</select></div>
+                                        <div class="col-4"><input type="text" class="form-control form-control-sm" readonly value="@CalcRisco(item.GravidadeDepois, item.ProbabilidadeDepois)" style="@RiscoStyle(CalcRisco(item.GravidadeDepois, item.ProbabilidadeDepois))" /></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2"><label class="small font-weight-bold">@Lang["ar.item.measures"]</label><textarea class="form-control" rows="5" style="min-height:100px;font-size:0.85rem;" @bind="item.MedidasProtecao"></textarea></div>
+                        </div>
+                    </div>
+                }
+                <button class="btn btn-sm btn-info" @onclick="() => formItens.Add(new ItemForm())"><i class="fas fa-plus mr-1"></i> @Lang["ar.item.add"]</button>
+            }
+
+            @if (wizStep == 3)
+            {
+                <table class="table table-sm table-bordered mb-2" style="font-size:0.8rem;">
+                    <tr><th class="bg-light">@Lang["ar.department"]</th><td>@form.Departamento</td><th class="bg-light">@Lang["ar.operation"]</th><td>@form.Operacao</td></tr>
+                    <tr><th class="bg-light">@Lang["ar.task"]</th><td>@form.Tarefa</td><th class="bg-light">@Lang["ar.date"]</th><td>@form.Data.ToString("dd/MM/yyyy")</td></tr>
+                </table>
+                @if (formItens.Any())
+                {
+                    <div class="table-responsive">
+                    <table class="table table-bordered table-sm" style="font-size:0.75rem;">
+                        <thead class="bg-pw-blue"><tr><th>#</th><th>Tarefa</th><th>Perigo</th><th>Exp.</th><th>Risco Antes</th><th>Medidas</th><th>Risco Após</th></tr></thead>
+                        <tbody>
+                            @for (int i = 0; i < formItens.Count; i++) { var it = formItens[i];
+                                <tr><td>@(i+1)</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td style="@RiscoStyle(CalcRisco(it.GravidadeAntes, it.ProbabilidadeAntes))">@CalcRisco(it.GravidadeAntes, it.ProbabilidadeAntes)</td><td>@it.MedidasProtecao</td><td style="@RiscoStyle(CalcRisco(it.GravidadeDepois, it.ProbabilidadeDepois))">@CalcRisco(it.GravidadeDepois, it.ProbabilidadeDepois)</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                }
+            }
+        </div>
+        <div class="modal-footer py-2">
+            @if (wizStep > 1) { <button class="btn btn-secondary" @onclick="() => wizStep--"><i class="fas fa-arrow-left mr-1"></i> @Lang["ar.action.previous"]</button> }
+            else { <button class="btn btn-secondary" @onclick="() => showWizard = false"><i class="fas fa-times mr-1"></i> @Lang["ar.action.cancel"]</button> }
+            <div class="flex-grow-1"></div>
+            @if (wizStep < 3) { <button class="btn btn-primary" @onclick="AdvanceStep" disabled="@(!CanAdvance())">@Lang["ar.action.next"] <i class="fas fa-arrow-right ml-1"></i></button> }
+            else { <button class="btn btn-success" @onclick="SaveAr" disabled="@saving"><i class="fas fa-save mr-1"></i> @Lang["ar.action.save"]</button> }
+        </div>
+    </div></div></div>
+}
+
+@* Modais confirmação *@
+@if (showInativarModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);z-index:1060;"><div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header py-2 bg-secondary text-white"><h5 class="modal-title"><i class="fas fa-power-off mr-1"></i> @Lang["ar.deactivate_title"]</h5><button type="button" class="close text-white" @onclick="() => showInativarModal = false"><span>&times;</span></button></div>
+        <div class="modal-body"><p>@Lang["ar.confirm_deactivate"]</p></div>
+        <div class="modal-footer py-1"><button class="btn btn-sm btn-secondary" @onclick="() => showInativarModal = false">@Lang["common.close"]</button><button class="btn btn-sm btn-dark" @onclick="DoInativar">@Lang["common.confirm"]</button></div>
+    </div></div></div>
+}
+@if (showDeleteModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);z-index:1060;"><div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header py-2 bg-danger text-white"><h5 class="modal-title"><i class="fas fa-trash mr-1"></i> @Lang["ar.action.delete"]</h5><button type="button" class="close text-white" @onclick="() => showDeleteModal = false"><span>&times;</span></button></div>
+        <div class="modal-body"><p>@Lang["ar.confirm_delete"]</p><p class="font-weight-bold">@sel?.Numero</p></div>
+        <div class="modal-footer py-1"><button class="btn btn-sm btn-secondary" @onclick="() => showDeleteModal = false">@Lang["common.close"]</button><button class="btn btn-sm btn-danger" @onclick="DoDelete">@Lang["common.confirm"]</button></div>
+    </div></div></div>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; }
+    private int userId; private bool IsAdmin, IsSuperGestor, IsUsuarioFinal, IsUsuario, IsComandoCentral, TreinamentoConcluido;
+
+    private List<PlantasDto> plantas = new();
+    private List<EquipamentoDto> eqPlanta = new();
+    private Dictionary<Guid, EToto.Domain.Enums.StatusPle> eqBloqueados = new();
+    private int wizPlantaId;
+    private string eqSearch = "";
+
+    private List<AvaliacaoRiscoDto> arList = new();
+    private AvaliacaoRiscoDto? sel;
+    private bool loading, showDetail;
+
+    private bool showWizard, saving;
+    private int wizStep = 1;
+    private AvaliacaoRiscoDto? editingAr;
+    private ArForm form = new();
+    private List<ItemForm> formItens = new();
+
+    private string filtroStatus = "", filtroTexto = "";
+    private DateTime? filtroDataDe, filtroDataAte;
+    private bool showInativarModal, showDeleteModal;
+
+    private string[] sev = []; private string[] prb = [];
+
+    private List<EquipamentoDto> distinctEq => eqPlanta
+        .GroupBy(e => e.Tag)
+        .Select(g => g.First())
+        .ToList();
+    private List<EquipamentoDto> filteredEq => string.IsNullOrWhiteSpace(eqSearch) ? distinctEq
+        : distinctEq.Where(e => e.Tag.Contains(eqSearch, StringComparison.OrdinalIgnoreCase) || e.EquipmentName.Contains(eqSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+    private bool allEqSelected => filteredEq.Any() && filteredEq.All(e => form.EquipamentoIds.Contains(e.Id));
+    private bool CanCreate => IsAdmin || IsSuperGestor;
+    private List<int> userPlantasIds = new();
+
+    private List<AvaliacaoRiscoDto> filtered => arList.Where(a => {
+        if (!IsSuperGestor && userPlantasIds.Any() && !a.Equipamentos.Any(e => userPlantasIds.Contains(e.PlantaId))) return false;
+        if (!string.IsNullOrEmpty(filtroStatus) && a.Status.ToString() != filtroStatus) return false;
+        if (filtroDataDe.HasValue && a.Data.Date < filtroDataDe.Value.Date) return false;
+        if (filtroDataAte.HasValue && a.Data.Date > filtroDataAte.Value.Date) return false;
+        if (!string.IsNullOrEmpty(filtroTexto)) { var t = filtroTexto.ToLowerInvariant(); return a.Numero.ToLowerInvariant().Contains(t) || a.Departamento.ToLowerInvariant().Contains(t) || a.Tarefa.ToLowerInvariant().Contains(t) || a.CriadoPorNome.ToLowerInvariant().Contains(t); }
+        return true;
+    }).ToList();
+
+    protected override void OnInitialized() { Lang.OnLanguageChanged += OnLang; UpdateOpt(); }
+    public void Dispose() { Lang.OnLanguageChanged -= OnLang; }
+    private void OnLang() { UpdateOpt(); StateHasChanged(); }
+    private void UpdateOpt() { sev = [Lang["ple.severity.catastrophic"], Lang["ple.severity.serious"], Lang["ple.severity.moderate"], Lang["ple.severity.minor"]]; prb = [Lang["ple.probability.very_likely"], Lang["ple.probability.likely"], Lang["ple.probability.unlikely"], Lang["ple.probability.remote"]]; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || AuthStateTask is null) return;
+        var auth = await AuthStateTask; var user = auth.User;
+        if (user.Identity is not { IsAuthenticated: true }) return;
+        userId = int.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var u) ? u : 0;
+        IsAdmin = user.IsInRole("Administrador"); IsSuperGestor = user.IsInRole("SuperGestor");
+        IsUsuarioFinal = user.IsInRole("UsuarioFinal"); IsUsuario = user.IsInRole("Usuario"); IsComandoCentral = user.IsInRole("ComandoCentral");
+        TreinamentoConcluido = user.FindFirst("TreinamentoConcluido")?.Value == "True";
+        userPlantasIds = user.FindAll("PlantasIds").Select(c => int.TryParse(c.Value, out var v) ? v : 0).Where(v => v > 0).ToList();
+        var allPlantas = await PlantaService.ListarAsync();
+        plantas = IsSuperGestor ? allPlantas.ToList() : allPlantas.Where(p => userPlantasIds.Contains(p.Id)).ToList();
+        await LoadList();
+        StateHasChanged();
+    }
+
+    private async Task LoadList() { loading = true; StateHasChanged(); try { arList = await ArService.GetAllAsync(); } finally { loading = false; } }
+
+    private async Task OpenWizard()
+    {
+        editingAr = null; form = new ArForm { Data = DateTimeHelper.AgoraBrasilia() }; formItens = new() { new ItemForm() }; wizStep = 1; eqSearch = "";
+        showWizard = true; showDetail = false;
+        // Pré-carrega planta e equipamentos se usuário tem só 1 planta
+        if (plantas.Count == 1)
+        {
+            wizPlantaId = plantas[0].Id;
+            eqPlanta = await EquipamentoService.GetByPlantAsync(wizPlantaId);
+            eqBloqueados = await PleService.GetEquipamentosComPleAtivoStatusAsync(wizPlantaId);
+        }
+    }
+
+    private void AdvanceStep()
+    {
+        // Ao ir do Step 1 para o Step 2, pré-preenche a Tarefa do primeiro item
+        if (wizStep == 1 && formItens.Count > 0 && string.IsNullOrWhiteSpace(formItens[0].Tarefa))
+            formItens[0].Tarefa = form.Tarefa;
+        wizStep++;
+    }
+
+    private bool CanAdvance() => wizStep switch { 1 => !string.IsNullOrWhiteSpace(form.Departamento) && !string.IsNullOrWhiteSpace(form.Operacao) && !string.IsNullOrWhiteSpace(form.Tarefa), 2 => formItens.Count > 0 && formItens.All(i => !string.IsNullOrWhiteSpace(i.Tarefa) && !string.IsNullOrWhiteSpace(i.Perigo)), _ => true };
+
+    private async Task SaveAr()
+    {
+        saving = true;
+        try
+        {
+            foreach (var it in formItens) { it.NivelRiscoAntes = CalcRisco(it.GravidadeAntes, it.ProbabilidadeAntes); it.NivelRiscoDepois = CalcRisco(it.GravidadeDepois, it.ProbabilidadeDepois); }
+            var itens = formItens.Select(i => new AvaliacaoRiscoItemDto { Tarefa = i.Tarefa, Perigo = i.Perigo, NumeroExpostos = i.NumeroExpostos, GravidadeAntes = i.GravidadeAntes, ProbabilidadeAntes = i.ProbabilidadeAntes, NivelRiscoAntes = i.NivelRiscoAntes, MedidasProtecao = i.MedidasProtecao, GravidadeDepois = i.GravidadeDepois, ProbabilidadeDepois = i.ProbabilidadeDepois, NivelRiscoDepois = i.NivelRiscoDepois }).ToList();
+
+            if (editingAr != null) { await ArService.UpdateAsync(new AvaliacaoRiscoUpdateDto { Id = editingAr.Id, EquipamentoIds = form.EquipamentoIds, Departamento = form.Departamento, Operacao = form.Operacao, Tarefa = form.Tarefa, Data = form.Data, Observacoes = form.Observacoes, ModificadoPorId = userId, Itens = itens }); await Toast(Lang["common.success"], Lang["ar.toast.updated"], "success"); var eid = editingAr.Id; showWizard = false; await LoadList(); await ViewAr(eid); }
+            else { await ArService.CreateAsync(new AvaliacaoRiscoCreateDto { EquipamentoIds = form.EquipamentoIds, Departamento = form.Departamento, Operacao = form.Operacao, Tarefa = form.Tarefa, Data = form.Data, Observacoes = form.Observacoes, CriadoPorId = userId, Itens = itens }); await Toast(Lang["common.success"], Lang["ar.toast.created"], "success"); showWizard = false; await LoadList(); }
+            StateHasChanged();
+        }
+        catch (Exception ex) { await Toast(Lang["common.error"], ex.Message, "danger"); }
+        finally { saving = false; }
+    }
+
+    private async Task ViewAr(Guid id) { sel = await ArService.GetByIdWithHistoricoAsync(id); showDetail = sel != null; showWizard = false; }
+    private void CloseDetail() { showDetail = false; sel = null; }
+
+    private async Task EditAr(AvaliacaoRiscoDto ar)
+    {
+        editingAr = ar; form = new ArForm { Departamento = ar.Departamento, Operacao = ar.Operacao, Tarefa = ar.Tarefa, Data = ar.Data, Observacoes = ar.Observacoes, EquipamentoIds = ar.Equipamentos.Select(e => e.EquipamentoId).ToList() };
+        formItens = ar.Itens.Select(i => new ItemForm { Tarefa = i.Tarefa, Perigo = i.Perigo, NumeroExpostos = i.NumeroExpostos, GravidadeAntes = i.GravidadeAntes, ProbabilidadeAntes = i.ProbabilidadeAntes, NivelRiscoAntes = i.NivelRiscoAntes, MedidasProtecao = i.MedidasProtecao, GravidadeDepois = i.GravidadeDepois, ProbabilidadeDepois = i.ProbabilidadeDepois, NivelRiscoDepois = i.NivelRiscoDepois }).ToList();
+        // Carrega planta e equipamentos
+        if (plantas.Count == 1) wizPlantaId = plantas[0].Id;
+        else if (ar.Equipamentos.Any()) wizPlantaId = 0; // usuário precisa selecionar
+        if (wizPlantaId > 0 || plantas.Count == 1)
+        {
+            if (wizPlantaId == 0) wizPlantaId = plantas[0].Id;
+            eqPlanta = await EquipamentoService.GetByPlantAsync(wizPlantaId);
+            eqBloqueados = await PleService.GetEquipamentosComPleAtivoStatusAsync(wizPlantaId);
+        }
+        eqSearch = ""; wizStep = 1; showWizard = true; showDetail = false;
+    }
+
+    private async Task AlterarStatus(StatusAvaliacaoRisco s) { if (sel == null) return; try { await ArService.AlterarStatusAsync(sel.Id, s, userId); await Toast(Lang["common.success"], Lang["ar.toast.status_changed"], "success"); await ViewAr(sel.Id); await LoadList(); StateHasChanged(); } catch (Exception ex) { await Toast(Lang["common.error"], ex.Message, "danger"); } }
+
+    private void OpenInativarModal() { showInativarModal = true; }
+    private async Task DoInativar() { showInativarModal = false; await AlterarStatus(StatusAvaliacaoRisco.Inativa); }
+    private void OpenDeleteModal() { showDeleteModal = true; }
+    private async Task DoDelete() { showDeleteModal = false; if (sel == null) return; try { await ArService.SoftDeleteAsync(sel.Id, userId); await Toast(Lang["common.success"], Lang["ar.toast.deleted"], "success"); showDetail = false; sel = null; await LoadList(); StateHasChanged(); } catch (Exception ex) { await Toast(Lang["common.error"], ex.Message, "danger"); } }
+
+    private async Task PlantaWizChanged(ChangeEventArgs e)
+    {
+        wizPlantaId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0;
+        if (wizPlantaId > 0)
+        {
+            eqPlanta = await EquipamentoService.GetByPlantAsync(wizPlantaId);
+            eqBloqueados = await PleService.GetEquipamentosComPleAtivoStatusAsync(wizPlantaId);
+        }
+        else { eqPlanta.Clear(); eqBloqueados.Clear(); }
+        form.EquipamentoIds.Clear(); eqSearch = "";
+    }
+    private void ToggleEq(Guid id, bool on) { if (on && !form.EquipamentoIds.Contains(id)) form.EquipamentoIds.Add(id); else if (!on) form.EquipamentoIds.Remove(id); }
+    private void ToggleAllEq(ChangeEventArgs e)
+    {
+        var ids = filteredEq.Select(eq => eq.Id).ToHashSet();
+        if ((bool)e.Value!)
+        {
+            foreach (var id in ids)
+                if (!form.EquipamentoIds.Contains(id)) form.EquipamentoIds.Add(id);
+        }
+        else
+        {
+            form.EquipamentoIds.RemoveAll(id => ids.Contains(id));
+        }
+    }
+
+    private void OnDataDeChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        filtroDataDe = !string.IsNullOrWhiteSpace(val) && DateTime.TryParse(val, out var d) ? d : null;
+    }
+    private void OnDataAteChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        filtroDataAte = !string.IsNullOrWhiteSpace(val) && DateTime.TryParse(val, out var d) ? d : null;
+    }
+
+    private async Task PrintAr(Guid id) { await Js.InvokeVoidAsync("open", $"/api/avaliacao-risco/pdf/{id}", "_blank"); }
+
+    private RenderFragment StatusBadge(StatusAvaliacaoRisco s) => s switch { StatusAvaliacaoRisco.Ativa => BF("badge-info", Lang["ar.status.ativa"]), StatusAvaliacaoRisco.Inativa => BF("badge-secondary", Lang["ar.status.inativa"]), _ => BF("badge-light", s.ToString()) };
+    private RenderFragment BF(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"badge {c}"); b.AddContent(2, t); b.CloseElement(); };
+
+    private string TlIcon(string a) => a switch { "Criado" => "fa-plus-circle", "Modificado" => "fa-edit", "Inativado" => "fa-power-off", "Ativado" => "fa-check-circle", "Excluído" => "fa-trash", _ => "fa-circle" };
+    private string TlColor(string a) => a switch { "Criado" => "text-success", "Modificado" => "text-primary", "Inativado" => "text-secondary", "Ativado" => "text-success", _ => "text-muted" };
+    private string TlBg(string a) => a switch { "Criado" => "bg-success", "Modificado" => "bg-primary", "Inativado" => "bg-secondary", "Ativado" => "bg-success", _ => "bg-secondary" };
+    private string TlLabel(string a) => a switch
+    {
+        "Criado" => Lang["timeline.action.created"],
+        "Iniciado" => Lang["timeline.action.started"],
+        "Cancelado" => Lang["timeline.action.cancelled"],
+        "Finalizado" => Lang["timeline.action.finalized"],
+        "Modificado" => Lang["timeline.action.modified"],
+        "Excluído" => Lang["timeline.action.deleted"],
+        "Inativado" => Lang["timeline.action.deactivated"],
+        "Ativado" => Lang["timeline.action.activated"],
+        _ => a
+    };
+
+    private string CalcRisco(string g, string p) { if (string.IsNullOrEmpty(g) || string.IsNullOrEmpty(p)) return "-"; var gi = Array.IndexOf(sev, g); if (gi < 0 && (g == "Sério" || g == "Serious")) gi = 1; var pi = Array.IndexOf(prb, p); if (gi < 0 || pi < 0) return "-"; string[,] m = { {"Alto","Alto","Médio","Baixo"}, {"Alto","Alto","Médio","Baixo"}, {"Alto","Médio","Baixo","Insignificante"}, {"Médio","Baixo","Insignificante","Insignificante"} }; return m[gi, pi] switch { "Alto" => Lang["ple.risk.high"], "Médio" => Lang["ple.risk.medium"], "Baixo" => Lang["ple.risk.low"], "Insignificante" => Lang["ple.risk.insignificant"], var x => x }; }
+    private string RiscoStyle(string r) { if (r == Lang["ple.risk.high"]) return "background-color:#dc3545;color:white;font-weight:bold;text-align:center;"; if (r == Lang["ple.risk.medium"]) return "background-color:#fd7e14;color:white;font-weight:bold;text-align:center;"; if (r == Lang["ple.risk.low"]) return "background-color:#ffc107;color:#333;font-weight:bold;text-align:center;"; if (r == Lang["ple.risk.insignificant"]) return "background-color:#28a745;color:white;font-weight:bold;text-align:center;"; return ""; }
+
+    private async Task Toast(string title, string message, string type) { await Js.InvokeVoidAsync("adminlteToasts.show", type, title, message); }
+
+    private class ArForm { public List<Guid> EquipamentoIds { get; set; } = new(); public string Departamento { get; set; } = ""; public string Operacao { get; set; } = ""; public string Tarefa { get; set; } = ""; public DateTime Data { get; set; } = DateTimeHelper.AgoraBrasilia(); public string? Observacoes { get; set; } }
+    private class ItemForm { public string Tarefa { get; set; } = ""; public string Perigo { get; set; } = ""; public int NumeroExpostos { get; set; } = 1; public string GravidadeAntes { get; set; } = ""; public string ProbabilidadeAntes { get; set; } = ""; public string NivelRiscoAntes { get; set; } = ""; public string MedidasProtecao { get; set; } = ""; public string GravidadeDepois { get; set; } = ""; public string ProbabilidadeDepois { get; set; } = ""; public string NivelRiscoDepois { get; set; } = ""; }
+}

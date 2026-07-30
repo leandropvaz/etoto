@@ -1,0 +1,1459 @@
+@page "/usuarios"
+@using System.ComponentModel.DataAnnotations
+@using EToto.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@using EToto.Application.Dto
+@using EToto.Web.Services
+@inject UsuariosService UsuarioService
+@inject PlantasService PlantaService
+@inject IJSRuntime Js
+@inject LanguageService Lang
+@layout MainLayout
+@inject NavigationManager Nav
+@implements IDisposable
+
+<section class="content pt-3">
+    <div class="container-fluid">
+
+        @* Toolbox: sub-abas que consolidam Cadastro, Revalidação, Auditoria e Relatórios numa só página *@
+        <div class="usuarios-toolbox card card-outline card-primary mb-3">
+            <ul class="nav nav-pills p-2 mb-0">
+                <li class="nav-item mr-1">
+                    <button type="button" class="nav-link @(SecaoAtiva == Secao.Cadastro ? "active" : "")"
+                            @onclick="() => SecaoAtiva = Secao.Cadastro">
+                        <i class="fas fa-user-edit mr-1"></i>@Lang["users.tab.registration"]
+                    </button>
+                </li>
+                @if (PodeAdministrar)
+                {
+                    <li class="nav-item mr-1">
+                        <button type="button" class="nav-link @(SecaoAtiva == Secao.Revalidacao ? "active" : "")"
+                                @onclick="() => SecaoAtiva = Secao.Revalidacao">
+                            <i class="fas fa-redo mr-1"></i>@Lang["users.tab.revalidation"]
+                        </button>
+                    </li>
+                    <li class="nav-item mr-1">
+                        <button type="button" class="nav-link @(SecaoAtiva == Secao.Auditoria ? "active" : "")"
+                                @onclick="() => SecaoAtiva = Secao.Auditoria">
+                            <i class="fas fa-history mr-1"></i>@Lang["users.tab.audit"]
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link @(SecaoAtiva == Secao.Relatorios ? "active" : "")"
+                                @onclick="() => SecaoAtiva = Secao.Relatorios">
+                            <i class="fas fa-file-export mr-1"></i>@Lang["users.tab.reports"]
+                        </button>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        @if (SecaoAtiva == Secao.Cadastro)
+        {
+        <!-- #8: layout empilhado — formulário em cima (largura total), lista embaixo -->
+        <div class="row">
+
+            <!-- FORMULÁRIO CADASTRO/EDIÇÃO (full width) -->
+            <div class="col-12">
+                <div class="card card-primary card-outline mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-user mr-1"></i>
+                            @(IsEditMode ? Lang["users.edit"] : Lang["users.register"])
+                        </h3>
+
+                        @if (IsEditMode)
+                        {
+                            <div class="card-tools">
+                                <button type="button"
+                                        class="btn btn-tool"
+                                        title="@Lang["common.cancel_edit_title"]"
+                                        @onclick="CancelarEdicao">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="card-body">
+                        <EditForm Model="@UsuarioForm" OnValidSubmit="SalvarUsuarioAsync" FormName="UsuarioForm">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger mb-2" />
+
+                            <div class="row">
+
+                            @* COLUNA ESQUERDA: dados básicos + treinamento + vínculo *@
+                            <div class="col-12 col-md-6">
+
+                            <!-- Login -->
+                            <div class="form-group">
+                                <label>@Lang["users.login_field"]</label>
+                                <InputText class="form-control" @bind-Value="UsuarioForm.Login" />
+                                <ValidationMessage For="@(() => UsuarioForm.Login)" class="text-danger" />
+                            </div>
+
+                            <!-- Nome completo -->
+                            <div class="form-group">
+                                <label>@Lang["users.full_name"]</label>
+                                <InputText class="form-control" @bind-Value="UsuarioForm.NomeCompleto" />
+                                <ValidationMessage For="@(() => UsuarioForm.NomeCompleto)" class="text-danger" />
+                            </div>
+
+                            <!-- Senha -->
+                            <div class="form-group">
+                                <label>@Lang["users.password"]</label>
+                                <InputText class="form-control"
+                                           type="password"
+                                           @bind-Value="UsuarioForm.Senha" />
+                                @if (IsEditMode)
+                                {
+                                    <small class="form-text text-muted">
+                                        @Lang["users.password_hint"]
+                                    </small>
+                                }
+                                <ValidationMessage For="@(() => UsuarioForm.Senha)" class="text-danger" />
+                            </div>
+
+                            <!-- Perfis (múltiplos, #1c) -->
+                            <div class="form-group">
+                                <label>@Lang["users.access_profiles"]</label>
+                                <div class="perfis-checkboxes">
+                                    @foreach (var value in PerfisDisponiveis)
+                                    {
+                                        var isChecked = UsuarioForm.Perfis.Contains(value);
+                                        var isSuper = value == PerfilUsuario.SuperGestor;
+                                        var temOutroSelecionado = UsuarioForm.Perfis.Any(p => p != PerfilUsuario.SuperGestor);
+                                        var temSuperSelecionado = UsuarioForm.Perfis.Contains(PerfilUsuario.SuperGestor);
+                                        // Desabilita conforme regra "SuperGestor exclusivo":
+                                        // - SuperGestor desabilita quando há outro perfil selecionado
+                                        // - Outros perfis desabilitam quando SuperGestor já está selecionado
+                                        var isDisabled = (isSuper && temOutroSelecionado && !isChecked)
+                                                         || (!isSuper && temSuperSelecionado && !isChecked);
+
+                                        <div class="form-check">
+                                            <input type="checkbox"
+                                                   class="form-check-input"
+                                                   id="perfil_@value"
+                                                   checked="@isChecked"
+                                                   disabled="@isDisabled"
+                                                   @onchange="@(e => TogglePerfil(value, (bool)e.Value!))" />
+                                            <label class="form-check-label @(isDisabled ? "text-muted" : "")" for="perfil_@value">
+                                                @GetPerfilDescricao(value)
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                                @if (!UsuarioForm.Perfis.Any())
+                                {
+                                    <small class="text-danger">@Lang["users.toast.profile_required"]</small>
+                                }
+                                else if (UsuarioForm.Perfis.Contains(PerfilUsuario.SuperGestor) && UsuarioForm.Perfis.Count > 1)
+                                {
+                                    <small class="text-danger">@Lang["users.profile_super_exclusive"]</small>
+                                }
+                            </div>
+
+                            <!-- Treinamento LOTOTO -->
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="chkTreinamento"
+                                           @bind="UsuarioForm.TreinamentoConcluido" />
+                                    <label class="custom-control-label" for="chkTreinamento">@Lang["users.training_completed"]</label>
+                                </div>
+                                @if (UsuarioForm.TreinamentoConcluido)
+                                {
+                                    <input type="date" class="form-control mt-1"
+                                           @bind="UsuarioForm.DataTreinamento"
+                                           @bind:after="OnDataTreinamentoChanged" />
+                                    <label class="mt-2">@Lang["users.training_validity"]</label>
+                                    <input type="date" class="form-control" @bind="UsuarioForm.DataValidadeTreinamento" />
+                                    <small class="form-text text-muted">@Lang["users.training_validity_hint"]</small>
+                                }
+                            </div>
+
+                            <!-- Vínculo Funcionário/Terceiro (#2) -->
+                            <div class="form-group">
+                                <label>@Lang["users.bond_type"]</label>
+                                <InputSelect class="form-control" @bind-Value="UsuarioForm.TipoVinculo"
+                                             @bind-Value:after="OnTipoVinculoChanged">
+                                    <option value="@TipoVinculo.Funcionario">@Lang["users.bond_employee"]</option>
+                                    <option value="@TipoVinculo.Terceiro">@Lang["users.bond_contractor"]</option>
+                                </InputSelect>
+                            </div>
+
+                            @if (UsuarioForm.TipoVinculo == TipoVinculo.Terceiro)
+                            {
+                                <div class="form-group">
+                                    <label>@Lang["users.company_name"]</label>
+                                    <InputText class="form-control" @bind-Value="UsuarioForm.NomeEmpresa" />
+                                    @if (string.IsNullOrWhiteSpace(UsuarioForm.NomeEmpresa))
+                                    {
+                                        <small class="text-danger">@Lang["users.toast.company_required"]</small>
+                                    }
+                                </div>
+                                <div class="form-group">
+                                    <label>@Lang["users.access_validity"]</label>
+                                    <input type="date" class="form-control"
+                                           min="@DataMinValidade" max="@DataMaxValidade"
+                                           @bind="UsuarioForm.DataValidadeAcesso" />
+                                    <small class="form-text text-muted">@Lang["users.access_validity_hint"]</small>
+                                    @if (!UsuarioForm.DataValidadeAcesso.HasValue)
+                                    {
+                                        <small class="text-danger">@Lang["users.toast.validity_required"]</small>
+                                    }
+                                    else if (UsuarioForm.DataValidadeAcesso.Value.Date > DataLimiteValidade)
+                                    {
+                                        <small class="text-danger">@Lang["users.toast.validity_max_6m"]</small>
+                                    }
+                                </div>
+                            }
+
+                            </div> @* fim col esquerda *@
+
+                            @* COLUNA DIREITA: plantas + status + auditoria *@
+                            <div class="col-12 col-md-6">
+
+                            <!-- Plantas (múltiplas) - só se NÃO houver SuperGestor entre os perfis -->
+                            @if (!UsuarioForm.Perfis.Contains(PerfilUsuario.SuperGestor))
+                            {
+                                <div class="form-group">
+                                    <label>@Lang["users.plants_select"]</label>
+                                    @if (PerfilLogado == PerfilUsuario.Administrador && PlantasIdsLogado.Any())
+                                    {
+                                        <small class="form-text text-info mb-1">
+                                            <i class="fas fa-info-circle"></i> @Lang["users.admin_restriction"]
+                                        </small>
+                                    }
+                                    <div class="plantas-checkboxes">
+                                        @foreach (var planta in Plantas)
+                                        {
+                                            var isChecked = UsuarioForm.PlantasIds.Contains(planta.Id);
+                                            // Administrador só pode gerenciar suas próprias plantas
+                                            var isDisabled = PerfilLogado == PerfilUsuario.Administrador &&
+                                            !PlantasIdsLogado.Contains(planta.Id);
+
+                                            <div class="form-check">
+                                                <input type="checkbox"
+                                                       class="form-check-input"
+                                                       id="planta_@planta.Id"
+                                                       checked="@isChecked"
+                                                       disabled="@isDisabled"
+                                                       @onchange="@(e => TogglePlanta(planta.Id, (bool)e.Value!))" />
+                                                <label class="form-check-label @(isDisabled ? "text-muted" : "")" for="planta_@planta.Id">
+                                                    @planta.Nome (@planta.Codigo)
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                    @if (!UsuarioForm.PlantasIds.Any())
+                                    {
+                                        <small class="text-danger">@Lang["users.select_plant_required"]</small>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Ativo -->
+                            <div class="form-group">
+                                <div class="icheck-primary d-inline">
+                                    <InputCheckbox id="usuarioAtivo"
+                                                   class="form-check-input"
+                                                   @bind-Value="UsuarioForm.Ativa" />
+                                    <label for="usuarioAtivo">@Lang["users.active"]</label>
+                                </div>
+                            </div>
+
+                            </div> @* fim col direita *@
+                            </div> @* fim row interno *@
+
+                            <div class="d-flex justify-content-between">
+                                <button type="submit" class="btn btn-primary" disabled="@Salvando">
+                                    @if (Salvando)
+                                    {
+                                        <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["common.processing"]</span>
+                                    }
+                                    else
+                                    {
+                                        @(IsEditMode ? Lang["common.save"] : Lang["common.register"])
+                                    }
+                                </button>
+
+                                @if (IsEditMode)
+                                {
+                                    <button type="button"
+                                            class="btn btn-danger"
+                                            disabled="@(Salvando || Excluindo)"
+                                            @onclick="AbrirModalExcluir">
+                                        <i class="fas fa-trash-alt mr-1"></i> @Lang["common.delete"]
+                                    </button>
+                                }
+                            </div>
+
+                            @* Auditoria de cadastro (#1c) — só em modo edição *@
+                            @if (IsEditMode && (UsuarioForm.CriadoEm.HasValue || UsuarioForm.AlteradoEm.HasValue))
+                            {
+                                <div class="audit-panel mt-3">
+                                    <small class="text-muted d-block mb-1"><strong>@Lang["users.audit_title"]</strong></small>
+                                    @if (UsuarioForm.CriadoEm.HasValue)
+                                    {
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-plus-circle mr-1"></i>
+                                            @Lang["users.created_by"]:
+                                            <strong>@(UsuarioForm.CriadoPorNome ?? Lang["users.audit_unknown"])</strong>
+                                            @Lang["users.audit_at"] @UsuarioForm.CriadoEm.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                        </small>
+                                    }
+                                    @if (UsuarioForm.AlteradoEm.HasValue)
+                                    {
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-pencil-alt mr-1"></i>
+                                            @Lang["users.updated_by"]:
+                                            <strong>@(UsuarioForm.AlteradoPorNome ?? Lang["users.audit_unknown"])</strong>
+                                            @Lang["users.audit_at"] @UsuarioForm.AlteradoEm.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                        </small>
+                                    }
+                                </div>
+                            }
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTA PAGINADA (full width, abaixo do formulário) -->
+            <div class="col-12">
+
+                <div class="card card-info card-outline mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-users mr-1"></i>
+                            @Lang["users.search"]
+                        </h3>
+
+                        <div class="card-tools">
+                            <div class="input-group input-group-sm" style="width: 260px;">
+                                <input type="text"
+                                       name="table_search"
+                                       class="form-control float-right"
+                                       placeholder="@Lang["users.search_placeholder"]"
+                                       @bind="TermoPesquisa"
+                                       @bind:event="oninput" />
+
+                                <div class="input-group-append">
+                                    <button type="button"
+                                            class="btn btn-default"
+                                            title="@Lang["common.clear"]"
+                                            @onclick="LimparPesquisa">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-2">
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="text-muted">
+                                    @if (UsuariosFiltrados?.Any() == true)
+                                    {
+                                        @($"{UsuariosFiltrados.Count} {Lang["users.found"]}")
+                                    }
+                                    else
+                                    {
+                                        @Lang["users.not_found"]
+                                    }
+                                </small>
+                            </div>
+
+                            <div class="btn-group btn-group-sm">
+                                <select class="form-control form-control-sm ml-2"
+                                        style="width: 80px;"
+                                        @bind="TamanhoPagina">
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover table-sm mb-0 usuarios-table selectable-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width: 11%;">@Lang["users.col_login"]</th>
+                                        <th style="width: 16%;">@Lang["users.col_name"]</th>
+                                        <th style="width: 10%;">@Lang["users.col_profiles"]</th>
+                                        <th style="width: 11%;">@Lang["users.col_bond"]</th>
+                                        <th style="width: 11%;">@Lang["users.col_training"]</th>
+                                        <th style="width: 19%;">@Lang["users.col_plants"]</th>
+                                        <th style="width: 8%;" class="text-center">@Lang["users.col_active"]</th>
+                                        <th style="width: 12%;" class="text-center">@Lang["common.actions"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Carregando)
+                                    {
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted py-3">
+                                                <i class="fas fa-sync-alt fa-spin mr-2"></i>@Lang["common.loading"]
+                                            </td>
+                                        </tr>
+                                    }
+                                    else if (UsuariosPaginados.Any())
+                                    {
+                                        @foreach (var u in UsuariosPaginados)
+                                        {
+                                            var statusValidade = ObterStatusValidade(u.DataValidadeAcesso);
+                                            var statusTreinamento = ObterStatusValidade(u.DataValidadeTreinamento);
+                                            var exigeTreinamento = TreinamentoValidacao.AlgumPerfilExigeTreinamento(
+                                                u.Perfis.Select(p => (EToto.Domain.Enums.PerfilUsuario)(int)p));
+                                            // Linha em vermelho/amarelo se acesso OU treinamento (quando exigido) estiver no pior estado.
+                                            var statusPiorLinha = PiorStatus(statusValidade,
+                                                exigeTreinamento ? statusTreinamento : StatusValidadeAcesso.SemValidade);
+                                            <tr class="@MontarClasseLinha(u.Id, statusPiorLinha)" @onclick="() => SelecionarLinha(u.Id)">
+                                                <td>@u.Login</td>
+                                                <td>@u.NomeCompleto</td>
+                                                <td>@DescreverPerfis(u.Perfis, u.Perfil)</td>
+                                                <td>
+                                                    @if (u.TipoVinculo == TipoVinculo.Terceiro)
+                                                    {
+                                                        <div><strong>@Lang["users.bond_contractor"]</strong></div>
+                                                        @if (!string.IsNullOrWhiteSpace(u.NomeEmpresa))
+                                                        {
+                                                            <div class="text-muted small">@u.NomeEmpresa</div>
+                                                        }
+                                                        @if (u.DataValidadeAcesso.HasValue)
+                                                        {
+                                                            <span class="badge @BadgeClass(statusValidade) badge-sm">
+                                                                @u.DataValidadeAcesso.Value.ToLocalTime().ToString("dd/MM/yyyy")
+                                                                @if (statusValidade == StatusValidadeAcesso.Vencido)
+                                                                { <span>· @Lang["users.validity_expired"]</span> }
+                                                                else if (statusValidade == StatusValidadeAcesso.Vencendo)
+                                                                { <span>· @Lang["users.validity_expiring"]</span> }
+                                                            </span>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">@Lang["users.bond_employee"]</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!exigeTreinamento)
+                                                    {
+                                                        <span class="text-muted small">@Lang["users.training_not_required"]</span>
+                                                    }
+                                                    else if (!u.TreinamentoConcluido)
+                                                    {
+                                                        <span class="badge bg-secondary badge-sm">@Lang["users.training_completed"]: —</span>
+                                                    }
+                                                    else if (u.DataValidadeTreinamento.HasValue)
+                                                    {
+                                                        <span class="badge @BadgeClass(statusTreinamento) badge-sm">
+                                                            @u.DataValidadeTreinamento.Value.ToLocalTime().ToString("dd/MM/yyyy")
+                                                            @if (statusTreinamento == StatusValidadeAcesso.Vencido)
+                                                            { <span>· @Lang["users.validity_expired"]</span> }
+                                                            else if (statusTreinamento == StatusValidadeAcesso.Vencendo)
+                                                            { <span>· @Lang["users.validity_expiring"]</span> }
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark badge-sm">
+                                                            <i class="fas fa-exclamation-triangle mr-1"></i>@Lang["users.training_validity"]
+                                                        </span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (u.Perfis.Contains(PerfilUsuario.SuperGestor))
+                                                    {
+                                                        <span class="text-muted">@Lang["users.all_plants"]</span>
+                                                    }
+                                                    else if (u.PlantasIds.Any())
+                                                    {
+                                                        <span>@string.Join(", ", ObterNomesPlantas(u.PlantasIds))</span>
+                                                    }
+                                                    else if (u.PlantaId.HasValue)
+                                                    {
+                                                        <span>@GetNomePlanta(u.PlantaId)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">@Lang["users.no_plant"]</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    @if (u.Ativa)
+                                                    {
+                                                        <span class="badge bg-success badge-sm">@Lang["common.active"]</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary badge-sm">@Lang["common.inactive"]</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-xs btn-outline-primary"
+                                                            title="@Lang["common.edit"]"
+                                                            @onclick="() => IniciarEdicao(u.Id)">
+                                                        <i class="fas fa-edit"></i> @Lang["common.edit"]
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted py-3">
+                                                @Lang["users.no_records"]
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer clearfix">
+                        <span class="text-muted">
+                            @Lang["common.page"] @PaginaAtual @Lang["common.of"] @TotalPaginas
+                        </span>
+
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <li class="page-item @(PaginaAtual == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="PaginaAnterior">«</button>
+                            </li>
+
+                            @foreach (var pagina in GetPaginasVisiveis())
+                            {
+                                @if (pagina.HasValue)
+                                {
+                                    <li class="page-item @(PaginaAtual == pagina.Value ? "active" : "")">
+                                        <button class="page-link" @onclick="() => IrParaPagina(pagina.Value)">@pagina.Value</button>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                }
+                            }
+
+                            <li class="page-item @(PaginaAtual == TotalPaginas ? "disabled" : "")">
+                                <button class="page-link" @onclick="ProximaPagina">»</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        @* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO *@
+        @if (MostrarModalExcluir)
+        {
+            <div class="modal fade show"
+                 tabindex="-1"
+                 role="dialog"
+                 style="display:block;"
+                 aria-modal="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content confirm-modal">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title mb-0">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                @Lang["common.confirm_delete"]
+                            </h5>
+                            <button type="button"
+                                    class="close text-white"
+                                    aria-label="Close"
+                                    @onclick="FecharModalExcluir">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-2">
+                                @Lang["users.delete_confirm_text"]
+                                <strong>@UsuarioForm.Login</strong>?
+                            </p>
+                        </div>
+                        <div class="modal-footer d-flex justify-content-between">
+                            <button type="button"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    disabled="@Excluindo"
+                                    @onclick="FecharModalExcluir">
+                                <i class="fas fa-times mr-1"></i> @Lang["common.no"]
+                            </button>
+                            <button type="button"
+                                    class="btn btn-danger btn-sm"
+                                    disabled="@Excluindo"
+                                    @onclick="ConfirmarExclusaoAsync">
+                                @if (Excluindo)
+                                {
+                                    <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["common.processing"]</span>
+                                }
+                                else
+                                {
+                                    <span><i class="fas fa-trash-alt mr-1"></i>@Lang["common.yes_delete"]</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show"></div>
+        }
+        }
+        else if (SecaoAtiva == Secao.Revalidacao)
+        {
+            <SecaoRevalidacao />
+        }
+        else if (SecaoAtiva == Secao.Auditoria)
+        {
+            <SecaoAuditoria />
+        }
+        else if (SecaoAtiva == Secao.Relatorios)
+        {
+            <SecaoRelatorioUsuarios />
+        }
+
+    </div>
+</section>
+
+<style>
+    .card-title {
+        font-size: 0.9rem !important;
+    }
+
+    .card-header {
+        padding: 0.45rem 0.9rem !important;
+    }
+
+    .card-body {
+        padding: 0.6rem 0.9rem !important;
+    }
+
+    label {
+        font-size: 0.78rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+
+    .form-text,
+    small.text-muted {
+        font-size: 0.75rem !important;
+    }
+
+    .form-control {
+        font-size: 0.8rem !important;
+        height: calc(1.45rem + 2px);
+        padding: 0.2rem 0.45rem;
+    }
+
+    .form-control-sm {
+        font-size: 0.78rem !important;
+        height: calc(1.35rem + 2px);
+        padding: 0.18rem 0.4rem;
+    }
+
+    .form-group {
+        margin-bottom: 0.4rem !important;
+    }
+
+    .btn,
+    .btn-sm {
+        font-size: 0.78rem !important;
+        padding: 0.25rem 0.55rem !important;
+    }
+
+    .btn-xs {
+        font-size: 0.72rem !important;
+        padding: 0.15rem 0.4rem !important;
+    }
+
+    .usuarios-table th,
+    .usuarios-table td {
+        font-size: 0.78rem;
+        padding: 0.23rem 0.4rem;
+    }
+
+    .usuarios-table thead th {
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+
+    .pagination .page-link {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .plantas-checkboxes,
+    .perfis-checkboxes {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+    }
+
+    .form-check {
+        margin-bottom: 0.3rem;
+    }
+
+    .audit-panel {
+        border-top: 1px solid #eee;
+        padding-top: 0.5rem;
+    }
+
+    /* Toolbox de sub-abas (#4) */
+    .usuarios-toolbox {
+        margin-bottom: 0.75rem;
+    }
+
+    .usuarios-toolbox .nav-pills .nav-link {
+        color: #495057;
+        border: 1px solid transparent;
+        font-weight: 500;
+        padding: 0.3rem 0.8rem !important;
+    }
+
+    .usuarios-toolbox .nav-pills .nav-link:hover {
+        background-color: #f1f5fb;
+        color: #006CB5;
+    }
+
+    .usuarios-toolbox .nav-pills .nav-link.active {
+        background-color: #006CB5;
+        color: #fff;
+        font-weight: 600;
+    }
+</style>
+
+@code {
+    public enum PerfilUsuario
+    {
+        Usuario = 1,
+        Administrador = 2,
+        SuperGestor = 3,
+        UsuarioFinal = 4,
+        ComandoCentral = 5
+    }
+
+    public class UsuarioViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "O login é obrigatório.")]
+        public string Login { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "O nome completo é obrigatório.")]
+        public string NomeCompleto { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        public string? Senha { get; set; }
+
+        // Perfil "primário" derivado (SuperGestor quando presente, senão o primeiro de Perfis).
+        // Usado para filtros e retrocompat.
+        public PerfilUsuario Perfil { get; set; } = PerfilUsuario.Usuario;
+
+        // Múltiplos perfis (#1c).
+        public List<PerfilUsuario> Perfis { get; set; } = new();
+
+        public bool Ativa { get; set; } = true;
+
+        public int? PlantaId { get; set; }
+        public List<int> PlantasIds { get; set; } = new();
+
+        public bool TreinamentoConcluido { get; set; }
+        public DateTime? DataTreinamento { get; set; }
+        // Validade do treinamento (#3)
+        public DateTime? DataValidadeTreinamento { get; set; }
+
+        // Vínculo Funcionário/Terceiro (#2)
+        public TipoVinculo TipoVinculo { get; set; } = TipoVinculo.Funcionario;
+        public string? NomeEmpresa { get; set; }
+        public DateTime? DataValidadeAcesso { get; set; }
+
+        // Auditoria de cadastro (#1c)
+        public string? CriadoPorNome { get; set; }
+        public DateTime? CriadoEm { get; set; }
+        public string? AlteradoPorNome { get; set; }
+        public DateTime? AlteradoEm { get; set; }
+    }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private PerfilUsuario PerfilLogado { get; set; } = PerfilUsuario.Usuario;
+    private List<int> PlantasIdsLogado { get; set; } = new(); // ✅ Múltiplas plantas do admin
+    private int? UsuarioIdLogado { get; set; }
+
+    private UsuarioViewModel UsuarioForm { get; set; } = new();
+    private List<UsuarioViewModel> TodosUsuarios { get; set; } = new();
+    private List<PlantasDto> Plantas { get; set; } = new();
+
+    // #9: indicadores de carregamento
+    private bool Carregando { get; set; } = true;
+    private bool Salvando { get; set; }
+    private bool Excluindo { get; set; }
+
+    // Linha selecionada no datagrid
+    private int? LinhaSelecionadaId { get; set; }
+
+    private string TermoPesquisa { get; set; } = string.Empty;
+    private int PaginaAtual { get; set; } = 1;
+    private int TamanhoPagina { get; set; } = 10;
+
+    private bool IsEditMode { get; set; } = false;
+    private int? UsuarioEmEdicaoId { get; set; }
+    private bool MostrarModalExcluir { get; set; } = false;
+
+    // Toolbox: seção ativa entre Cadastro / Revalidação / Auditoria / Relatórios (#4).
+    private enum Secao { Cadastro, Revalidacao, Auditoria, Relatorios }
+    private Secao SecaoAtiva { get; set; } = Secao.Cadastro;
+
+    // Revalidação/Auditoria/Relatórios são exclusivos de Administrador/SuperGestor.
+    private bool PodeAdministrar =>
+        PerfilLogado is PerfilUsuario.Administrador or PerfilUsuario.SuperGestor;
+
+    // #2: limites da validade de acesso (Terceiro) — janela de [hoje, hoje + 6 meses].
+    private DateTime DataLimiteValidade => VinculoValidacao.DataValidadeMaxima();
+    private string DataMinValidade => DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
+    private string DataMaxValidade => DataLimiteValidade.ToString("yyyy-MM-dd");
+
+    // Ao escolher Terceiro, sugere a validade máxima (hoje + 6 meses) se ainda não houver data.
+    private void OnTipoVinculoChanged()
+    {
+        if (UsuarioForm.TipoVinculo == TipoVinculo.Terceiro && !UsuarioForm.DataValidadeAcesso.HasValue)
+            UsuarioForm.DataValidadeAcesso = DataLimiteValidade;
+    }
+
+    // Validade do treinamento = data do treinamento + 2 anos (mesma regra para Funcionário e Parceiro).
+    private const int AnosValidadeTreinamento = 2;
+    private void OnDataTreinamentoChanged()
+    {
+        UsuarioForm.DataValidadeTreinamento = UsuarioForm.DataTreinamento?.AddYears(AnosValidadeTreinamento);
+    }
+
+    private IEnumerable<PerfilUsuario> PerfisDisponiveis =>
+        PerfilLogado switch
+        {
+            PerfilUsuario.SuperGestor => Enum.GetValues(typeof(PerfilUsuario)).Cast<PerfilUsuario>(),
+            // Administrador pode cadastrar a equipe operacional da planta: Usuario, Lider de Bloqueio, Comando Central e Administrador
+            PerfilUsuario.Administrador => new[] { PerfilUsuario.Usuario, PerfilUsuario.UsuarioFinal, PerfilUsuario.ComandoCentral, PerfilUsuario.Administrador },
+            _ => new[] { PerfilUsuario.Usuario }
+        };
+
+    private List<UsuarioViewModel> UsuariosFiltrados =>
+        string.IsNullOrWhiteSpace(TermoPesquisa)
+            ? TodosUsuarios
+            : TodosUsuarios
+                .Where(u =>
+                    (u.Login ?? "").Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    (u.NomeCompleto ?? "").Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    DescreverPerfis(u.Perfis, u.Perfil).Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    DescreverVinculo(u).Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase) ||
+                    ObterNomesPlantas(u.PlantasIds).Any(p => p.Contains(TermoPesquisa, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+    // Texto pesquisável do vínculo: tipo traduzido + empresa (quando Terceiro).
+    private string DescreverVinculo(UsuarioViewModel u)
+    {
+        var tipo = u.TipoVinculo == TipoVinculo.Terceiro
+            ? Lang["users.bond_contractor"]
+            : Lang["users.bond_employee"];
+        return u.TipoVinculo == TipoVinculo.Terceiro && !string.IsNullOrWhiteSpace(u.NomeEmpresa)
+            ? $"{tipo} {u.NomeEmpresa}"
+            : tipo;
+    }
+
+    private IEnumerable<UsuarioViewModel> UsuariosPaginados =>
+        UsuariosFiltrados
+            .Skip((PaginaAtual - 1) * TamanhoPagina)
+            .Take(TamanhoPagina);
+
+    private int TotalPaginas =>
+        UsuariosFiltrados.Count == 0
+            ? 1
+            : (int)Math.Ceiling(UsuariosFiltrados.Count / (double)TamanhoPagina);
+
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+
+        if (int.TryParse(user.FindFirst("Perfil")?.Value, out var perfilInt))
+            PerfilLogado = (PerfilUsuario)perfilInt;
+
+        // ✅ Obter múltiplas plantas do usuário logado
+        var plantasIdsStr = user.Claims
+            .Where(c => c.Type == "PlantasIds")
+            .Select(c => c.Value)
+            .ToList();
+
+        foreach (var idStr in plantasIdsStr)
+        {
+            if (int.TryParse(idStr, out var plantaId))
+            {
+                PlantasIdsLogado.Add(plantaId);
+            }
+        }
+
+        // Fallback para claim única (retrocompat)
+        if (!PlantasIdsLogado.Any())
+        {
+            if (int.TryParse(user.FindFirst("PlantaId")?.Value, out var plantaId))
+                PlantasIdsLogado.Add(plantaId);
+        }
+
+        if (int.TryParse(user.FindFirst("UserId")?.Value, out var userId))
+            UsuarioIdLogado = userId;
+
+        try
+        {
+            await CarregarPlantasAsync();
+            await CarregarUsuariosAsync();
+
+            UsuarioForm = CriarNovoUsuarioForm();
+            IsEditMode = false;
+            UsuarioEmEdicaoId = null;
+        }
+        finally
+        {
+            Carregando = false;
+        }
+    }
+
+    private UsuarioViewModel CriarNovoUsuarioForm()
+    {
+        var vm = new UsuarioViewModel();
+
+        // Perfil default = Usuario (sempre disponível).
+        vm.Perfis = new List<PerfilUsuario> { PerfilUsuario.Usuario };
+        vm.Perfil = PerfilUsuario.Usuario;
+
+        // ✅ Administrador pré-seleciona todas as suas plantas
+        if (PerfilLogado != PerfilUsuario.SuperGestor && PlantasIdsLogado.Any())
+        {
+            vm.PlantasIds.AddRange(PlantasIdsLogado);
+        }
+
+        return vm;
+    }
+
+    private void TogglePerfil(PerfilUsuario perfil, bool selecionado)
+    {
+        if (selecionado)
+        {
+            // Regra SuperGestor exclusivo: marcar SuperGestor limpa os demais; marcar outro com SuperGestor já selecionado também é ignorado pela UI (checkbox vem disabled).
+            if (perfil == PerfilUsuario.SuperGestor)
+            {
+                UsuarioForm.Perfis.Clear();
+            }
+            else
+            {
+                UsuarioForm.Perfis.Remove(PerfilUsuario.SuperGestor);
+            }
+
+            if (!UsuarioForm.Perfis.Contains(perfil))
+                UsuarioForm.Perfis.Add(perfil);
+        }
+        else
+        {
+            UsuarioForm.Perfis.Remove(perfil);
+        }
+
+        // Sincroniza campo legado Perfil (primário): SuperGestor > primeiro.
+        UsuarioForm.Perfil = UsuarioForm.Perfis.Contains(PerfilUsuario.SuperGestor)
+            ? PerfilUsuario.SuperGestor
+            : (UsuarioForm.Perfis.FirstOrDefault() == default ? PerfilUsuario.Usuario : UsuarioForm.Perfis[0]);
+
+        StateHasChanged();
+    }
+
+    private async Task CarregarPlantasAsync()
+    {
+        var dtos = await PlantaService.ListarAsync();
+
+        if (PerfilLogado == PerfilUsuario.SuperGestor)
+        {
+            Plantas = dtos.ToList();
+        }
+        else if (PlantasIdsLogado.Any())
+        {
+            // ✅ Carregar apenas plantas do administrador
+            Plantas = dtos.Where(p => PlantasIdsLogado.Contains(p.Id)).ToList();
+        }
+        else
+        {
+            Plantas = dtos.ToList();
+        }
+    }
+
+    private async Task CarregarUsuariosAsync()
+    {
+        var dtos = await UsuarioService.ListarAsync();
+
+        if (PerfilLogado == PerfilUsuario.SuperGestor)
+        {
+            // SuperGestor vê todos
+        }
+        else if (PerfilLogado == PerfilUsuario.Administrador)
+        {
+            // Admin enxerga apenas usuários cujos perfis incluem Usuario OU Administrador
+            // (qualquer um dos perfis basta — multi-perfil, #1c) e que pertençam às suas plantas.
+            var perfisAdminVisiveis = new HashSet<int>
+            {
+                (int)PerfilUsuario.Usuario,
+                (int)PerfilUsuario.Administrador
+            };
+
+            dtos = dtos
+                .Where(u =>
+                    (u.Perfis.Any(p => perfisAdminVisiveis.Contains(p))
+                        || perfisAdminVisiveis.Contains(u.Perfil)) &&
+                    (u.PlantasIds.Any(p => PlantasIdsLogado.Contains(p)) ||
+                     (u.PlantaId.HasValue && PlantasIdsLogado.Contains(u.PlantaId.Value))))
+                .ToList();
+        }
+        else
+        {
+            if (UsuarioIdLogado.HasValue)
+            {
+                dtos = dtos.Where(u => u.Id == UsuarioIdLogado.Value).ToList();
+            }
+            else
+            {
+                dtos = new List<UsuariosDto>();
+            }
+        }
+
+        TodosUsuarios = dtos
+            .Select(u => new UsuarioViewModel
+            {
+                Id = u.Id,
+                Login = u.Login,
+                NomeCompleto = u.NomeCompleto,
+                Perfil = (PerfilUsuario)u.Perfil,
+                Perfis = (u.Perfis?.Count > 0
+                            ? u.Perfis.Select(p => (PerfilUsuario)p)
+                            : new[] { (PerfilUsuario)u.Perfil })
+                          .Distinct()
+                          .ToList(),
+                Ativa = u.Ativa,
+                PlantaId = u.PlantaId,
+                PlantasIds = u.PlantasIds?.Any() == true ? new List<int>(u.PlantasIds) : new List<int>(),
+                TreinamentoConcluido = u.TreinamentoConcluido,
+                DataTreinamento = u.DataTreinamento,
+                DataValidadeTreinamento = u.DataValidadeTreinamento,
+                TipoVinculo = (TipoVinculo)u.TipoVinculo,
+                NomeEmpresa = u.NomeEmpresa,
+                DataValidadeAcesso = u.DataValidadeAcesso,
+                CriadoPorNome = u.CriadoPorNome,
+                CriadoEm = u.CriadoEm,
+                AlteradoPorNome = u.AlteradoPorNome,
+                AlteradoEm = u.AlteradoEm
+            })
+            .ToList();
+
+        PaginaAtual = 1;
+    }
+
+    private void TogglePlanta(int plantaId, bool selecionada)
+    {
+        if (selecionada)
+        {
+            if (!UsuarioForm.PlantasIds.Contains(plantaId))
+                UsuarioForm.PlantasIds.Add(plantaId);
+        }
+        else
+        {
+            UsuarioForm.PlantasIds.Remove(plantaId);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ShowToastSucessoAsync(string mensagem)
+        => await Js.InvokeVoidAsync("adminlteToasts.show", "success", Lang["common.success"], mensagem);
+
+    private async Task ShowToastErroAsync(string mensagem)
+        => await Js.InvokeVoidAsync("adminlteToasts.show", "error", Lang["common.error"], mensagem);
+
+    private async Task SalvarUsuarioAsync()
+    {
+        var isEdicao = IsEditMode && UsuarioEmEdicaoId.HasValue;
+        var loginNormalizado = (UsuarioForm.Login ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(loginNormalizado))
+        {
+            await ShowToastErroAsync(Lang["users.toast.login_required"]);
+            return;
+        }
+
+        if (!UsuarioForm.Perfis.Any())
+        {
+            await ShowToastErroAsync(Lang["users.toast.profile_required"]);
+            return;
+        }
+
+        if (UsuarioForm.Perfis.Contains(PerfilUsuario.SuperGestor) && UsuarioForm.Perfis.Count > 1)
+        {
+            await ShowToastErroAsync(Lang["users.toast.profile_super_exclusive"]);
+            return;
+        }
+
+        if (PerfilLogado != PerfilUsuario.SuperGestor &&
+            UsuarioForm.Perfis.Contains(PerfilUsuario.SuperGestor))
+        {
+            await ShowToastErroAsync(Lang["users.toast.only_super"]);
+            return;
+        }
+
+        if (!UsuarioForm.Perfis.Contains(PerfilUsuario.SuperGestor) && !UsuarioForm.PlantasIds.Any())
+        {
+            await ShowToastErroAsync(Lang["users.toast.select_plant"]);
+            return;
+        }
+
+        // #2: regra de Terceiro — empresa e validade obrigatórios.
+        if (UsuarioForm.TipoVinculo == TipoVinculo.Terceiro)
+        {
+            if (string.IsNullOrWhiteSpace(UsuarioForm.NomeEmpresa))
+            {
+                await ShowToastErroAsync(Lang["users.toast.company_required"]);
+                return;
+            }
+            if (!UsuarioForm.DataValidadeAcesso.HasValue)
+            {
+                await ShowToastErroAsync(Lang["users.toast.validity_required"]);
+                return;
+            }
+            if (UsuarioForm.DataValidadeAcesso.Value.Date > DataLimiteValidade)
+            {
+                await ShowToastErroAsync(Lang["users.toast.validity_max_6m"]);
+                return;
+            }
+        }
+
+        // ✅ Validação: Administrador só pode associar às suas plantas
+        if (PerfilLogado == PerfilUsuario.Administrador && PlantasIdsLogado.Any())
+        {
+            if (UsuarioForm.PlantasIds.Any(p => !PlantasIdsLogado.Contains(p)))
+            {
+                await ShowToastErroAsync(Lang["users.toast.own_plants_only"]);
+                return;
+            }
+        }
+
+        var idAtual = isEdicao ? UsuarioEmEdicaoId!.Value : 0;
+        var existeDuplicado = TodosUsuarios.Any(u =>
+            u.Id != idAtual &&
+            string.Equals((u.Login ?? string.Empty).Trim(), loginNormalizado, StringComparison.OrdinalIgnoreCase) &&
+            u.PlantasIds.Any(p => UsuarioForm.PlantasIds.Contains(p)));
+
+        if (existeDuplicado)
+        {
+            await ShowToastErroAsync(Lang["users.toast.duplicate"]);
+            return;
+        }
+
+        try
+        {
+            Salvando = true;
+            var dto = new UsuariosDto
+            {
+                Id = isEdicao ? UsuarioEmEdicaoId.Value : 0,
+                Login = loginNormalizado,
+                NomeCompleto = UsuarioForm.NomeCompleto,
+                Perfil = (int)UsuarioForm.Perfil,
+                Perfis = UsuarioForm.Perfis.Select(p => (int)p).ToList(),
+                Ativa = UsuarioForm.Ativa,
+                PlantaId = UsuarioForm.PlantaId,
+                PlantasIds = new List<int>(UsuarioForm.PlantasIds),
+                TreinamentoConcluido = UsuarioForm.TreinamentoConcluido,
+                DataTreinamento = UsuarioForm.DataTreinamento,
+                DataValidadeTreinamento = UsuarioForm.TreinamentoConcluido ? UsuarioForm.DataValidadeTreinamento : null,
+                TipoVinculo = (int)UsuarioForm.TipoVinculo,
+                NomeEmpresa = UsuarioForm.TipoVinculo == TipoVinculo.Terceiro ? UsuarioForm.NomeEmpresa : null,
+                DataValidadeAcesso = UsuarioForm.TipoVinculo == TipoVinculo.Terceiro ? UsuarioForm.DataValidadeAcesso : null,
+                Senha = !string.IsNullOrWhiteSpace(UsuarioForm.Senha) ? UsuarioForm.Senha : string.Empty,
+                ExecutadoPorId = UsuarioIdLogado
+            };
+
+            if (isEdicao)
+                await UsuarioService.AtualizarAsync(dto);
+            else
+                await UsuarioService.CriarAsync(dto);
+
+            UsuarioForm = CriarNovoUsuarioForm();
+            IsEditMode = false;
+            UsuarioEmEdicaoId = null;
+
+            await CarregarUsuariosAsync();
+
+            await ShowToastSucessoAsync(isEdicao
+                ? Lang["users.toast.saved"]
+                : Lang["users.toast.registered"]);
+        }
+        catch (Exception ex)
+        {
+            await ShowToastErroAsync(Lang["users.toast.save_error"]);
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            Salvando = false;
+        }
+    }
+
+    private async Task IniciarEdicao(int id)
+    {
+        var usuario = TodosUsuarios.FirstOrDefault(u => u.Id == id);
+        if (usuario is null) return;
+
+        if (PerfilLogado == PerfilUsuario.Administrador &&
+            (usuario.Perfis.Contains(PerfilUsuario.Administrador) || usuario.Perfis.Contains(PerfilUsuario.SuperGestor)))
+        {
+            await ShowToastErroAsync(Lang["users.toast.no_permission"]);
+            return;
+        }
+
+        if (PerfilLogado == PerfilUsuario.Usuario && UsuarioIdLogado.HasValue && usuario.Id != UsuarioIdLogado.Value)
+        {
+            await ShowToastErroAsync(Lang["users.toast.no_permission"]);
+            return;
+        }
+
+        IsEditMode = true;
+        UsuarioEmEdicaoId = id;
+
+        UsuarioForm = new UsuarioViewModel
+        {
+            Id = usuario.Id,
+            Login = usuario.Login,
+            NomeCompleto = usuario.NomeCompleto,
+            Perfil = usuario.Perfil,
+            Perfis = new List<PerfilUsuario>(usuario.Perfis),
+            Ativa = usuario.Ativa,
+            PlantaId = usuario.PlantaId,
+            PlantasIds = new List<int>(usuario.PlantasIds),
+            TreinamentoConcluido = usuario.TreinamentoConcluido,
+            DataTreinamento = usuario.DataTreinamento,
+            DataValidadeTreinamento = usuario.DataValidadeTreinamento,
+            TipoVinculo = usuario.TipoVinculo,
+            NomeEmpresa = usuario.NomeEmpresa,
+            DataValidadeAcesso = usuario.DataValidadeAcesso,
+            Senha = null,
+            CriadoPorNome = usuario.CriadoPorNome,
+            CriadoEm = usuario.CriadoEm,
+            AlteradoPorNome = usuario.AlteradoPorNome,
+            AlteradoEm = usuario.AlteradoEm
+        };
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalExcluir()
+    {
+        if (!IsEditMode || !UsuarioEmEdicaoId.HasValue)
+            return;
+
+        MostrarModalExcluir = true;
+    }
+
+    private void FecharModalExcluir()
+    {
+        MostrarModalExcluir = false;
+    }
+
+    private async Task ConfirmarExclusaoAsync()
+    {
+        if (!IsEditMode || !UsuarioEmEdicaoId.HasValue)
+        {
+            MostrarModalExcluir = false;
+            return;
+        }
+
+        try
+        {
+            Excluindo = true;
+            await UsuarioService.RemoverAsync(UsuarioEmEdicaoId.Value);
+
+            UsuarioForm = CriarNovoUsuarioForm();
+            IsEditMode = false;
+            UsuarioEmEdicaoId = null;
+
+            await CarregarUsuariosAsync();
+
+            await ShowToastSucessoAsync(Lang["users.toast.deleted"]);
+        }
+        catch (Exception ex)
+        {
+            await ShowToastErroAsync(Lang["users.toast.delete_error"]);
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            Excluindo = false;
+            MostrarModalExcluir = false;
+        }
+    }
+
+    private void CancelarEdicao()
+    {
+        IsEditMode = false;
+        UsuarioEmEdicaoId = null;
+        UsuarioForm = CriarNovoUsuarioForm();
+    }
+
+    private void LimparPesquisa()
+    {
+        TermoPesquisa = string.Empty;
+        PaginaAtual = 1;
+    }
+
+    private void PaginaAnterior()
+    {
+        if (PaginaAtual > 1)
+            PaginaAtual--;
+    }
+
+    private void ProximaPagina()
+    {
+        if (PaginaAtual < TotalPaginas)
+            PaginaAtual++;
+    }
+
+    private void IrParaPagina(int pagina)
+    {
+        if (pagina >= 1 && pagina <= TotalPaginas)
+            PaginaAtual = pagina;
+    }
+
+    private List<int?> GetPaginasVisiveis()
+    {
+        var paginas = new List<int?>();
+        const int delta = 2;
+
+        if (TotalPaginas <= 7)
+        {
+            for (int i = 1; i <= TotalPaginas; i++)
+            {
+                paginas.Add(i);
+            }
+        }
+        else
+        {
+            paginas.Add(1);
+
+            int start = Math.Max(2, PaginaAtual - delta);
+            int end = Math.Min(TotalPaginas - 1, PaginaAtual + delta);
+
+            if (start > 2)
+            {
+                paginas.Add(null);
+            }
+
+            for (int i = start; i <= end; i++)
+            {
+                paginas.Add(i);
+            }
+
+            if (end < TotalPaginas - 1)
+            {
+                paginas.Add(null);
+            }
+
+            paginas.Add(TotalPaginas);
+        }
+
+        return paginas;
+    }
+
+    private string GetPerfilDescricao(PerfilUsuario perfil) =>
+        perfil switch
+        {
+            PerfilUsuario.Usuario => Lang["users.profile_user"],
+            PerfilUsuario.Administrador => Lang["users.profile_admin"],
+            PerfilUsuario.SuperGestor => Lang["users.profile_super"],
+            PerfilUsuario.UsuarioFinal => Lang["users.profile_final"],
+            PerfilUsuario.ComandoCentral => Lang["users.profile_central"],
+            _ => perfil.ToString()
+        };
+
+    private string DescreverPerfis(List<PerfilUsuario> perfis, PerfilUsuario fallback)
+    {
+        if (perfis is null || perfis.Count == 0)
+            return GetPerfilDescricao(fallback);
+
+        return string.Join(", ", perfis.Distinct().Select(GetPerfilDescricao));
+    }
+
+    // #2: status de validade do acesso para destaque visual.
+    private static StatusValidadeAcesso ObterStatusValidade(DateTime? dataValidade)
+        => VinculoValidacao.AvaliarStatus(dataValidade);
+
+    private static string BadgeClass(StatusValidadeAcesso status) => status switch
+    {
+        StatusValidadeAcesso.Vencido => "bg-danger text-white",
+        StatusValidadeAcesso.Vencendo => "bg-warning text-dark",
+        StatusValidadeAcesso.Vigente => "bg-success text-white",
+        _ => "bg-secondary text-white"
+    };
+
+    // #3: agrega status (acesso + treinamento). Vencido > Vencendo > Vigente > SemValidade.
+    private static StatusValidadeAcesso PiorStatus(StatusValidadeAcesso a, StatusValidadeAcesso b)
+        => (StatusValidadeAcesso)Math.Max((int)a, (int)b);
+
+    private void SelecionarLinha(int id)
+    {
+        LinhaSelecionadaId = LinhaSelecionadaId == id ? null : id;
+    }
+
+    private string MontarClasseLinha(int id, StatusValidadeAcesso status)
+    {
+        var classes = new List<string>();
+        if (LinhaSelecionadaId == id) classes.Add("row-selected");
+        if (status == StatusValidadeAcesso.Vencido) classes.Add("table-danger");
+        else if (status == StatusValidadeAcesso.Vencendo) classes.Add("table-warning");
+        return string.Join(" ", classes);
+    }
+
+    private string? GetNomePlanta(int? plantaId)
+    {
+        if (plantaId is null) return null;
+        var p = Plantas.FirstOrDefault(x => x.Id == plantaId.Value);
+        return p != null ? $"{p.Nome} ({p.Codigo})" : null;
+    }
+
+    private IEnumerable<string> ObterNomesPlantas(List<int> plantasIds)
+    {
+        return plantasIds
+            .Select(id => {
+                var planta = Plantas.FirstOrDefault(p => p.Id == id);
+                return planta != null ? $"{planta.Nome} ({planta.Codigo})" : null;
+            })
+            .Where(nome => !string.IsNullOrEmpty(nome))
+            .Cast<string>();
+    }
+}

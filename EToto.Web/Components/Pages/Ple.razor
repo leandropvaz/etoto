@@ -1,0 +1,639 @@
+@page "/ple"
+@using EToto.Application.Dto
+@using EToto.Application.Helpers
+@using EToto.Application.Interfaces
+@using EToto.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using EToto.Web.Services
+@inject IPleAppService PleService
+@inject IEquipamentoAppService EquipamentoService
+@inject PlantasService PlantaService
+@inject UsuariosService UsuarioService
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+@inject LanguageService Lang
+@implements IDisposable
+
+@layout MainLayout
+
+<section class="content pt-3">
+<div class="container-fluid">
+
+    @* ═══ DETALHE ═══ *@
+    @if (showDetail && sel != null)
+    {
+        <div class="row mb-3">
+        <div class="col-12">
+        <div class="card card-outline @StatusCardColor(sel.Status)">
+            @* ── Header com toolbar centralizada ── *@
+            <div class="card-header py-2 d-flex align-items-center">
+                <h3 class="card-title mb-0 mr-3">
+                    <i class="fas fa-file-alt mr-1"></i> @sel.Numero
+                </h3>
+
+                <div class="d-flex flex-grow-1 justify-content-center flex-wrap" style="gap:4px;">
+                    @{ var st = sel.Status; }
+                    @if (!SomenteConsulta && TemPermissaoNoSel() && st == StatusPle.Criado)
+                    {
+                        <button class="btn btn-xs btn-success" @onclick="() => ChangeStatus(StatusPle.EmAndamento)"><i class="fas fa-play mr-1"></i> @Lang["ple.action.start"]</button>
+                        <button class="btn btn-xs btn-primary" @onclick="() => EditPle(sel)"><i class="fas fa-edit mr-1"></i> @Lang["common.edit"]</button>
+                        <button class="btn btn-xs btn-outline-danger" @onclick="OpenDeleteModal"><i class="fas fa-trash mr-1"></i> @Lang["ple.action.delete"]</button>
+                    }
+                    @if ((st == StatusPle.EmAndamento || st == StatusPle.InicioDesbloqueio) && PodeCancelarSel())
+                    {
+                        <button class="btn btn-xs btn-outline-danger" @onclick="OpenCancelModal"><i class="fas fa-ban mr-1"></i> @Lang["ple.action.cancel_ple"]</button>
+                    }
+                    @if (st == StatusPle.EmAndamento && PodeIniciarDesbloqueioSel())
+                    {
+                        <button class="btn btn-xs btn-warning" @onclick="OpenStartUnlockModal"><i class="fas fa-unlock mr-1"></i> @Lang["ple.action.start_unlock"]</button>
+                    }
+                    @if (st == StatusPle.InicioDesbloqueio && PodeFinalizarSel())
+                    {
+                        <button class="btn btn-xs btn-dark" @onclick="OpenFinalizeModal"><i class="fas fa-flag-checkered mr-1"></i> @Lang["ple.action.finalize"]</button>
+                    }
+                    @if (st != StatusPle.Criado)
+                    {
+                        <button class="btn btn-xs btn-info" @onclick="() => PrintPle(sel.Id)"><i class="fas fa-print mr-1"></i> @Lang["ple.action.print"]</button>
+                    }
+                </div>
+
+                <button class="btn btn-xs btn-secondary ml-3" @onclick="CloseDetail"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="card-body">
+                @* ── Info organizado em tabela compacta ── *@
+                <table class="table table-sm table-bordered mb-3" style="font-size:0.8rem;">
+                    <tbody>
+                        <tr>
+                            <th class="bg-light" style="width:15%;">@Lang["ple.number"]</th>
+                            <td style="width:35%;">@sel.Numero</td>
+                            <th class="bg-light" style="width:15%;">@Lang["ple.status"]</th>
+                            <td style="width:35%;">@StatusBadge(sel.Status)</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">@Lang["ple.start_date"]</th>
+                            <td>@sel.DataInicio.ToString("dd/MM/yyyy HH:mm")</td>
+                            <th class="bg-light">@Lang["ple.end_date"]</th>
+                            <td>@(sel.DataFim?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <th class="bg-light">@Lang["ple.created_by"]</th>
+                            <td>@sel.CriadoPorNome &nbsp;<small class="text-muted">@sel.DataCriacao.ToString("dd/MM HH:mm")</small></td>
+                            <th class="bg-light">@Lang["ple.finalized_by"]</th>
+                            <td>@(sel.FinalizadoPorNome ?? "-") @if (sel.DataFinalizacao.HasValue) { <text>&nbsp;</text><small class="text-muted">@sel.DataFinalizacao?.ToString("dd/MM HH:mm")</small> }</td>
+                        </tr>
+                        @if (sel.UsuariosPermitidos.Any())
+                        {
+                            <tr>
+                                <th class="bg-light">@Lang["ple.authorized_users"]</th>
+                                <td colspan="3">
+                                    @foreach (var u in sel.UsuariosPermitidos) { <span class="badge badge-secondary mr-1">@u.NomeCompleto</span> }
+                                </td>
+                            </tr>
+                        }
+                        <tr>
+                            <th class="bg-light">@Lang["ple.equipment"]</th>
+                            <td colspan="3">
+                                @foreach (var eq in sel.Equipamentos.GroupBy(e => string.IsNullOrWhiteSpace(e.TagDispositivo) ? e.Tag : e.TagDispositivo).Select(g => g.First()))
+                                {
+                                    <span class="badge badge-info mr-1">@(string.IsNullOrWhiteSpace(eq.TagDispositivo) ? eq.Tag : eq.TagDispositivo)</span>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                @if (!string.IsNullOrWhiteSpace(sel.MotivoCancelamento))
+                {
+                    <div class="alert alert-danger py-1 px-2 mb-2">
+                        <i class="fas fa-ban mr-1"></i> <strong>@Lang["ple.cancel_reason"]:</strong> @sel.MotivoCancelamento
+                    </div>
+                }
+
+                @* ── Timeline Horizontal ── *@
+                @if (sel.Historico.Any())
+                {
+                    <h6 class="mb-2 text-center"><i class="fas fa-stream mr-1"></i> @Lang["ple.history"]</h6>
+                    <div class="d-flex flex-nowrap overflow-auto pb-2 justify-content-center align-items-start">
+                        @for (int i = 0; i < HistoricoOrdenado.Count; i++)
+                        {
+                            var h = HistoricoOrdenado[i];
+                            var isLast = i == HistoricoOrdenado.Count - 1;
+                            @* ── Círculo ── *@
+                            <div class="text-center flex-shrink-0" style="width:100px;">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center @TimelineBg(h.Acao)" style="width:30px;height:30px;">
+                                    <i class="fas @TimelineIcon(h.Acao) text-white" style="font-size:0.7rem;"></i>
+                                </div>
+                                <div class="mt-1">
+                                    <strong style="font-size:0.7rem;" class="@TimelineColor(h.Acao)">@TimelineLabel(h.Acao)</strong><br/>
+                                    <small class="text-muted" style="font-size:0.65rem;">@h.UsuarioNome</small><br/>
+                                    <small class="text-muted" style="font-size:0.6rem;">@h.DataAcao.ToString("dd/MM HH:mm")</small>
+                                </div>
+                            </div>
+                            @* ── Linha conectora ── *@
+                            @if (!isLast)
+                            {
+                                <div class="flex-shrink-0 align-self-center" style="width:40px;height:2px;background:#adb5bd;margin-top:-30px;"></div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        </div>
+        </div>
+    }
+
+    @* ═══ LISTAGEM ═══ *@
+    <div class="row">
+    <div class="col-12">
+    <div class="card card-info card-outline">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-list mr-1"></i> @Lang["ple.list"] @if (pleList.Any()) { <span class="badge badge-primary ml-2">@filtered.Count</span> }</h3>
+            <div class="card-tools">
+                @if (!SomenteConsulta) { <button class="btn btn-sm btn-primary" @onclick="OpenNew"><i class="fas fa-plus mr-1"></i> @Lang["ple.new"]</button> }
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-2">
+                @if (IsSuperGestor && plantas.Count > 1)
+                {
+                    <div class="col-12 col-md-3 mb-1">
+                        <select class="form-control" @onchange="PlantaFiltroChanged">
+                            <option value="">@Lang["ple.select_plant"]</option>
+                            @foreach (var p in plantas) { <option value="@p.Id" selected="@(filtroPlantaId == p.Id)">@p.Nome</option> }
+                        </select>
+                    </div>
+                }
+                <div class="col-6 col-md-2 mb-1">
+                    <select class="form-control" @bind="filtroStatus">
+                        <option value="">@Lang["ple.filter.all_status"]</option>
+                        <option value="Criado">@Lang["ple.status.criado"]</option>
+                        <option value="EmAndamento">@Lang["ple.status.em_andamento"]</option>
+                        <option value="Cancelado">@Lang["ple.status.cancelado"]</option>
+                        <option value="InicioDesbloqueio">@Lang["ple.status.inicio_desbloqueio"]</option>
+                        <option value="Finalizado">@Lang["ple.status.finalizado"]</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2 mb-1">
+                    <input type="date" class="form-control" value="@filtroDataDe?.ToString("yyyy-MM-dd")" @onchange="e => OnDataDeChanged(e)" placeholder="De" />
+                </div>
+                <div class="col-6 col-md-2 mb-1">
+                    <input type="date" class="form-control" value="@filtroDataAte?.ToString("yyyy-MM-dd")" @onchange="e => OnDataAteChanged(e)" placeholder="Até" />
+                </div>
+                <div class="col-12 col-md-3 mb-1">
+                    <input type="text" class="form-control" placeholder="@Lang["ple.filter.search"]" @bind="filtroTexto" @bind:event="oninput" />
+                </div>
+            </div>
+
+            @if (loading) { <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div> }
+            else if (!filtered.Any()) { <p class="text-muted text-center py-3">Nenhum PLE encontrado.</p> }
+            else
+            {
+                <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm">
+                    <thead class="bg-pw-blue"><tr><th>@Lang["ple.number"]</th><th>@Lang["ple.equipment"]</th><th>@Lang["ple.tag_disp"]</th><th>@Lang["ple.start_date"]</th><th>@Lang["ple.status"]</th><th>@Lang["ple.created_by"]</th><th style="width:36px;"></th></tr></thead>
+                    <tbody>
+                        @foreach (var p in filtered)
+                        {
+                            <tr @onclick="() => ViewPle(p.Id)" style="cursor:pointer;" class="@(sel?.Id == p.Id ? "table-active" : "")">
+                                <td>@p.Numero</td>
+                                <td>@p.EquipamentoTagPlusNomeDistinct</td>
+                                <td>@p.TagsDispDistinct</td>
+                                <td>@p.DataInicio.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@StatusBadge(p.Status)</td>
+                                <td>@p.CriadoPorNome</td>
+                                <td class="text-center"><button class="btn btn-xs btn-outline-info" @onclick:stopPropagation @onclick="() => ViewPle(p.Id)"><i class="fas fa-eye"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                </div>
+            }
+        </div>
+    </div>
+    </div>
+    </div>
+</div>
+</section>
+
+@* ═══ MODAL: Criar/Editar PLE ═══ *@
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);z-index:1050;">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+        <div class="modal-header bg-pw-blue-light py-2">
+            <h5 class="modal-title text-white"><i class="fas fa-clipboard-check mr-1"></i> @(editing != null ? Lang["ple.edit"] : Lang["ple.new"])</h5>
+            <button type="button" class="close text-white" @onclick="() => showModal = false"><span>&times;</span></button>
+        </div>
+        <div class="modal-body">
+            @* Avatar *@
+            <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-2" style="width:36px;height:36px;font-weight:700;font-size:0.85rem;">
+                    @(userName.Length > 0 ? userName[0].ToString().ToUpper() : "?")
+                </div>
+                <div>
+                    <div class="font-weight-bold">@userName</div>
+                    <small class="text-muted">@Lang["ple.created_by"]</small>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 col-md-6">
+                    <div class="form-group">
+                        <label><i class="fas fa-industry mr-1 text-info"></i> @Lang["ple.plant"]</label>
+                        <select class="form-control" @onchange="PlantaModalChanged" disabled="@(editing != null)">
+                            <option value="">@Lang["ple.select_plant"]</option>
+                            @foreach (var p in plantas) { <option value="@p.Id" selected="@(form.PlantaId == p.Id)">@p.Nome (@p.Codigo)</option> }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label>@Lang["ple.start_date"]</label>
+                    <input type="datetime-local" class="form-control" @bind="form.DataInicio" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-tools mr-1 text-info"></i> @Lang["ple.equipment"]</label>
+                <input type="text" class="form-control form-control-sm mb-1" placeholder="Filtrar..." @bind="eqSearch" @bind:event="oninput" />
+                <div class="border rounded" style="max-height:200px;overflow-y:auto;background:#fff;">
+                    @if (filteredEq.Any())
+                    {
+                        <label class="d-flex align-items-center px-2 py-1 mb-0 bg-light font-weight-bold" style="border-bottom:1px solid #ddd;cursor:pointer;">
+                            <input type="checkbox" class="mr-2" checked="@(filteredEq.All(e => form.EquipamentoIds.Contains(e.Id)))" @onchange="ToggleAllEqPle" /> @Lang["common.select_all"]
+                        </label>
+                    }
+                    @foreach (var eq in filteredEq)
+                    {
+                        <label class="d-flex align-items-center px-2 py-1 mb-0 @(form.EquipamentoIds.Contains(eq.Id) ? "bg-light" : "")" style="cursor:pointer;border-bottom:1px solid #f0f0f0;">
+                            <input type="checkbox" class="mr-2"
+                                   checked="@form.EquipamentoIds.Contains(eq.Id)"
+                                   @onchange="(e) => ToggleEq(eq.Id, (bool)e.Value!)" />
+                            <strong class="text-primary mr-1" style="min-width:140px;">@(string.IsNullOrWhiteSpace(eq.IsolationDeviceTag) ? eq.Tag : eq.IsolationDeviceTag)</strong>
+                            <span class="small mr-2 flex-grow-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;" title="@eq.HazardDescription">@eq.HazardDescription</span>
+                            @if (eqBloqueados.ContainsKey(eq.Id))
+                            {
+                                var eqSt = eqBloqueados[eq.Id];
+                                var eqBloqueioAtivo = eqSt == EToto.Domain.Enums.StatusPle.EmAndamento || eqSt == EToto.Domain.Enums.StatusPle.InicioDesbloqueio;
+                                var eqMsg = eqBloqueioAtivo ? Lang["ple.maintenance_badge_active"] : Lang["ple.maintenance_badge"];
+                                var eqCss = eqBloqueioAtivo ? "badge-danger" : "badge-warning";
+                                <span class="badge @eqCss mr-2 ple-blink" title="@eqMsg"><i class="fas fa-lock"></i></span>
+                            }
+                            @if (!string.IsNullOrEmpty(eq.LockoutType))
+                            {
+                                <small class="text-muted" style="min-width:100px;text-align:right;">@eq.LockoutType</small>
+                            }
+                        </label>
+                    }
+                </div>
+                @if (form.EquipamentoIds.Any())
+                {
+                    <div class="mt-1">
+                        @foreach (var eqId in form.EquipamentoIds)
+                        {
+                            var eq = eqPlanta.FirstOrDefault(e => e.Id == eqId);
+                            if (eq != null)
+                            {
+                                var label = string.IsNullOrWhiteSpace(eq.IsolationDeviceTag) ? eq.Tag : eq.IsolationDeviceTag;
+                                <span class="badge badge-info mr-1 mb-1">@label <span style="cursor:pointer;" @onclick="() => form.EquipamentoIds.Remove(eqId)">&times;</span></span>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+
+            @* ── Delegar usuários ── *@
+            <div class="form-group">
+                <label><i class="fas fa-users mr-1 text-info"></i> @Lang["ple.users_with_permission"] <small class="text-muted">@Lang["ple.users_with_permission_hint"]</small></label>
+                <input type="text" class="form-control form-control-sm mb-1" placeholder="Filtrar usuários..." @bind="userSearch" @bind:event="oninput" />
+                <div class="border rounded" style="max-height:140px;overflow-y:auto;background:#fff;">
+                    @foreach (var u in filteredUsers)
+                    {
+                        <label class="d-flex align-items-center px-2 py-1 mb-0 @(form.UsuariosPermitidosIds.Contains(u.Id) ? "bg-light" : "")" style="cursor:pointer;border-bottom:1px solid #f0f0f0;">
+                            <input type="checkbox" class="mr-2"
+                                   checked="@form.UsuariosPermitidosIds.Contains(u.Id)"
+                                   @onchange="(e) => ToggleUsuario(u.Id, (bool)e.Value!)" />
+                            <span>@u.NomeCompleto</span>
+                        </label>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer py-2">
+            <button class="btn btn-secondary" @onclick="() => showModal = false"><i class="fas fa-times mr-1"></i> @Lang["ple.action.cancel"]</button>
+            <button class="btn btn-success" @onclick="SavePle" disabled="@(saving || !CanSave())"><i class="fas fa-save mr-1"></i> @Lang["ple.action.save"]</button>
+        </div>
+    </div>
+    </div>
+    </div>
+}
+
+@* ═══ MODAL: Cancelar PLE ═══ *@
+@if (showCancelModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);z-index:1060;">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header py-2 bg-danger text-white"><h5 class="modal-title"><i class="fas fa-ban mr-1"></i> @Lang["ple.action.cancel_ple"]</h5><button type="button" class="close text-white" @onclick="() => showCancelModal = false"><span>&times;</span></button></div>
+        <div class="modal-body"><label>@Lang["ple.cancel_reason"]</label><textarea class="form-control" rows="3" @bind="cancelReason"></textarea></div>
+        <div class="modal-footer py-1"><button class="btn btn-sm btn-secondary" @onclick="() => showCancelModal = false">@Lang["common.close"]</button><button class="btn btn-sm btn-danger" @onclick="DoCancel" disabled="@string.IsNullOrWhiteSpace(cancelReason)"><i class="fas fa-ban mr-1"></i> @Lang["common.confirm"]</button></div>
+    </div></div>
+    </div>
+}
+
+@* ═══ MODAL: Início do Desbloqueio ═══ *@
+@if (showStartUnlockModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);z-index:1060;">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header py-2 bg-warning"><h5 class="modal-title"><i class="fas fa-unlock mr-1"></i> @Lang["ple.action.start_unlock"]</h5><button type="button" class="close" @onclick="() => showStartUnlockModal = false"><span>&times;</span></button></div>
+        <div class="modal-body"><p>@Lang["ple.confirm_start_unlock"]</p></div>
+        <div class="modal-footer py-1"><button class="btn btn-sm btn-secondary" @onclick="() => showStartUnlockModal = false">@Lang["common.close"]</button><button class="btn btn-sm btn-warning" @onclick="DoStartUnlock"><i class="fas fa-unlock mr-1"></i> @Lang["common.confirm"]</button></div>
+    </div></div>
+    </div>
+}
+
+@* ═══ MODAL: Finalizar ═══ *@
+@if (showFinalizeModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);z-index:1060;">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header py-2 bg-dark text-white"><h5 class="modal-title"><i class="fas fa-flag-checkered mr-1"></i> @Lang["ple.action.finalize"]</h5><button type="button" class="close text-white" @onclick="() => showFinalizeModal = false"><span>&times;</span></button></div>
+        <div class="modal-body"><p>@Lang["ple.confirm_finalize"]</p></div>
+        <div class="modal-footer py-1"><button class="btn btn-sm btn-secondary" @onclick="() => showFinalizeModal = false">@Lang["common.close"]</button><button class="btn btn-sm btn-dark" @onclick="DoFinalize"><i class="fas fa-flag-checkered mr-1"></i> @Lang["common.confirm"]</button></div>
+    </div></div>
+    </div>
+}
+
+@* ═══ MODAL: Excluir ═══ *@
+@if (showDeleteModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);z-index:1060;">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header py-2 bg-danger text-white"><h5 class="modal-title"><i class="fas fa-trash mr-1"></i> @Lang["ple.action.delete"]</h5><button type="button" class="close text-white" @onclick="() => showDeleteModal = false"><span>&times;</span></button></div>
+        <div class="modal-body"><p>@Lang["ple.confirm_delete"]</p><p class="font-weight-bold">@sel?.Numero</p></div>
+        <div class="modal-footer py-1"><button class="btn btn-sm btn-secondary" @onclick="() => showDeleteModal = false">@Lang["common.close"]</button><button class="btn btn-sm btn-danger" @onclick="DoDelete"><i class="fas fa-trash mr-1"></i> @Lang["common.confirm"]</button></div>
+    </div></div>
+    </div>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; }
+    private int userId; private string userName = ""; private bool IsUsuarioFinal, IsUsuario, IsComandoCentral, TreinamentoConcluido;
+    // Comando Central nao cria/edita; apenas finaliza/imprime (regras especificas no item 2).
+    private bool SomenteConsulta => !(IsAdmin || IsSuperGestor || (IsUsuarioFinal && TreinamentoConcluido));
+    private int? userPlantaId;
+    private bool IsAdmin, IsSuperGestor;
+    private List<int> plantasIds = new();
+
+    private List<PlantasDto> plantas = new();
+    private List<EquipamentoDto> eqPlanta = new();
+    private List<UsuariosDto> usuariosDisponiveis = new();
+    private string userSearch = "";
+    private List<UsuariosDto> filteredUsers => usuariosDisponiveis
+        .Where(u => u.Id != userId && (string.IsNullOrWhiteSpace(userSearch)
+            || u.NomeCompleto.Contains(userSearch, StringComparison.OrdinalIgnoreCase)
+            || u.Login.Contains(userSearch, StringComparison.OrdinalIgnoreCase)))
+        .ToList();
+    private Dictionary<Guid, EToto.Domain.Enums.StatusPle> eqBloqueados = new();
+    private List<PleDto> pleList = new();
+    private PleDto? sel;
+    private bool loading, showDetail;
+
+    private bool showModal, saving;
+    private PleDto? editing;
+    private PleForm form = new();
+    private string eqSearch = "";
+
+    private int? filtroPlantaId;
+    private string filtroStatus = "", filtroTexto = "";
+    private DateTime? filtroDataDe, filtroDataAte;
+
+    private bool showCancelModal, showFinalizeModal, showDeleteModal, showStartUnlockModal;
+    private string cancelReason = "";
+
+    private List<PleHistoricoDto> HistoricoOrdenado => sel?.Historico?.OrderBy(x => x.DataAcao).ToList() ?? new();
+
+    // Busca filtra somente pela Tag do equipamento principal — digitar a TAG traz todas as linhas filhas.
+    private List<EquipamentoDto> filteredEq => string.IsNullOrWhiteSpace(eqSearch) ? eqPlanta
+        : eqPlanta.Where(e => e.Tag.Contains(eqSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private List<PleDto> filtered => pleList.Where(p =>
+    {
+        if (!string.IsNullOrEmpty(filtroStatus) && p.Status.ToString() != filtroStatus) return false;
+        if (filtroDataDe.HasValue && p.DataInicio.Date < filtroDataDe.Value.Date) return false;
+        if (filtroDataAte.HasValue && p.DataInicio.Date > filtroDataAte.Value.Date) return false;
+        if (!string.IsNullOrEmpty(filtroTexto))
+        {
+            var t = filtroTexto.ToLowerInvariant();
+            return p.Numero.ToLowerInvariant().Contains(t)
+                   || p.EquipamentoTagPlusNomeDistinct.ToLowerInvariant().Contains(t)
+                   || p.TagsDispDistinct.ToLowerInvariant().Contains(t)
+                   || p.CriadoPorNome.ToLowerInvariant().Contains(t);
+        }
+        return true;
+    }).ToList();
+
+    protected override void OnInitialized() { Lang.OnLanguageChanged += StateHasChanged; }
+    public void Dispose() { Lang.OnLanguageChanged -= StateHasChanged; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || AuthStateTask is null) return;
+        var auth = await AuthStateTask; var user = auth.User;
+        if (user.Identity is not { IsAuthenticated: true }) return;
+        userId = int.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var u) ? u : 0;
+        userName = user.Identity.Name ?? "";
+        userPlantaId = int.TryParse(user.FindFirst("plantaId")?.Value, out var p) ? p : null;
+        plantasIds = user.FindAll("PlantasIds").Select(c => int.TryParse(c.Value, out var v) ? v : 0).Where(v => v > 0).ToList();
+        IsAdmin = user.IsInRole("Administrador"); IsSuperGestor = user.IsInRole("SuperGestor");
+        IsUsuarioFinal = user.IsInRole("UsuarioFinal"); IsUsuario = user.IsInRole("Usuario");
+        // Robusto: role OU claim "Perfil" (numero) OU claim "Perfil" textual
+        IsComandoCentral = user.IsInRole("ComandoCentral")
+            || user.FindFirst("Perfil")?.Value == ((int)PerfilUsuario.ComandoCentral).ToString()
+            || user.FindFirst("Perfil")?.Value == PerfilUsuario.ComandoCentral.ToString();
+        TreinamentoConcluido = user.FindFirst("TreinamentoConcluido")?.Value == "True";
+        await LoadPlantas();
+        usuariosDisponiveis = (await UsuarioService.ListarAsync()).Where(u => u.Ativa).ToList();
+        if (plantas.Count == 1) { filtroPlantaId = plantas[0].Id; await LoadPles(); }
+        else if (userPlantaId.HasValue) { filtroPlantaId = userPlantaId.Value; await LoadPles(); }
+        StateHasChanged();
+    }
+
+    private async Task LoadPlantas() { var all = await PlantaService.ListarAsync(); plantas = IsSuperGestor ? all.ToList() : all.Where(p => plantasIds.Contains(p.Id)).ToList(); }
+    private async Task LoadPles() { if (filtroPlantaId is null or 0) { pleList.Clear(); return; } loading = true; StateHasChanged(); try { pleList = await PleService.GetByPlantAsync(filtroPlantaId.Value); } finally { loading = false; } }
+    private async Task LoadEq(int plantaId) { eqPlanta = await EquipamentoService.GetByPlantAsync(plantaId); eqBloqueados = await PleService.GetEquipamentosComPleAtivoStatusAsync(plantaId); }
+
+    private async Task OpenNew()
+    {
+        editing = null; form = new PleForm { DataInicio = DateTimeHelper.AgoraBrasilia() }; eqSearch = "";
+        showModal = true; showDetail = false;
+        if (filtroPlantaId.HasValue && filtroPlantaId > 0) { form.PlantaId = filtroPlantaId.Value; await LoadEq(form.PlantaId); }
+    }
+
+    private bool CanSave() => form.PlantaId > 0
+        && form.EquipamentoIds.Count > 0
+        && form.DataInicio != default;
+
+    private async Task SavePle()
+    {
+        saving = true;
+        try
+        {
+            if (editing != null)
+            {
+                await PleService.UpdateAsync(new PleUpdateDto { Id = editing.Id, EquipamentoIds = form.EquipamentoIds, UsuariosPermitidosIds = form.UsuariosPermitidosIds, DataInicio = form.DataInicio, ModificadoPorId = userId });
+                await Toast(Lang["common.success"], Lang["ple.toast.updated"], "success");
+            }
+            else
+            {
+                await PleService.CreateAsync(new PleCreateDto { PlantaId = form.PlantaId, EquipamentoIds = form.EquipamentoIds, UsuariosPermitidosIds = form.UsuariosPermitidosIds, DataInicio = form.DataInicio, CriadoPorId = userId });
+                await Toast(Lang["common.success"], Lang["ple.toast.created"], "success");
+            }
+            var editedId = editing?.Id;
+            showModal = false;
+            await LoadPles();
+            if (editedId.HasValue) await ViewPle(editedId.Value);
+            StateHasChanged();
+        }
+        catch (Exception ex) { await Toast(Lang["common.error"], ex.Message, "danger"); }
+        finally { saving = false; }
+    }
+
+    private async Task ViewPle(Guid id) { sel = await PleService.GetByIdWithHistoricoAsync(id); showDetail = sel != null; showModal = false; }
+    private void CloseDetail() { showDetail = false; sel = null; }
+
+    private async Task EditPle(PleDto ple)
+    {
+        editing = ple;
+        form = new PleForm { PlantaId = ple.PlantaId, EquipamentoIds = ple.Equipamentos.Select(e => e.EquipamentoId).ToList(), UsuariosPermitidosIds = ple.UsuariosPermitidos.Select(u => u.UsuarioId).ToList(), DataInicio = ple.DataInicio };
+        await LoadEq(ple.PlantaId); eqSearch = ""; showModal = true; showDetail = false;
+    }
+
+    private async Task ChangeStatus(StatusPle s, string? m = null)
+    {
+        if (sel == null) return;
+        try { await PleService.AlterarStatusAsync(sel.Id, s, userId, m); await Toast(Lang["common.success"], Lang["ple.toast.status_changed"], "success"); await ViewPle(sel.Id); await LoadPles(); StateHasChanged(); }
+        catch (Exception ex) { await Toast(Lang["common.error"], ex.Message, "danger"); }
+    }
+
+    private void OpenCancelModal() { cancelReason = ""; showCancelModal = true; }
+    private async Task DoCancel() { showCancelModal = false; await ChangeStatus(StatusPle.Cancelado, cancelReason); }
+    private void OpenStartUnlockModal() { showStartUnlockModal = true; }
+    private async Task DoStartUnlock() { showStartUnlockModal = false; await ChangeStatus(StatusPle.InicioDesbloqueio); }
+    private void OpenFinalizeModal() { showFinalizeModal = true; }
+    private async Task DoFinalize() { showFinalizeModal = false; await ChangeStatus(StatusPle.Finalizado); }
+    private void OpenDeleteModal() { showDeleteModal = true; }
+    private async Task DoDelete()
+    {
+        showDeleteModal = false; if (sel == null) return;
+        try { await PleService.SoftDeleteAsync(sel.Id, userId); await Toast(Lang["common.success"], Lang["ple.toast.deleted"], "success"); showDetail = false; sel = null; await LoadPles(); StateHasChanged(); }
+        catch (Exception ex) { await Toast(Lang["common.error"], ex.Message, "danger"); }
+    }
+
+    private async Task PrintPle(Guid id) { await Js.InvokeVoidAsync("open", $"/api/ple/pdf/{id}", "_blank"); }
+
+    private async Task PlantaModalChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0) { form.PlantaId = id; await LoadEq(id); } else { form.PlantaId = 0; eqPlanta.Clear(); }
+        form.EquipamentoIds.Clear(); eqSearch = "";
+    }
+    private async Task PlantaFiltroChanged(ChangeEventArgs e) { filtroPlantaId = int.TryParse(e.Value?.ToString(), out var id) ? id : null; await LoadPles(); }
+    private void OnDataDeChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        filtroDataDe = !string.IsNullOrWhiteSpace(val) && DateTime.TryParse(val, out var d) ? d : null;
+    }
+    private void OnDataAteChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        filtroDataAte = !string.IsNullOrWhiteSpace(val) && DateTime.TryParse(val, out var d) ? d : null;
+    }
+
+    private bool TemPermissaoNoSel() => sel != null && (sel.CriadoPorId == userId || sel.UsuariosPermitidos.Any(u => u.UsuarioId == userId) || IsSuperGestor);
+
+    // Início do Desbloqueio (EmAndamento → InicioDesbloqueio): Líder/Gestor/Admin/SuperGestor/criador/delegado com acesso à planta
+    private bool PodeIniciarDesbloqueioSel()
+    {
+        if (sel == null) return false;
+        if (IsAdmin || IsSuperGestor) return true;
+        if (sel.CriadoPorId == userId) return true;
+        if (sel.UsuariosPermitidos.Any(u => u.UsuarioId == userId)) return true;
+        if (IsUsuarioFinal && TreinamentoConcluido && plantasIds.Contains(sel.PlantaId)) return true;
+        return false;
+    }
+
+    // Finalizar (InicioDesbloqueio → Finalizado): EXCLUSIVO do Comando Central. Backend valida acesso à planta.
+    private bool PodeFinalizarSel() => sel != null && IsComandoCentral;
+
+    // Cancelar Bloqueio (EmAndamento ou InicioDesbloqueio → Cancelado): criador/delegado/Lider com planta + Admin/SuperGestor (sempre)
+    private bool PodeCancelarSel()
+    {
+        if (sel == null) return false;
+        if (IsAdmin || IsSuperGestor) return true;
+        if (sel.CriadoPorId == userId) return true;
+        if (sel.UsuariosPermitidos.Any(u => u.UsuarioId == userId)) return true;
+        if (IsUsuarioFinal && TreinamentoConcluido && plantasIds.Contains(sel.PlantaId)) return true;
+        return false;
+    }
+
+    private void ToggleUsuario(int uid, bool on) { if (on && !form.UsuariosPermitidosIds.Contains(uid)) form.UsuariosPermitidosIds.Add(uid); else if (!on) form.UsuariosPermitidosIds.Remove(uid); }
+
+    private void ToggleAllEqPle(ChangeEventArgs e)
+    {
+        if ((bool)e.Value!) form.EquipamentoIds = filteredEq.Select(eq => eq.Id).ToList();
+        else form.EquipamentoIds.Clear();
+    }
+    private void ToggleEq(Guid id, bool on) { if (on && !form.EquipamentoIds.Contains(id)) form.EquipamentoIds.Add(id); else if (!on) form.EquipamentoIds.Remove(id); }
+
+    private RenderFragment StatusBadge(StatusPle s) => s switch
+    {
+        StatusPle.Criado => Badge("badge-secondary", Lang["ple.status.criado"]),
+        StatusPle.EmAndamento => Badge("badge-primary", Lang["ple.status.em_andamento"]),
+        StatusPle.Cancelado => Badge("badge-danger", Lang["ple.status.cancelado"]),
+        StatusPle.InicioDesbloqueio => Badge("badge-warning", Lang["ple.status.inicio_desbloqueio"]),
+        StatusPle.Finalizado => Badge("badge-success", Lang["ple.status.finalizado"]),
+        _ => Badge("badge-light", s.ToString()),
+    };
+    private RenderFragment Badge(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"badge {c}"); b.AddContent(2, t); b.CloseElement(); };
+
+    private string StatusCardColor(StatusPle s) => s switch
+    {
+        StatusPle.Criado => "card-secondary",
+        StatusPle.EmAndamento => "card-primary",
+        StatusPle.Cancelado => "card-danger",
+        StatusPle.InicioDesbloqueio => "card-warning",
+        StatusPle.Finalizado => "card-success",
+        _ => "card-info",
+    };
+
+    private string TimelineIcon(string a) => a switch { "Criado" => "fa-plus-circle", "Iniciado" => "fa-play-circle", "Cancelado" => "fa-ban", "InicioDesbloqueio" => "fa-unlock", "Finalizado" => "fa-flag-checkered", "Modificado" => "fa-edit", "Excluído" => "fa-trash", _ => "fa-circle" };
+    private string TimelineColor(string a) => a switch { "Criado" => "text-secondary", "Iniciado" => "text-success", "Cancelado" => "text-danger", "InicioDesbloqueio" => "text-warning", "Finalizado" => "text-dark", "Modificado" => "text-primary", _ => "text-muted" };
+    private string TimelineBg(string a) => a switch { "Criado" => "bg-secondary", "Iniciado" => "bg-success", "Cancelado" => "bg-danger", "InicioDesbloqueio" => "bg-warning", "Finalizado" => "bg-dark", "Modificado" => "bg-primary", _ => "bg-secondary" };
+    private string TimelineLabel(string a) => a switch
+    {
+        "Criado" => Lang["timeline.action.created"],
+        "Iniciado" => Lang["timeline.action.started"],
+        "Cancelado" => Lang["timeline.action.cancelled"],
+        "InicioDesbloqueio" => Lang["timeline.action.start_unlock"],
+        "Finalizado" => Lang["timeline.action.finalized"],
+        "Modificado" => Lang["timeline.action.modified"],
+        "Excluído" => Lang["timeline.action.deleted"],
+        "Inativado" => Lang["timeline.action.deactivated"],
+        "Ativado" => Lang["timeline.action.activated"],
+        _ => a
+    };
+
+    private async Task Toast(string title, string message, string type) { await Js.InvokeVoidAsync("adminlteToasts.show", type, title, message); }
+
+    private class PleForm
+    {
+        public int PlantaId { get; set; }
+        public List<Guid> EquipamentoIds { get; set; } = new();
+        public List<int> UsuariosPermitidosIds { get; set; } = new();
+        public DateTime DataInicio { get; set; } = DateTimeHelper.AgoraBrasilia();
+        public string? Observacoes { get; set; }
+    }
+}

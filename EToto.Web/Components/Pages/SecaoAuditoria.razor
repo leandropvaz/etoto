@@ -1,0 +1,418 @@
+@using System.Text.Json
+@using EToto.Application.Dto
+@using EToto.Application.Services
+@using EToto.Web.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuditoriaService AuditoriaService
+@inject UsuariosService UsuarioService
+@inject LanguageService Lang
+@inject NavigationManager Nav
+@implements IDisposable
+
+<section class="content pt-3">
+    <div class="container-fluid">
+
+        <div class="card card-primary card-outline mb-3">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-history mr-1"></i>
+                    @Lang["audit.title"]
+                </h3>
+                <small class="text-muted ml-2">— @Lang["audit.subtitle"]</small>
+            </div>
+
+            <div class="card-body p-3">
+                <!-- Filtros -->
+                <div class="row align-items-end">
+                    <div class="col-6 col-md-2">
+                        <label>@Lang["audit.filter.period_from"]</label>
+                        <input type="date" class="form-control form-control-sm" @bind="Filtro.PeriodoInicio" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label>@Lang["audit.filter.period_to"]</label>
+                        <input type="date" class="form-control form-control-sm" @bind="Filtro.PeriodoFim" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label>@Lang["audit.filter.user"]</label>
+                        <select class="form-control form-control-sm" @bind="Filtro.UsuarioId">
+                            <option value="">@Lang["audit.filter.all_users"]</option>
+                            @foreach (var u in Usuarios)
+                            {
+                                <option value="@u.Id">@u.NomeCompleto</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label>@Lang["audit.filter.entity"]</label>
+                        <select class="form-control form-control-sm" @bind="Filtro.NomeTabela">
+                            <option value="">@Lang["audit.filter.all_entities"]</option>
+                            @foreach (var t in TabelasDisponiveis)
+                            {
+                                <option value="@t">@t</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label>@Lang["audit.filter.action"]</label>
+                        <select class="form-control form-control-sm" @bind="Filtro.Acao">
+                            <option value="">@Lang["audit.filter.all_actions"]</option>
+                            <option value="1">@Lang["audit.action_create"]</option>
+                            <option value="2">@Lang["audit.action_update"]</option>
+                            <option value="3">@Lang["audit.action_delete"]</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-1 mt-2 mt-md-0">
+                        <button class="btn btn-primary btn-sm w-100" disabled="@Carregando" @onclick="AplicarFiltroAsync">
+                            @if (Carregando)
+                            {
+                                <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["common.processing"]</span>
+                            }
+                            else
+                            {
+                                <span><i class="fas fa-search"></i> @Lang["audit.filter.apply"]</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12 text-right">
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="LimparFiltroAsync">
+                            <i class="fas fa-times"></i> @Lang["audit.filter.clear"]
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-info card-outline">
+            <div class="card-body p-2">
+
+                @* Busca rápida na grade (filtra as linhas da página atual) *@
+                <div class="d-flex justify-content-end mb-2">
+                    <div class="input-group input-group-sm" style="width: 280px;">
+                        <input type="text" class="form-control"
+                               placeholder="@Lang["audit.search_placeholder"]"
+                               @bind="BuscaRapida" @bind:event="oninput" />
+                        <div class="input-group-append">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm mb-0 audit-table selectable-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 18%;">@Lang["audit.col_when"]</th>
+                                <th style="width: 24%;">@Lang["audit.col_user"]</th>
+                                <th style="width: 18%;">@Lang["audit.col_key"]</th>
+                                <th style="width: 12%;">@Lang["audit.col_action"]</th>
+                                <th style="width: 28%;" class="text-center">@Lang["audit.col_details"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Carregando)
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        <i class="fas fa-sync-alt fa-spin mr-2"></i>@Lang["common.loading"]
+                                    </td>
+                                </tr>
+                            }
+                            else if (ItensExibidos.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        @Lang["audit.no_results"]
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in ItensExibidos)
+                                {
+                                    <tr class="@(LinhaSelecionadaId == item.Id ? "row-selected" : "")"
+                                        @onclick="() => SelecionarLinha(item.Id)">
+                                        <td>@item.ExecutadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                        <td>@(item.UsuarioNome ?? Lang["audit.unknown_user"])</td>
+                                        <td class="text-muted small">@item.ChaveRegistro</td>
+                                        <td>
+                                            <span class="badge @BadgeAcao(item.Acao) badge-sm">
+                                                @TraduzirAcao(item.Acao)
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.Acao != (int)EToto.Domain.Enums.AcaoAuditoria.Criar
+                                                 || item.ValoresDepois != null)
+                                            {
+                                                <button class="btn btn-xs btn-outline-info"
+                                                        @onclick="() => AbrirDetalhe(item)">
+                                                    <i class="fas fa-eye"></i> @Lang["audit.col_details"]
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer clearfix">
+                <span class="text-muted">
+                    @Lang["common.page"] @Resultado.Pagina @Lang["common.of"] @TotalPaginas
+                    @if (Resultado.Total > 0) { <span class="ml-2">(@Resultado.Total)</span> }
+                </span>
+                <ul class="pagination pagination-sm m-0 float-right">
+                    <li class="page-item @(Filtro.Pagina <= 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="PaginaAnteriorAsync">«</button>
+                    </li>
+                    <li class="page-item @(Filtro.Pagina >= TotalPaginas ? "disabled" : "")">
+                        <button class="page-link" @onclick="ProximaPaginaAsync">»</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        @if (Selecionado is not null)
+        {
+            <div class="modal fade show" tabindex="-1" style="display:block;" aria-modal="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title mb-0">
+                                <i class="fas fa-exchange-alt mr-2"></i>@Lang["audit.diff_title"]
+                            </h5>
+                            <button type="button" class="close text-white" @onclick="FecharDetalhe">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body p-2">
+                            <small class="text-muted d-block mb-2">
+                                <strong>@Selecionado.NomeTabela</strong>
+                                · @Selecionado.ChaveRegistro
+                                · @TraduzirAcao(Selecionado.Acao)
+                                · @Selecionado.ExecutadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
+                                · @(Selecionado.UsuarioNome ?? Lang["audit.unknown_user"])
+                            </small>
+                            <table class="table table-sm table-bordered mb-0 audit-diff">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width: 30%;">@Lang["audit.diff_field"]</th>
+                                        <th style="width: 35%;">@Lang["audit.diff_before"]</th>
+                                        <th style="width: 35%;">@Lang["audit.diff_after"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var (campo, antes, depois) in MontarDiff(Selecionado))
+                                    {
+                                        var rotulo = AuditoriaTraducao.CampoAmigavel(Selecionado.NomeTabela, campo);
+                                        var antesFmt = AuditoriaTraducao.ValorAmigavel(Selecionado.NomeTabela, campo, antes);
+                                        var depoisFmt = AuditoriaTraducao.ValorAmigavel(Selecionado.NomeTabela, campo, depois);
+                                        <tr class="@(antesFmt != depoisFmt ? "table-warning" : "")">
+                                            <td>@rotulo</td>
+                                            <td>@antesFmt</td>
+                                            <td>@depoisFmt</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="FecharDetalhe">
+                                @Lang["common.close"]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show"></div>
+        }
+    </div>
+</section>
+
+<style>
+    .audit-table th, .audit-table td { font-size: 0.78rem; padding: 0.25rem 0.4rem; }
+    .audit-diff td, .audit-diff th { font-size: 0.78rem; padding: 0.3rem 0.45rem; word-break: break-all; }
+    .audit-diff .text-monospace { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+</style>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private AuditoriaConsultaFiltro Filtro { get; set; } = new()
+    {
+        Pagina = 1,
+        TamanhoPagina = 20,
+        PeriodoInicio = DateTime.UtcNow.Date.AddDays(-30)
+    };
+    private AuditoriaConsultaResultadoDto Resultado { get; set; } = new();
+    private List<UsuariosDto> Usuarios { get; set; } = new();
+    private AuditoriaEntradaDto? Selecionado { get; set; }
+
+    // Busca rápida — filtra as linhas da página atual (usuário, chave ou ação).
+    private string BuscaRapida { get; set; } = string.Empty;
+    private List<AuditoriaEntradaDto> ItensExibidos =>
+        string.IsNullOrWhiteSpace(BuscaRapida)
+            ? Resultado.Itens
+            : Resultado.Itens.Where(i =>
+                (i.UsuarioNome ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase) ||
+                (i.ChaveRegistro ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase) ||
+                (i.NomeTabela ?? "").Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase) ||
+                TraduzirAcao(i.Acao).Contains(BuscaRapida, StringComparison.OrdinalIgnoreCase))
+              .ToList();
+
+    // #9: indicador de carregamento
+    private bool Carregando { get; set; } = true;
+
+    // Linha selecionada no datagrid
+    private Guid? LinhaSelecionadaId { get; set; }
+    private void SelecionarLinha(Guid id) => LinhaSelecionadaId = LinhaSelecionadaId == id ? null : id;
+
+    private int TotalPaginas =>
+        Resultado.Total == 0 ? 1 : (int)Math.Ceiling(Resultado.Total / (double)Filtro.TamanhoPagina);
+
+    // Entidades auditáveis (espelha conjunto de AuditoriaCapture.AuditedTypes).
+    private static readonly string[] TabelasDisponiveis = new[]
+    {
+        "Usuarios", "Plantas", "Equipamento", "Ple", "PleEquipamento",
+        "PleHistorico", "AvaliacaoRisco", "AvaliacaoRiscoItem", "AvaliacaoRiscoHistorico"
+    };
+
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+
+        // Guarda: somente Administrador ou SuperGestor (#5b).
+        if (!user.IsInRole("Administrador") && !user.IsInRole("SuperGestor"))
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+
+        Usuarios = await UsuarioService.ListarAsync();
+        await CarregarAsync();
+    }
+
+    private async Task CarregarAsync()
+    {
+        try
+        {
+            Carregando = true;
+            Resultado = await AuditoriaService.ConsultarAsync(Filtro);
+        }
+        finally
+        {
+            Carregando = false;
+        }
+    }
+
+    private async Task AplicarFiltroAsync()
+    {
+        Filtro.Pagina = 1;
+        await CarregarAsync();
+    }
+
+    private async Task LimparFiltroAsync()
+    {
+        Filtro = new AuditoriaConsultaFiltro
+        {
+            Pagina = 1,
+            TamanhoPagina = 20,
+            PeriodoInicio = DateTime.UtcNow.Date.AddDays(-30)
+        };
+        await CarregarAsync();
+    }
+
+    private async Task PaginaAnteriorAsync()
+    {
+        if (Filtro.Pagina > 1)
+        {
+            Filtro.Pagina--;
+            await CarregarAsync();
+        }
+    }
+
+    private async Task ProximaPaginaAsync()
+    {
+        if (Filtro.Pagina < TotalPaginas)
+        {
+            Filtro.Pagina++;
+            await CarregarAsync();
+        }
+    }
+
+    private void AbrirDetalhe(AuditoriaEntradaDto item) => Selecionado = item;
+    private void FecharDetalhe() => Selecionado = null;
+
+    private string TraduzirAcao(int acao) => acao switch
+    {
+        1 => Lang["audit.action_create"],
+        2 => Lang["audit.action_update"],
+        3 => Lang["audit.action_delete"],
+        _ => "?"
+    };
+
+    private static string BadgeAcao(int acao) => acao switch
+    {
+        1 => "bg-success text-white",
+        2 => "bg-warning text-dark",
+        3 => "bg-danger text-white",
+        _ => "bg-secondary text-white"
+    };
+
+    private static IEnumerable<(string Campo, string Antes, string Depois)> MontarDiff(AuditoriaEntradaDto item)
+    {
+        var antes = ParseJson(item.ValoresAntes);
+        var depois = ParseJson(item.ValoresDepois);
+
+        var campos = new SortedSet<string>(antes.Keys);
+        foreach (var k in depois.Keys) campos.Add(k);
+
+        foreach (var campo in campos)
+        {
+            antes.TryGetValue(campo, out var a);
+            depois.TryGetValue(campo, out var d);
+            yield return (campo, a ?? "", d ?? "");
+        }
+    }
+
+    private static Dictionary<string, string> ParseJson(string? json)
+    {
+        var dict = new Dictionary<string, string>();
+        if (string.IsNullOrWhiteSpace(json)) return dict;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                dict[prop.Name] = prop.Value.ValueKind switch
+                {
+                    JsonValueKind.Null => "—",
+                    JsonValueKind.String => prop.Value.GetString() ?? "",
+                    _ => prop.Value.ToString()
+                };
+            }
+        }
+        catch { /* JSON inválido — devolve dict vazio */ }
+        return dict;
+    }
+}

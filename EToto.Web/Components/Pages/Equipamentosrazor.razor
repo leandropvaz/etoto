@@ -1,0 +1,1719 @@
+@page "/equipamentos"
+@using System.ComponentModel.DataAnnotations
+@using System.Drawing
+@using System.Drawing.Imaging
+@using System.Linq
+@using EToto.Application.Dto
+@using EToto.Application.Interfaces
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Text
+@using System.Globalization
+@using EToto.Web.Services
+@inject PlantasService PlantaService
+@inject IEquipamentoAppService EquipamentoAppService
+@inject IPleAppService PleService
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+@inject LanguageService Lang
+@implements IDisposable
+
+@layout MainLayout
+
+<section class="content pt-3">
+    <div class="container-fluid">
+
+        <!-- LINHA 1 – WIZARD -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card card-primary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-cogs mr-1"></i>
+                            @(IsEditMode ? Lang["equip.edit"] : Lang["equip.register_import"])
+                        </h3>
+                        <div class="card-tools">
+                            <span class="badge badge-info badge-sm">@Lang["equip.step"] @passoAtual @Lang["equip.of"] 3</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+
+                        @* PASSO 1 *@
+                        @if (passoAtual == 1)
+                        {
+                            <div class="form-group">
+                                <label>@Lang["equip.plant"]</label>
+                                <select class="form-control"
+                                        @onchange="PlantaAlterada"
+                                        disabled="@Importando">
+                                    <option value="">@Lang["equip.select_plant"]</option>
+                                    @foreach (var p in PlantasDisponiveis)
+                                    {
+                                        <option value="@p.Id" selected="@(PlantaSelecionadaId == p.Id)">
+                                            @p.Nome (@p.Codigo)
+                                        </option>
+                                    }
+                                </select>
+                                @if (PlantasDisponiveis.Count == 1)
+                                {
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i> @Lang["equip.single_plant_info"]
+                                    </small>
+                                }
+                                else if (PlantasDisponiveis.Count > 1)
+                                {
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i> @Lang["equip.multi_plant_info"] @PlantasDisponiveis.Count @Lang["equip.multi_plant_info2"]
+                                    </small>
+                                }
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label>@Lang["equip.operation_mode"]</label>
+                                <div class="icheck-primary radio-small">
+                                    <input type="radio" id="modoManual" name="modoCadastro"
+                                           disabled="@Importando"
+                                           checked="@(ModoSelecionado == ModoCadastro.Manual)"
+                                           @onchange="() => ModoSelecionado = ModoCadastro.Manual" />
+                                    <label for="modoManual">
+                                        @Lang["equip.manual_mode"] @(IsEditMode ? Lang["equip.edit_mode_label"] : "")
+                                    </label>
+                                </div>
+                                <div class="icheck-primary radio-small">
+                                    <input type="radio" id="modoImportacao" name="modoCadastro"
+                                           disabled="@Importando"
+                                           checked="@(ModoSelecionado == ModoCadastro.ImportacaoExcel)"
+                                           @onchange="() => ModoSelecionado = ModoCadastro.ImportacaoExcel" />
+                                    <label for="modoImportacao">
+                                        @Lang["equip.import_mode"]
+                                    </label>
+                                </div>
+                            </div>
+                        }
+
+                        @* PASSO 2 *@
+                        else if (passoAtual == 2)
+                        {
+                            @if (ModoSelecionado == ModoCadastro.Manual)
+                            {
+                                <EditForm Model="@Manual" OnValidSubmit="SalvarManual">
+                                    <DataAnnotationsValidator />
+                                    <ValidationSummary class="text-danger mb-2" />
+
+                                    @* CABEÇALHO *@
+                                    <div class="card card-outline card-secondary mb-2">
+                                        <div class="card-header py-2">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-id-badge mr-1"></i>
+                                                @Lang["equip.header"]
+                                            </h6>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <div class="form-group">
+                                                <label>@Lang["equip.tag"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.Tag" />
+                                                <ValidationMessage For="@(() => Manual.Tag)" class="text-danger small" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.name"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.EquipmentName" />
+                                                <ValidationMessage For="@(() => Manual.EquipmentName)" class="text-danger small" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.factory"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.FactoryName" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.revision"]</label>
+                                                <InputDate class="form-control" @bind-Value="Manual.RevisionDate" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.responsible"]</label>
+                                                <input type="text"
+                                                       class="form-control"
+                                                       value="@Manual.ResponsibleUser"
+                                                       disabled
+                                                       style="background-color: #e9ecef; cursor: not-allowed;" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* I. IDENTIFICAÇÃO *@
+                                    <div class="card card-outline card-info mb-2">
+                                        <div class="card-header py-2">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                @Lang["equip.identification"]
+                                            </h6>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <div class="form-group">
+                                                <label>@Lang["equip.line_number"]</label>
+                                                <InputNumber class="form-control" @bind-Value="Manual.LineNumber" />
+                                                <ValidationMessage For="@(() => Manual.LineNumber)" class="text-danger small" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.energy_type"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.EnergyType" />
+                                                <ValidationMessage For="@(() => Manual.EnergyType)" class="text-danger small" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.energy_desc"]</label>
+                                                <InputTextArea class="form-control" rows="4" @bind-Value="Manual.HazardDescription" />
+                                                <ValidationMessage For="@(() => Manual.HazardDescription)" class="text-danger small" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.zero_energy"]</label>
+                                                <InputTextArea class="form-control" rows="2" @bind-Value="Manual.ZeroEnergyVerification" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.test"]</label>
+                                                <InputTextArea class="form-control" rows="2" @bind-Value="Manual.Test" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* II. CONTROLE *@
+                                    <div class="card card-outline card-success mb-2">
+                                        <div class="card-header py-2">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-lock mr-1"></i>
+                                                @Lang["equip.control"]
+                                            </h6>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <div class="form-group">
+                                                <label>@Lang["equip.isolation_tag"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.IsolationDeviceTag" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.isolation_location"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.IsolationDeviceLocation" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.isolation_device"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.IsolationDeviceDescription" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label>@Lang["equip.lockout"]</label>
+                                                <InputText class="form-control" @bind-Value="Manual.LockoutType" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* IMAGENS *@
+                                    <div class="form-group">
+                                        <label>@Lang["equip.images"]</label>
+                                        <InputFile OnChange="ImagensManuaisSelecionadas" accept="image/*" multiple />
+                                        @if (!string.IsNullOrEmpty(Manual.ImageFileName))
+                                        {
+                                            <small class="form-text text-muted">
+                                                @Lang["equip.selected_files"] @Manual.ImageFileName
+                                            </small>
+                                        }
+                                </div>
+
+                                <div class="form-group">
+                                    <label>@Lang["equip.image_notes"]</label>
+                                    <InputTextArea class="form-control" rows="4" @bind-Value="Manual.ImageNotes" />
+                                </div>
+
+                                <button type="submit"
+                                        class="btn btn-success btn-block btn-sm"
+                                        disabled="@(Importando || SalvandoManual)">
+                                    <i class="fas fa-save mr-1"></i>
+                                    @(SalvandoManual
+                                        ? Lang["equip.saving"]
+                                        : (IsEditMode ? Lang["equip.save_changes"] : Lang["equip.save_equipment"]))
+                                    </button>
+                                </EditForm>
+                            }
+                            else
+                            {
+                                @* IMPORTAÇÃO EXCEL *@
+                                <div class="form-group">
+                                    <label class="d-flex align-items-center justify-content-between">
+                                        <span>@Lang["equip.select_excel"]</span>
+                                        <button type="button"
+                                                class="btn btn-xs btn-outline-info ml-2"
+                                                title="@Lang["equip.view_template"]"
+                                                @onclick="AbrirModalTemplate">
+                                            <i class="fas fa-table mr-1"></i> @Lang["equip.view_template"]
+                                        </button>
+                                    </label>
+                                    <InputFile OnChange="ArquivosExcelSelecionados"
+                                               multiple
+                                               accept=".xlsx"
+                                               disabled="@Importando" />
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        @Lang["equip.template_hint"]
+                                    </small>
+                                </div>
+
+                                @if (ArquivosImportacao.Any())
+                                {
+                                    <div class="position-relative">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped table-bordered mb-2">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th>@Lang["equip.file_col"]</th>
+                                                        <th>@Lang["equip.status_col"]</th>
+                                                        <th>@Lang["equip.progress_col"]</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var a in ArquivosImportacao)
+                                                    {
+                                                        <tr>
+                                                            <td>@a.Nome</td>
+                                                            <td>
+                                                                <span class="@ClasseBadgeStatus(a.Status)">
+                                                                    @TranslateImportStatus(a.Status)
+                                                                </span>
+                                                                @if (!string.IsNullOrEmpty(a.MensagemErro))
+                                                                {
+                                                                    <div class="alert alert-danger alert-sm mt-1 mb-0 py-1 px-2" role="alert">
+                                                                        <i class="fas fa-exclamation-circle mr-1"></i>
+                                                                        @foreach (var linha in a.MensagemErro.Split('\n'))
+                                                                        {
+                                                                            <div>@linha</div>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                            </td>
+                                                            <td style="width: 220px;">
+                                                                <div class="progress progress-xs">
+                                                                    <div class="progress-bar @(a.Status == "Erro" ? "bg-danger" : "")"
+                                                                         role="progressbar"
+                                                                         style="width: @a.Progresso%">
+                                                                    </div>
+                                                                </div>
+                                                                <small>@a.Progresso %</small>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <button class="btn btn-primary btn-block btn-sm"
+                                                disabled="@Importando"
+                                                @onclick="IniciarImportacao">
+                                            <i class="fas fa-file-import mr-1"></i>
+                                            @(Importando ? Lang["equip.importing"] : Lang["equip.start_import"])
+                                        </button>
+
+                                        @if (!string.IsNullOrEmpty(MensagemImportacao))
+                                        {
+                                            <p class="mt-2 text-info">@MensagemImportacao</p>
+                                        }
+
+                                        @if (Importando)
+                                        {
+                                            <div class="overlay d-flex justify-content-center align-items-center">
+                                                <i class="fas fa-sync-alt fa-spin fa-2x"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-muted">@Lang["equip.no_file"]</p>
+                                }
+                            }
+                        }
+
+                        @* PASSO 3 *@
+                        else if (passoAtual == 3)
+                        {
+                            <p>
+                                @Lang["equip.complete"]
+                                @Lang["equip.complete_desc"]
+                            </p>
+                            <p class="text-muted mb-0">
+                                @Lang["equip.complete_desc2"]
+                            </p>
+                        }
+
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-between">
+                        @if (!IsEditMode && passoAtual < 3)
+                        {
+                            <button class="btn btn-secondary btn-sm"
+                                    disabled="@(passoAtual == 1 || Importando || SalvandoManual)"
+                                    @onclick="PassoAnterior">
+                                <i class="fas fa-arrow-left mr-1"></i> @Lang["equip.previous"]
+                            </button>
+                            @if (!(passoAtual == 2 && ModoSelecionado == ModoCadastro.Manual))
+                            {
+                                <button class="btn btn-primary btn-sm"
+                                        disabled="@(!PodeAvancarPasso())"
+                                        @onclick="ProximoPasso">
+                                    @Lang["equip.next"] <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary btn-sm ml-auto"
+                                    disabled="@(Importando || SalvandoManual)"
+                                    @onclick="FecharWizard">
+                                @Lang["equip.close"]
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LINHA 2 – LISTA -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-info card-outline mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-list mr-1"></i>
+                            @Lang["equip.list_title"]
+                        </h3>
+                        <div class="card-tools">
+                            <div class="input-group input-group-sm" style="width: 260px;">
+                                <input type="text"
+                                       class="form-control float-right"
+                                       placeholder="@Lang["equip.search_placeholder"]"
+                                       @bind="TermoPesquisa"
+                                       @bind:event="oninput"
+                                       @bind:after="() => PaginaAtual = 1" />
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-default" title="@Lang["common.clear"]" @onclick="LimparPesquisa">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-2">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="text-muted">
+                                    @if (EquipamentosFiltrados?.Any() == true)
+                                    {
+                                        @($"{EquipamentosFiltrados.Count} {Lang["equip.found"]}")
+                                    }
+                                    else
+                                    {
+                                        @Lang["equip.not_found"]
+                                    }
+                                </small>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <select class="form-control form-control-sm"
+                                        style="width: 90px;"
+                                        @bind="TamanhoPagina"
+                                        @bind:after="ResetarPagina">
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="150">150</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table table-bordered table-hover table-sm mb-0 equip-table">
+                                <thead class="sticky-header">
+                                    <tr class="thead-light">
+                                        <th colspan="6" class="text-center">@Lang["equip.col_identification"]</th>
+                                        <th colspan="6" class="text-center">@Lang["equip.col_energy_control"]</th>
+                                        <th rowspan="2" style="width: 5%;" class="text-center align-middle">@Lang["equip.col_active"]</th>
+                                        <th rowspan="2" style="width: 15%;" class="text-right align-middle">@Lang["equip.col_actions"]</th>
+                                    </tr>
+                                    <tr class="thead-light">
+                                        <th style="width: 8%;">Tag</th>
+                                        <th style="width: 22%;">Equip.</th>
+                                        <th style="width: 6%;">Nº</th>
+                                        <th style="width: 10%;">@Lang["home.table.energy_type"]</th>
+                                        <th style="width: 5%;">Img</th>
+                                        <th style="width: 18%;">@Lang["home.table.energy_desc"]</th>
+                                        <th style="width: 10%;">@Lang["home.table.isolation_tag"]</th>
+                                        <th style="width: 14%;">@Lang["home.table.loc_device"]</th>
+                                        <th style="width: 10%;">@Lang["home.table.device"]</th>
+                                        <th style="width: 8%;">@Lang["home.table.lockout"]</th>
+                                        <th style="width: 14%;">@Lang["home.table.zero_energy"]</th>
+                                        <th style="width: 14%;">@Lang["home.table.test"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (EquipamentosPaginados.Any())
+                                    {
+                                        @foreach (var e in EquipamentosPaginados)
+                                        {
+                                            <tr class="@(e.IsDeleted ? "table-danger" : "")">
+                                                <td>
+                                                    @e.Tag
+                                                    @if (equipamentosComPle.ContainsKey(e.Id))
+                                                    {
+                                                        var pleStatus = equipamentosComPle[e.Id];
+                                                        var pleBloqueioAtivo = pleStatus == EToto.Domain.Enums.StatusPle.EmAndamento || pleStatus == EToto.Domain.Enums.StatusPle.InicioDesbloqueio;
+                                                        var badgeMsg = pleBloqueioAtivo ? Lang["ple.maintenance_badge_active"] : Lang["ple.maintenance_badge"];
+                                                        var badgeCss = pleBloqueioAtivo ? "badge-danger" : "badge-warning";
+                                                        <span class="badge @badgeCss ml-1 ple-blink" title="@badgeMsg">
+                                                            <i class="fas fa-lock"></i>
+                                                        </span>
+                                                    }
+                                                </td>
+                                                <td>@e.EquipmentName</td>
+                                                <td>@e.LineNumber</td>
+                                                <td style="@GetEstiloTipoEnergia(e.EnergyType)" class="energy-type-cell">
+                                                    <span class="energy-type-text">@e.EnergyType</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    @if (!string.IsNullOrEmpty(e.ImageBlobUrl))
+                                                    {
+                                                        <button class="btn btn-xs btn-outline-secondary"
+                                                                title="@Lang["equip.view_img_notes"]"
+                                                                @onclick="() => AbrirModalImagem(e)">
+                                                            <i class="fas fa-image"></i>
+                                                        </button>
+                                                    }
+                                                </td>
+                                                <td>@e.HazardDescription</td>
+                                                <td>@e.IsolationDeviceTag</td>
+                                                <td>@e.IsolationDeviceLocation</td>
+                                                <td>@e.IsolationDeviceDescription</td>
+                                                <td>@e.LockoutType</td>
+                                                <td>@e.ZeroEnergyVerification</td>
+                                                <td>@e.Test</td>
+                                                <td class="text-center">
+                                                    @if (!e.IsDeleted)
+                                                    {
+                                                        <span class="badge bg-success badge-sm">@Lang["common.active"]</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary badge-sm">@Lang["common.inactive"]</span>
+                                                    }
+                                                </td>
+                                                <td class="text-right">
+                                                    <button class="btn btn-xs btn-outline-primary"
+                                                            title="@Lang["common.edit"]"
+                                                            disabled="@Importando"
+                                                            @onclick="() => IniciarEdicao(e)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-xs btn-outline-danger"
+                                                            title="@Lang["common.delete"]"
+                                                            disabled="@Importando"
+                                                            @onclick="() => AbrirModalConfirmacaoExclusao(e)">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="14" class="text-center text-muted py-3">
+                                                @Lang["equip.no_records"]
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card-footer clearfix">
+                        <span class="text-muted">@Lang["common.page"] @PaginaAtual @Lang["common.of"] @TotalPaginas</span>
+                        <ul class="pagination pagination-sm m-0 float-right">
+                            <li class="page-item @(PaginaAtual == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="PaginaAnterior">«</button>
+                            </li>
+                            @foreach (var pagina in GetPaginasVisiveis())
+                            {
+                                @if (pagina.HasValue)
+                                {
+                                    <li class="page-item @(PaginaAtual == pagina.Value ? "active" : "")">
+                                        <button class="page-link" @onclick="() => IrParaPagina(pagina.Value)">@pagina.Value</button>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                            }
+                            <li class="page-item @(PaginaAtual == TotalPaginas ? "disabled" : "")">
+                                <button class="page-link" @onclick="ProximaPagina">»</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ======================================================
+           MODAL — IMAGEM
+           ====================================================== *@
+        @if (MostrarModalImagem)
+        {
+            <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;" aria-modal="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-image" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-pw-blue text-white py-2">
+                            <h5 class="modal-title mb-0">
+                                <i class="fas fa-image mr-1"></i> @ImagemModalTitulo
+                            </h5>
+                            <button type="button" class="close text-white" aria-label="Close" @onclick="FecharModalImagem">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="d-flex flex-column flex-md-row align-items-start modal-image-content">
+                                <div class="modal-image-wrapper text-center mb-3 mb-md-0 flex-fill">
+                                    @if (!string.IsNullOrEmpty(ImagemModalUrl))
+                                    {
+                                        <img src="@ImagemModalUrl" class="img-fluid rounded shadow-sm" />
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted">@Lang["equip.image_unavailable"]</p>
+                                    }
+                                </div>
+                                <div class="modal-notes-wrapper ml-md-3">
+                                    <h6 class="mb-2 text-muted">
+                                        <i class="fas fa-sticky-note mr-1"></i> @Lang["equip.notes"]
+                                    </h6>
+                                    @if (!string.IsNullOrWhiteSpace(ImagemModalNotas))
+                                    {
+                                        <div class="image-notes-bubble">@ImagemModalNotas</div>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">@Lang["equip.no_notes"]</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer py-2">
+                            <button type="button" class="btn btn-secondary btn-sm" @onclick="FecharModalImagem">@Lang["common.close"]</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show"></div>
+        }
+
+        @* ======================================================
+           MODAL — CONFIRMAÇÃO EXCLUSÃO
+           ====================================================== *@
+        @if (MostrarModalConfirmacaoExclusao && EquipamentoParaExcluir is not null)
+        {
+            <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;" aria-modal="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content confirm-modal">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title mb-0">
+                                <i class="fas fa-exclamation-triangle mr-2"></i> @Lang["common.confirm_delete"]
+                            </h5>
+                            <button type="button" class="close text-white" aria-label="Close" @onclick="FecharModalConfirmacaoExclusao">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-2">
+                                @Lang["equip.delete_confirm_text"]
+                                <strong>@EquipamentoParaExcluir.Tag - @EquipamentoParaExcluir.EquipmentName</strong>?
+                            </p>
+                        </div>
+                        <div class="modal-footer d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="FecharModalConfirmacaoExclusao">
+                                <i class="fas fa-times mr-1"></i> @Lang["common.no"]
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" @onclick="ConfirmarExclusaoAsync">
+                                <i class="fas fa-trash-alt mr-1"></i> @Lang["common.yes_delete"]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show"></div>
+        }
+
+        @* ======================================================
+           MODAL — TEMPLATE EXCEL
+           ====================================================== *@
+        @if (MostrarModalTemplate)
+        {
+            <div class="modal fade show" tabindex="-1" role="dialog" style="display:block; z-index:1060;" aria-modal="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+                    <div class="modal-content">
+
+                        <div class="modal-header" style="background-color:#1a3a5c; color:white;">
+                            <h5 class="modal-title mb-0">
+                                <i class="fas fa-table mr-2"></i>
+                                @Lang["equip.tmpl.title"]
+                            </h5>
+                            <button type="button" class="close" style="color:white;" aria-label="Close" @onclick="FecharModalTemplate">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body" style="font-size:0.82rem;">
+
+                            <div class="alert alert-warning py-2 mb-3">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                @((MarkupString)Lang["equip.tmpl.warning"])
+                            </div>
+
+                            @* CABEÇALHO *@
+                            <h6 class="template-section-title">
+                                <i class="fas fa-id-badge mr-1 text-secondary"></i> @Lang["equip.tmpl.header_section"]
+                            </h6>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-bordered table-sm template-table">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>@Lang["equip.tmpl.cell"]</th>
+                                            <th>@Lang["equip.tmpl.column"]</th>
+                                            <th>@Lang["equip.tmpl.field"]</th>
+                                            <th>@Lang["equip.tmpl.required"]</th>
+                                            <th>@Lang["equip.tmpl.observation"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="table-danger">
+                                            <td><code>D3</code></td>
+                                            <td>D</td>
+                                            <td>@Lang["equip.tmpl.tag_field"]</td>
+                                            <td><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
+                                            <td>@Lang["equip.tmpl.tag_obs"]</td>
+                                        </tr>
+                                        <tr class="table-danger">
+                                            <td><code>F3</code></td>
+                                            <td>F</td>
+                                            <td>@Lang["equip.tmpl.name_field"]</td>
+                                            <td><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
+                                            <td>@Lang["equip.tmpl.name_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>J3</code></td>
+                                            <td>J</td>
+                                            <td>@Lang["equip.tmpl.factory_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.factory_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>K3</code></td>
+                                            <td>K</td>
+                                            <td>@Lang["equip.tmpl.revision_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.revision_obs"]</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @* GRUPO I *@
+                            <h6 class="template-section-title">
+                                <i class="fas fa-list-ol mr-1 text-info"></i>
+                                @Lang["equip.tmpl.data_section"]
+                            </h6>
+                            <p class="mb-1 font-weight-bold text-info" style="font-size:0.8rem;">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                @Lang["equip.tmpl.group1"]
+                            </p>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-bordered table-sm template-table">
+                                    <thead style="background-color:#d1ecf1;">
+                                        <tr>
+                                            <th>@Lang["equip.tmpl.column"]</th>
+                                            <th>@Lang["equip.tmpl.letter"]</th>
+                                            <th>@Lang["equip.tmpl.field"]</th>
+                                            <th>@Lang["equip.tmpl.required"]</th>
+                                            <th>@Lang["equip.tmpl.observation"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="table-danger">
+                                            <td>2</td>
+                                            <td><code>B</code></td>
+                                            <td>@Lang["equip.tmpl.g1_number_field"]</td>
+                                            <td><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
+                                            <td>@Lang["equip.tmpl.g1_number_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td><code>C</code></td>
+                                            <td>@Lang["equip.tmpl.g1_type_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g1_type_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>4</td>
+                                            <td><code>D</code></td>
+                                            <td>@Lang["equip.tmpl.g1_desc_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g1_desc_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>5</td>
+                                            <td><code>E</code></td>
+                                            <td>@Lang["equip.tmpl.g1_image_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g1_image_obs"]</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @* GRUPO II *@
+                            <p class="mb-1 font-weight-bold text-success" style="font-size:0.8rem;">
+                                <i class="fas fa-lock mr-1"></i>
+                                @Lang["equip.tmpl.group2"]
+                            </p>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-bordered table-sm template-table">
+                                    <thead style="background-color:#d4edda;">
+                                        <tr>
+                                            <th>@Lang["equip.tmpl.column"]</th>
+                                            <th>@Lang["equip.tmpl.letter"]</th>
+                                            <th>@Lang["equip.tmpl.field"]</th>
+                                            <th>@Lang["equip.tmpl.required"]</th>
+                                            <th>@Lang["equip.tmpl.observation"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>9</td>
+                                            <td><code>I</code></td>
+                                            <td>@Lang["equip.tmpl.g2_iso_tag_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g2_iso_tag_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>10</td>
+                                            <td><code>J</code></td>
+                                            <td>@Lang["equip.tmpl.g2_loc_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g2_loc_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>11</td>
+                                            <td><code>K</code></td>
+                                            <td>@Lang["equip.tmpl.g2_device_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g2_device_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>12</td>
+                                            <td><code>L</code></td>
+                                            <td>@Lang["equip.tmpl.g2_lockout_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g2_lockout_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>13</td>
+                                            <td><code>M</code></td>
+                                            <td>@Lang["equip.tmpl.g2_zero_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g2_zero_obs"]</td>
+                                        </tr>
+                                        <tr>
+                                            <td>14</td>
+                                            <td><code>N</code></td>
+                                            <td>@Lang["equip.tmpl.g2_test_field"]</td>
+                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td>@Lang["equip.tmpl.g2_test_obs"]</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @* MAPA VISUAL *@
+                            <h6 class="template-section-title">
+                                <i class="fas fa-columns mr-1 text-warning"></i>
+                                @Lang["equip.tmpl.visual_map"]
+                            </h6>
+                            <div class="table-responsive mb-2">
+                                <table class="table table-bordered table-sm text-center mb-0" style="min-width:900px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="background:#e2e3e5;">A</th>
+                                            <th style="background:#f8d7da;">B ⭐</th>
+                                            <th style="background:#d1ecf1;">C</th>
+                                            <th style="background:#d1ecf1;">D</th>
+                                            <th style="background:#d1ecf1;">E 🖼</th>
+                                            <th style="background:#fff3cd;">F</th>
+                                            <th style="background:#fff3cd;">G</th>
+                                            <th style="background:#fff3cd;">H</th>
+                                            <th style="background:#d4edda;">I</th>
+                                            <th style="background:#d4edda;">J</th>
+                                            <th style="background:#d4edda;">K</th>
+                                            <th style="background:#d4edda;">L</th>
+                                            <th style="background:#d4edda;">M</th>
+                                            <th style="background:#d4edda;">N</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="font-size:0.72rem;">
+                                            <td class="text-muted">—</td>
+                                            <td class="table-danger font-weight-bold">@Lang["equip.tmpl.map_number"]</td>
+                                            <td class="table-info">@Lang["equip.tmpl.map_energy_type"]</td>
+                                            <td class="table-info">@Lang["equip.tmpl.map_desc"]</td>
+                                            <td class="table-info">@Lang["equip.tmpl.map_photo"]</td>
+                                            <td class="table-warning text-muted" colspan="3">@Lang["equip.tmpl.map_float_zone"]</td>
+                                            <td class="table-success">@Lang["equip.tmpl.map_iso_tag"]</td>
+                                            <td class="table-success">@Lang["equip.tmpl.map_location"]</td>
+                                            <td class="table-success">@Lang["equip.tmpl.map_device"]</td>
+                                            <td class="table-success">@Lang["equip.tmpl.map_lockout"]</td>
+                                            <td class="table-success">@Lang["equip.tmpl.map_zero"]</td>
+                                            <td class="table-success">@Lang["equip.tmpl.map_test"]</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted d-block mb-3">
+                                <span class="badge badge-danger mr-1">@Lang["equip.tmpl.required_badge"]</span>
+                                @Lang["equip.tmpl.col_b_note"]
+                            </small>
+
+                            @* REGRAS ESPECIAIS *@
+                            <h6 class="template-section-title">
+                                <i class="fas fa-lightbulb mr-1 text-warning"></i> @Lang["equip.tmpl.special_rules"]
+                            </h6>
+                            <ul style="font-size:0.8rem; line-height:1.8rem;">
+                                <li>
+                                    <strong>@Lang["equip.tmpl.rule_comments"]</strong>
+                                    @Lang["equip.tmpl.rule_comments_desc"]
+                                </li>
+                                <li>
+                                    <strong>@Lang["equip.tmpl.rule_floating"]</strong>
+                                    @Lang["equip.tmpl.rule_floating_desc"]
+                                </li>
+                                <li>
+                                    <strong>@Lang["equip.tmpl.rule_balloons"]</strong>
+                                    @Lang["equip.tmpl.rule_balloons_desc"]
+                                </li>
+                                <li>
+                                    <strong>@Lang["equip.tmpl.rule_min_cols"]</strong>
+                                    @Lang["equip.tmpl.rule_min_cols_desc"]
+                                </li>
+                                <li>
+                                    <strong>@Lang["equip.tmpl.rule_data_start"]</strong>
+                                    @Lang["equip.tmpl.rule_data_start_desc"]
+                                </li>
+                                <li>
+                                    <strong>@Lang["equip.tmpl.rule_stop"]</strong>
+                                    @Lang["equip.tmpl.rule_stop_desc"]
+                                </li>
+                            </ul>
+
+                        </div>
+
+                        <div class="modal-footer py-2">
+                            <button type="button" class="btn btn-secondary btn-sm" @onclick="FecharModalTemplate">
+                                <i class="fas fa-times mr-1"></i> @Lang["common.close"]
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show" style="z-index:1055;"></div>
+        }
+
+    </div>
+</section>
+
+<style>
+    .card-title {
+        font-size: 0.9rem !important;
+    }
+
+    .card-header {
+        padding: 0.45rem 0.9rem !important;
+    }
+
+    .card-body {
+        padding: 0.6rem 0.9rem !important;
+    }
+
+    label {
+        font-size: 0.78rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+
+    .form-text, small.text-muted {
+        font-size: 0.75rem !important;
+    }
+
+    .form-control {
+        font-size: 0.8rem !important;
+        height: calc(1.45rem + 2px);
+        padding: 0.2rem 0.45rem;
+    }
+
+    .form-control-sm {
+        font-size: 0.78rem !important;
+        height: calc(1.35rem + 2px);
+        padding: 0.18rem 0.4rem;
+    }
+
+    .form-group {
+        margin-bottom: 0.4rem !important;
+    }
+
+    .btn, .btn-sm {
+        font-size: 0.78rem !important;
+        padding: 0.25rem 0.55rem !important;
+    }
+
+    .btn-xs {
+        font-size: 0.72rem !important;
+        padding: 0.15rem 0.4rem !important;
+    }
+
+    .table-container {
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    .equip-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .equip-table th, .equip-table td {
+            font-size: 0.78rem;
+            padding: 0.25rem 0.45rem;
+            vertical-align: top;
+        }
+
+        .equip-table thead.sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f8f9fa;
+        }
+
+            .equip-table thead.sticky-header th {
+                font-size: 0.75rem;
+                white-space: nowrap;
+                background-color: #f8f9fa;
+                box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
+            }
+
+    .energy-type-cell {
+        font-weight: 600;
+        text-align: center;
+        border-left: 4px solid transparent;
+    }
+
+    .energy-type-text {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.75rem;
+    }
+
+    .pagination .page-link {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* Modal imagem */
+    .modal-image .modal-content {
+        border-radius: 0.75rem;
+        overflow-x: hidden;
+    }
+
+    .modal-image .modal-dialog {
+        max-width: 900px;
+        width: 100%;
+        margin: 1.75rem auto;
+    }
+
+    .modal-image-content {
+        gap: 1.5rem;
+        width: 100%;
+    }
+
+    .modal-image-wrapper {
+        max-width: 100%;
+    }
+
+        .modal-image-wrapper img {
+            max-height: 420px;
+            object-fit: contain;
+        }
+
+    .modal-notes-wrapper {
+        max-width: 320px;
+        width: 100%;
+    }
+
+    .image-notes-bubble {
+        background-color: #fff3cd;
+        border: 1px solid #f1c453;
+        border-radius: 0.75rem;
+        padding: 0.65rem 0.9rem;
+        font-size: 0.8rem;
+        line-height: 1.3rem;
+        position: relative;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+        .image-notes-bubble::before {
+            content: "";
+            position: absolute;
+            left: -10px;
+            top: 18px;
+            border-width: 8px 10px 8px 0;
+            border-style: solid;
+            border-color: transparent #f1c453 transparent transparent;
+        }
+
+    /* Modal confirmação */
+    .confirm-modal {
+        border-radius: 0.75rem;
+    }
+
+        .confirm-modal .modal-header {
+            border-bottom: none;
+            padding-bottom: 0.25rem;
+        }
+
+        .confirm-modal .modal-body {
+            padding-top: 0.25rem;
+            padding-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .confirm-modal .modal-footer {
+            border-top: none;
+        }
+
+    /* Modal template */
+    .template-section-title {
+        font-size: 0.83rem;
+        font-weight: 700;
+        border-left: 3px solid #1a3a5c;
+        padding-left: 8px;
+        margin-bottom: 6px;
+        margin-top: 14px;
+    }
+
+    .template-table th, .template-table td {
+        font-size: 0.78rem !important;
+        padding: 0.22rem 0.4rem !important;
+        vertical-align: middle !important;
+    }
+
+    .template-table code {
+        font-size: 0.8rem;
+        background: #f0f0f0;
+        padding: 1px 4px;
+        border-radius: 3px;
+    }
+
+    /* Alerta erro inline */
+    .alert-sm {
+        font-size: 0.75rem;
+    }
+
+    @@media (max-width: 768px) {
+        .modal-image .modal-dialog {
+            max-width: 95%;
+            margin: 1rem auto;
+        }
+
+        .modal-image-content {
+            flex-direction: column !important;
+            gap: 1rem;
+        }
+
+        .modal-notes-wrapper {
+            max-width: 100%;
+            width: 100%;
+            margin-left: 0 !important;
+            margin-top: 0.75rem;
+        }
+    }
+</style>
+
+@code {
+    public enum PerfilUsuario { Usuario = 1, Administrador = 2, SuperGestor = 3 }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private PerfilUsuario PerfilLogado { get; set; } = PerfilUsuario.Usuario;
+    private List<int> PlantasIdsLogado { get; set; } = new();
+    private string NomeUsuarioLogado { get; set; } = string.Empty;
+    private int? IdUsuarioLogado { get; set; }
+
+    private enum ModoCadastro { Manual, ImportacaoExcel }
+
+    public class ManualModel
+    {
+        [Required(ErrorMessage = "Tag é obrigatória.")]
+        public string Tag { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Nome / descrição do equipamento é obrigatório.")]
+        public string EquipmentName { get; set; } = string.Empty;
+
+        public string? FactoryName { get; set; }
+        public string? RevisionInfo { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? RevisionDate { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "Nº (linha / risco) deve ser maior que zero.")]
+        public int LineNumber { get; set; }
+
+        [Required(ErrorMessage = "Tipo de energia é obrigatório.")]
+        public string EnergyType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Descrição da energia perigosa é obrigatória.")]
+        public string HazardDescription { get; set; } = string.Empty;
+
+        public string? ZeroEnergyVerification { get; set; }
+        public string? Test { get; set; }
+        public string? IsolationDeviceTag { get; set; }
+        public string? IsolationDeviceLocation { get; set; }
+        public string? IsolationDeviceDescription { get; set; }
+        public string? LockoutType { get; set; }
+        public string? ImageFileName { get; set; }
+        public string? ImageNotes { get; set; }
+        public int? ResponsibleUserId { get; set; }
+        public string? ResponsibleUser { get; set; }
+    }
+
+    private class ArquivoImportacaoItem
+    {
+        public IBrowserFile File { get; set; } = default!;
+        public string Nome { get; set; } = string.Empty;
+        public string Status { get; set; } = "Pendente";
+        public int Progresso { get; set; }
+        public string? MensagemErro { get; set; }
+    }
+
+    // ===== STATE =====
+    private int passoAtual = 1;
+    private List<PlantasDto> Plantas = new();
+    private List<PlantasDto> PlantasDisponiveis = new();
+    private int? PlantaSelecionadaId;
+    private ModoCadastro ModoSelecionado = ModoCadastro.ImportacaoExcel;
+    private ManualModel Manual = new();
+    private List<IBrowserFile> ImagensManuais { get; set; } = new();
+    private bool IsEditMode;
+    private Guid? EquipamentoEmEdicaoId;
+    private List<ArquivoImportacaoItem> ArquivosImportacao = new();
+    private bool Importando;
+    private string? MensagemImportacao;
+    private bool SalvandoManual;
+    private List<EquipamentoDto> Equipamentos = new();
+    private Dictionary<Guid, EToto.Domain.Enums.StatusPle> equipamentosComPle = new();
+    private bool CarregandoEquipamentos;
+    private string TermoPesquisa { get; set; } = string.Empty;
+    private int PaginaAtual { get; set; } = 1;
+    private int TamanhoPagina { get; set; } = 50;
+
+    // Modais
+    private bool MostrarModalImagem;
+    private string? ImagemModalUrl;
+    private string? ImagemModalTitulo;
+    private string? ImagemModalNotas;
+    private bool MostrarModalConfirmacaoExclusao;
+    private EquipamentoDto? EquipamentoParaExcluir;
+    private bool MostrarModalTemplate;
+
+    // ===== COMPUTED =====
+    private List<EquipamentoDto> EquipamentosFiltrados =>
+        string.IsNullOrWhiteSpace(TermoPesquisa)
+            ? Equipamentos
+            : Equipamentos.Where(e =>
+                ContainsIgnoreCaseAndAccents(e.Tag, TermoPesquisa) ||
+                ContainsIgnoreCaseAndAccents(e.EquipmentName, TermoPesquisa) ||
+                ContainsIgnoreCaseAndAccents(e.EnergyType, TermoPesquisa) ||
+                ContainsIgnoreCaseAndAccents(e.HazardDescription, TermoPesquisa) ||
+                ContainsIgnoreCaseAndAccents(e.IsolationDeviceTag, TermoPesquisa) ||
+                ContainsIgnoreCaseAndAccents(e.IsolationDeviceLocation, TermoPesquisa) ||
+                ContainsIgnoreCaseAndAccents(e.ZeroEnergyVerification, TermoPesquisa) ||
+                ContainsIgnoreCaseAndAccents(e.Test, TermoPesquisa))
+            .ToList();
+
+    private IEnumerable<EquipamentoDto> EquipamentosPaginados =>
+        EquipamentosFiltrados.Skip((PaginaAtual - 1) * TamanhoPagina).Take(TamanhoPagina);
+
+    private int TotalPaginas =>
+        EquipamentosFiltrados.Count == 0 ? 1 : (int)Math.Ceiling(EquipamentosFiltrados.Count / (double)TamanhoPagina);
+
+    // ===== LIFECYCLE =====
+    protected override void OnInitialized()
+    {
+        Lang.OnLanguageChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+    }
+
+    // ===== INIT =====
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+
+        NomeUsuarioLogado = user.Identity.Name ?? user.FindFirst("name")?.Value ?? "Usuário não identificado";
+
+        var userIdClaim = user.FindFirst("sub")?.Value ??
+                         user.FindFirst("userId")?.Value ??
+                         user.FindFirst("UserId")?.Value ??
+                         user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (int.TryParse(userIdClaim, out var userId)) IdUsuarioLogado = userId;
+        if (int.TryParse(user.FindFirst("Perfil")?.Value, out var perfilInt)) PerfilLogado = (PerfilUsuario)perfilInt;
+
+        var plantasIdsStr = user.Claims.Where(c => c.Type == "PlantasIds").Select(c => c.Value).ToList();
+        foreach (var idStr in plantasIdsStr)
+            if (int.TryParse(idStr, out var plantaId)) PlantasIdsLogado.Add(plantaId);
+
+        if (!PlantasIdsLogado.Any())
+            if (int.TryParse(user.FindFirst("PlantaId")?.Value, out var plantaId))
+                PlantasIdsLogado.Add(plantaId);
+
+        await CarregarPlantasAsync();
+
+        if (PlantasDisponiveis.Count == 1)
+        {
+            PlantaSelecionadaId = PlantasDisponiveis[0].Id;
+            await CarregarEquipamentosAsync();
+        }
+    }
+
+    // ===== PLANTAS =====
+    private async Task CarregarPlantasAsync()
+    {
+        var dtos = await PlantaService.ListarAsync();
+        Plantas = dtos.ToList();
+        PlantasDisponiveis = PerfilLogado == PerfilUsuario.SuperGestor
+            ? Plantas
+            : PlantasIdsLogado.Any()
+                ? Plantas.Where(p => PlantasIdsLogado.Contains(p.Id)).ToList()
+                : new List<PlantasDto>();
+    }
+
+    private async Task PlantaAlterada(ChangeEventArgs e)
+    {
+        if (Importando || SalvandoManual) return;
+
+        if (int.TryParse(e.Value?.ToString(), out var id))
+        {
+            if (PerfilLogado != PerfilUsuario.SuperGestor && !PlantasIdsLogado.Contains(id))
+            {
+                await ShowToastErroAsync(Lang["equip.toast.no_access"]);
+                PlantaSelecionadaId = null;
+                Equipamentos.Clear();
+                return;
+            }
+            PlantaSelecionadaId = id;
+            await CarregarEquipamentosAsync();
+        }
+        else
+        {
+            PlantaSelecionadaId = null;
+            Equipamentos.Clear();
+        }
+        PaginaAtual = 1;
+    }
+
+    private async Task CarregarEquipamentosAsync()
+    {
+        if (PlantaSelecionadaId is null or 0) return;
+        CarregandoEquipamentos = true;
+        try
+        {
+            Equipamentos = (await EquipamentoAppService.GetByPlantAsync(PlantaSelecionadaId.Value)).ToList();
+            equipamentosComPle = await PleService.GetEquipamentosComPleAtivoStatusAsync(PlantaSelecionadaId.Value);
+        }
+        finally { CarregandoEquipamentos = false; }
+    }
+
+    // ===== WIZARD =====
+    private bool PodeAvancarPasso()
+    {
+        if (Importando || SalvandoManual) return false;
+        if (passoAtual == 1) return PlantaSelecionadaId.HasValue && PlantaSelecionadaId.Value > 0;
+        if (passoAtual == 2 && ModoSelecionado == ModoCadastro.ImportacaoExcel) return false;
+        return false;
+    }
+
+    private void PassoAnterior() { if (passoAtual > 1 && !Importando && !SalvandoManual) passoAtual--; }
+
+    private async Task ProximoPasso()
+    {
+        if (!PodeAvancarPasso())
+        {
+            if (passoAtual == 1 && (PlantaSelecionadaId is null or 0))
+                await ShowToastErroAsync(Lang["equip.toast.select_advance"]);
+            return;
+        }
+        if (passoAtual < 3) passoAtual++;
+    }
+
+    private void FecharWizard()
+    {
+        if (Importando || SalvandoManual) return;
+        passoAtual = 1; IsEditMode = false; EquipamentoEmEdicaoId = null;
+        Manual = new ManualModel(); ImagensManuais.Clear(); Manual.ImageFileName = null;
+        ArquivosImportacao.Clear(); MensagemImportacao = null; Importando = false; SalvandoManual = false;
+    }
+
+    // ===== MANUAL =====
+    private void ImagensManuaisSelecionadas(InputFileChangeEventArgs e)
+    {
+        ImagensManuais.Clear();
+        foreach (var file in e.GetMultipleFiles(20)) ImagensManuais.Add(file);
+        Manual.ImageFileName = ImagensManuais.Any() ? string.Join(", ", ImagensManuais.Select(f => f.Name)) : null;
+    }
+
+    private async Task<Stream?> CriarImagemMescladaAsync()
+    {
+        if (!ImagensManuais.Any()) return null;
+        var imagens = new List<Image>();
+        try
+        {
+            foreach (var file in ImagensManuais)
+            {
+                await using var browserStream = file.OpenReadStream(long.MaxValue);
+                using var ms = new MemoryStream();
+                await browserStream.CopyToAsync(ms);
+                ms.Position = 0;
+                imagens.Add(Image.FromStream(ms));
+            }
+            var largura = imagens.Max(i => i.Width);
+            var alturaTotal = imagens.Sum(i => i.Height);
+            var bitmapFinal = new Bitmap(largura, alturaTotal);
+            using (var g = Graphics.FromImage(bitmapFinal))
+            {
+                g.Clear(Color.White);
+                var offsetY = 0;
+                foreach (var img in imagens) { g.DrawImage(img, new Rectangle(0, offsetY, img.Width, img.Height)); offsetY += img.Height; }
+            }
+            var output = new MemoryStream();
+            bitmapFinal.Save(output, ImageFormat.Png);
+            output.Position = 0;
+            return output;
+        }
+        finally { foreach (var img in imagens) img.Dispose(); }
+    }
+
+    private async Task SalvarManual()
+    {
+        if (Importando || SalvandoManual) return;
+        if (PlantaSelecionadaId is null or 0) { await ShowToastErroAsync(Lang["equip.toast.select_plant"]); return; }
+        if (PerfilLogado != PerfilUsuario.SuperGestor && !PlantasIdsLogado.Contains(PlantaSelecionadaId.Value))
+        { await ShowToastErroAsync(Lang["equip.toast.no_permission"]); return; }
+
+        SalvandoManual = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            Manual.RevisionInfo = Manual.RevisionDate.HasValue ? Manual.RevisionDate.Value.ToString("dd/MM/yyyy") : null;
+            Manual.ResponsibleUserId = IdUsuarioLogado;
+            var imagemMesclada = await CriarImagemMescladaAsync();
+            var hasImagem = imagemMesclada != null;
+
+            if (IsEditMode && EquipamentoEmEdicaoId.HasValue)
+            {
+                await EquipamentoAppService.UpdateAsync(new EquipamentoUpdateDto
+                {
+                    Id = EquipamentoEmEdicaoId.Value,
+                    PlantId = PlantaSelecionadaId.Value,
+                    Tag = Manual.Tag,
+                    EquipmentName = Manual.EquipmentName,
+                    FactoryName = Manual.FactoryName,
+                    RevisionInfo = Manual.RevisionInfo,
+                    LineNumber = Manual.LineNumber,
+                    EnergyType = Manual.EnergyType,
+                    HazardDescription = Manual.HazardDescription,
+                    ZeroEnergyVerification = Manual.ZeroEnergyVerification,
+                    Test = Manual.Test,
+                    IsolationDeviceTag = Manual.IsolationDeviceTag,
+                    IsolationDeviceLocation = Manual.IsolationDeviceLocation,
+                    IsolationDeviceDescription = Manual.IsolationDeviceDescription,
+                    LockoutType = Manual.LockoutType,
+                    ImageNotes = Manual.ImageNotes,
+                    ResponsibleUserId = Manual.ResponsibleUserId
+                });
+                if (hasImagem)
+                    await EquipamentoAppService.UpdateImageAsync(EquipamentoEmEdicaoId.Value, imagemMesclada!, "equipamento.png", "image/png");
+            }
+            else
+            {
+                await EquipamentoAppService.CreateManualAsync(new EquipamentoCreateManualRequestDto
+                {
+                    PlantId = PlantaSelecionadaId.Value,
+                    Tag = Manual.Tag,
+                    EquipmentName = Manual.EquipmentName,
+                    FactoryName = Manual.FactoryName,
+                    RevisionInfo = Manual.RevisionInfo,
+                    LineNumber = Manual.LineNumber,
+                    EnergyType = Manual.EnergyType,
+                    HazardDescription = Manual.HazardDescription,
+                    ZeroEnergyVerification = Manual.ZeroEnergyVerification,
+                    Test = Manual.Test,
+                    IsolationDeviceTag = Manual.IsolationDeviceTag,
+                    IsolationDeviceLocation = Manual.IsolationDeviceLocation,
+                    IsolationDeviceDescription = Manual.IsolationDeviceDescription,
+                    LockoutType = Manual.LockoutType,
+                    ImageNotes = Manual.ImageNotes,
+                    ResponsibleUserId = Manual.ResponsibleUserId
+                }, imagemMesclada, hasImagem ? "equipamento.png" : null, hasImagem ? "image/png" : null);
+            }
+
+            Manual = new ManualModel(); ImagensManuais.Clear(); Manual.ImageFileName = null;
+            IsEditMode = false; EquipamentoEmEdicaoId = null;
+            await CarregarEquipamentosAsync();
+            await ShowToastSucessoAsync(Lang["equip.toast.saved"]);
+            passoAtual = 3;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); await ShowToastErroAsync(Lang["equip.toast.save_error"]); }
+        finally { SalvandoManual = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private void IniciarEdicao(EquipamentoDto dto)
+    {
+        if (Importando || SalvandoManual) return;
+        if (PlantaSelecionadaId is null or 0) PlantaSelecionadaId = dto.PlantId;
+        IsEditMode = true; EquipamentoEmEdicaoId = dto.Id; ModoSelecionado = ModoCadastro.Manual; passoAtual = 2;
+        Manual = new ManualModel
+        {
+            Tag = dto.Tag,
+            EquipmentName = dto.EquipmentName,
+            FactoryName = dto.FactoryName,
+            RevisionInfo = dto.RevisionInfo,
+            LineNumber = dto.LineNumber,
+            EnergyType = dto.EnergyType,
+            HazardDescription = dto.HazardDescription,
+            ZeroEnergyVerification = dto.ZeroEnergyVerification,
+            Test = dto.Test,
+            IsolationDeviceTag = dto.IsolationDeviceTag,
+            IsolationDeviceLocation = dto.IsolationDeviceLocation,
+            IsolationDeviceDescription = dto.IsolationDeviceDescription,
+            LockoutType = dto.LockoutType,
+            ImageNotes = dto.ImageNotes,
+            ResponsibleUser = dto.ResponsibleUserName
+        };
+        Manual.RevisionDate = ParseNullableDate(dto.RevisionInfo);
+        ImagensManuais.Clear(); Manual.ImageFileName = null;
+    }
+
+    private DateTime? ParseNullableDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return DateTime.TryParse(value, out var dt) ? dt : null;
+    }
+
+    // ===== IMPORTAÇÃO =====
+    private void ArquivosExcelSelecionados(InputFileChangeEventArgs e)
+    {
+        if (Importando) return;
+        ArquivosImportacao.Clear();
+        foreach (var file in e.GetMultipleFiles(50))
+            ArquivosImportacao.Add(new ArquivoImportacaoItem { File = file, Nome = file.Name, Status = "Pendente", Progresso = 0 });
+    }
+
+    private async Task IniciarImportacao()
+    {
+        if (Importando) return;
+        if (!ArquivosImportacao.Any() || PlantaSelecionadaId is null or 0)
+        { await ShowToastErroAsync(Lang["equip.toast.select_import"]); return; }
+        if (PerfilLogado != PerfilUsuario.SuperGestor && !PlantasIdsLogado.Contains(PlantaSelecionadaId.Value))
+        { await ShowToastErroAsync(Lang["equip.toast.no_perm_import"]); return; }
+        if (!IdUsuarioLogado.HasValue) { await ShowToastErroAsync(Lang["equip.toast.no_user"]); return; }
+
+        Importando = true; MensagemImportacao = Lang["equip.import.started"];
+        await InvokeAsync(StateHasChanged);
+
+        var totalSucesso = 0; var totalErro = 0;
+        try
+        {
+            foreach (var a in ArquivosImportacao)
+            {
+                try
+                {
+                    a.Status = "Enviado"; a.MensagemErro = null; a.Progresso = 10;
+                    await InvokeAsync(StateHasChanged);
+
+                    await using var browserStream = a.File.OpenReadStream(long.MaxValue);
+                    using var ms = new MemoryStream();
+                    await browserStream.CopyToAsync(ms); ms.Position = 0;
+
+                    a.Status = "Processando"; a.Progresso = 50;
+                    await InvokeAsync(StateHasChanged);
+
+                    var result = await EquipamentoAppService.ImportExcelAsync(
+                        PlantaSelecionadaId.Value, IdUsuarioLogado.Value, ms, a.File.Name, a.File.ContentType);
+
+                    if (result.Success) { a.Status = "Concluído"; a.Progresso = 100; a.MensagemErro = null; totalSucesso++; }
+                    else { a.Status = "Erro"; a.Progresso = 0; a.MensagemErro = result.ErrorMessage; totalErro++; }
+                }
+                catch (Exception ex)
+                {
+                    a.Status = "Erro"; a.Progresso = 0;
+                    a.MensagemErro = $"Erro inesperado: {ex.Message}";
+                    totalErro++; Console.WriteLine(ex);
+                }
+                finally { await InvokeAsync(StateHasChanged); }
+            }
+
+            if (totalErro == 0)
+            {
+                MensagemImportacao = $"{Lang["equip.import.done_prefix"]} {totalSucesso} {Lang["equip.import.files_ok"]}";
+                await CarregarEquipamentosAsync();
+                await ShowToastSucessoAsync($"{totalSucesso} {Lang["equip.import.files_ok"]}");
+                passoAtual = 3;
+            }
+            else if (totalSucesso > 0)
+            {
+                MensagemImportacao = $"{Lang["equip.import.warnings"]} {totalSucesso} {Lang["equip.import.successes"]} {totalErro} {Lang["equip.import.errors"]}";
+                await CarregarEquipamentosAsync();
+                await ShowToastErroAsync($"{totalErro} {Lang["equip.import.error_table"]}");
+            }
+            else
+            {
+                MensagemImportacao = $"{Lang["equip.import.failed"]} {totalErro} {Lang["equip.import.failed_desc"]}";
+                await ShowToastErroAsync(Lang["equip.import.all_failed"]);
+            }
+        }
+        finally { Importando = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    // ===== EXCLUSÃO =====
+    private void AbrirModalConfirmacaoExclusao(EquipamentoDto dto) { if (Importando) return; EquipamentoParaExcluir = dto; MostrarModalConfirmacaoExclusao = true; }
+    private void FecharModalConfirmacaoExclusao() { MostrarModalConfirmacaoExclusao = false; EquipamentoParaExcluir = null; }
+
+    private async Task ConfirmarExclusaoAsync()
+    {
+        if (EquipamentoParaExcluir is null) return;
+        try
+        {
+            await EquipamentoAppService.SoftDeleteAsync(EquipamentoParaExcluir.Id);
+            await CarregarEquipamentosAsync();
+            await ShowToastSucessoAsync(Lang["equip.toast.deleted"]);
+        }
+        catch (Exception ex) { Console.WriteLine(ex); await ShowToastErroAsync(Lang["equip.toast.delete_error"]); }
+        finally { FecharModalConfirmacaoExclusao(); }
+    }
+
+    // ===== MODAIS =====
+    private void AbrirModalImagem(EquipamentoDto eq) { ImagemModalUrl = eq.ImageBlobUrl; ImagemModalTitulo = $"{eq.Tag} - {eq.EquipmentName}"; ImagemModalNotas = eq.ImageNotes; MostrarModalImagem = true; }
+    private void FecharModalImagem() { MostrarModalImagem = false; ImagemModalUrl = null; ImagemModalTitulo = null; ImagemModalNotas = null; }
+    private void AbrirModalTemplate() => MostrarModalTemplate = true;
+    private void FecharModalTemplate() => MostrarModalTemplate = false;
+
+    // ===== TOASTS =====
+    private async Task ShowToastSucessoAsync(string mensagem) => await Js.InvokeVoidAsync("adminlteToasts.show", "success", Lang["common.success"], mensagem);
+    private async Task ShowToastErroAsync(string mensagem) => await Js.InvokeVoidAsync("adminlteToasts.show", "error", Lang["common.error"], mensagem);
+
+    // ===== STATUS IMPORTAÇÃO =====
+    private string TranslateImportStatus(string status) => status switch
+    {
+        "Pendente"   => Lang["equip.status.pending"],
+        "Enviado"    => Lang["equip.status.sent"],
+        "Processando"=> Lang["equip.status.processing"],
+        "Concluído"  => Lang["equip.status.completed"],
+        "Erro"       => Lang["equip.status.error"],
+        _            => status
+    };
+
+    // ===== PAGINAÇÃO =====
+    private void LimparPesquisa() { TermoPesquisa = string.Empty; PaginaAtual = 1; }
+    private void PaginaAnterior() { if (PaginaAtual > 1) { PaginaAtual--; StateHasChanged(); } }
+    private void ProximaPagina() { if (PaginaAtual < TotalPaginas) { PaginaAtual++; StateHasChanged(); } }
+    private void IrParaPagina(int p) { if (p >= 1 && p <= TotalPaginas) { PaginaAtual = p; StateHasChanged(); } }
+    private void ResetarPagina() { PaginaAtual = 1; StateHasChanged(); }
+
+    private List<int?> GetPaginasVisiveis()
+    {
+        var paginas = new List<int?>();
+        const int delta = 2;
+        if (TotalPaginas <= 7) { for (int i = 1; i <= TotalPaginas; i++) paginas.Add(i); }
+        else
+        {
+            paginas.Add(1);
+            int start = Math.Max(2, PaginaAtual - delta);
+            int end = Math.Min(TotalPaginas - 1, PaginaAtual + delta);
+            if (start > 2) paginas.Add(null);
+            for (int i = start; i <= end; i++) paginas.Add(i);
+            if (end < TotalPaginas - 1) paginas.Add(null);
+            paginas.Add(TotalPaginas);
+        }
+        return paginas;
+    }
+
+    // ===== ESTILOS ENERGIA =====
+    private string GetEstiloTipoEnergia(string? tipoEnergia)
+    {
+        if (string.IsNullOrWhiteSpace(tipoEnergia)) return string.Empty;
+        var tipo = RemoverAcentos(tipoEnergia.Split('/')[0].Trim()).ToUpperInvariant();
+        var corFundo = tipo switch
+        {
+            var t when t.Contains("ELETRICA") || t.Contains("ELETRIC") => "#FF2929",
+            var t when t.Contains("GRAVITACIONAL") => "#D4C19C",
+            var t when t.Contains("PNEUMATICA") => "#4BDFF3",
+            var t when t.Contains("MECANICA") => "#8C8C8C",
+            var t when t.Contains("GAS") => "#E9E6D7",
+            var t when t.Contains("HIDRAULICA") => "#0041DA",
+            var t when t.Contains("QUIMICA") => "#FFC301",
+            var t when t.Contains("RADIACAO") => "#FFFF00",
+            var t when t.Contains("TERMICA") => "#DAEFF3",
+            _ => "transparent"
+        };
+        if (corFundo == "transparent") return string.Empty;
+        var corTexto = corFundo switch { "#FF2929" => "white", "#0041DA" => "white", "#8C8C8C" => "white", _ => "#333" };
+        return $"background-color: {corFundo}; color: {corTexto}; font-weight: 600; border-left-color: {corFundo};";
+    }
+
+    // ===== UTILITÁRIOS =====
+    private static string RemoverAcentos(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
+        var sb = new StringBuilder();
+        foreach (var c in texto.Normalize(NormalizationForm.FormD))
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
+        return sb.ToString().Normalize(NormalizationForm.FormC);
+    }
+
+    private static bool ContainsIgnoreCaseAndAccents(string? source, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(value)) return false;
+        return RemoverAcentos(source).ToUpperInvariant().Contains(RemoverAcentos(value).ToUpperInvariant());
+    }
+
+    private string ClasseBadgeStatus(string status) => status switch
+    {
+        "Pendente" => "badge badge-secondary",
+        "Enviado" => "badge badge-info",
+        "Processando" => "badge badge-warning",
+        "Concluído" => "badge badge-success",
+        "Erro" => "badge badge-danger",
+        _ => "badge badge-light"
+    };
+}

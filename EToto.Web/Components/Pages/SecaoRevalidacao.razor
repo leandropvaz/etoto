@@ -1,0 +1,324 @@
+@using EToto.Application.Dto
+@using EToto.Application.Services
+@using EToto.Domain.Enums
+@using EToto.Web.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject CampanhaRevalidacaoService CampanhaSvc
+@inject PlantasService PlantaService
+@inject LanguageService Lang
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="content pt-3">
+    <div class="container-fluid">
+
+        <div class="card card-primary card-outline mb-3">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-bullhorn mr-1"></i>
+                    @Lang["campaign.title"]
+                </h3>
+                <div class="card-tools">
+                    <button class="btn btn-primary btn-sm" @onclick="AbrirModalNova">
+                        <i class="fas fa-plus mr-1"></i>@Lang["campaign.new"]
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-2">
+                <small class="text-muted d-block mb-2 px-1">@Lang["campaign.subtitle"]</small>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm mb-0 campaign-table selectable-table">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 28%;">@Lang["campaign.name"]</th>
+                                <th style="width: 14%;">@Lang["campaign.status"]</th>
+                                <th style="width: 14%;">@Lang["campaign.start"]</th>
+                                <th style="width: 14%;">@Lang["campaign.end_expected"]</th>
+                                <th style="width: 16%;">@Lang["campaign.progress"]</th>
+                                <th style="width: 14%;" class="text-center">@Lang["common.actions"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Carregando)
+                            {
+                                <tr><td colspan="6" class="text-center text-muted py-3"><i class="fas fa-sync-alt fa-spin mr-2"></i>@Lang["common.loading"]</td></tr>
+                            }
+                            else if (Itens.Count == 0)
+                            {
+                                <tr><td colspan="6" class="text-center text-muted py-3">@Lang["campaign.no_results"]</td></tr>
+                            }
+                            else
+                            {
+                                @foreach (var c in Itens)
+                                {
+                                    var pct = c.TotalItens == 0 ? 0 : (int)Math.Round(100.0 * c.ItensDecididos / c.TotalItens);
+                                    <tr class="@(LinhaSelecionadaId == c.Id ? "row-selected" : "")"
+                                        @onclick="() => SelecionarLinha(c.Id)">
+                                        <td class="align-middle">
+                                            <div class="font-weight-bold">@c.Nome</div>
+                                            <small class="text-muted">@Lang["campaign.created_by"]: @(c.CriadoPorNome ?? "—")</small>
+                                        </td>
+                                        <td class="align-middle"><span class="badge @StatusBadge(c.Status)">@TraduzirStatus(c.Status)</span></td>
+                                        <td class="align-middle">@c.DataInicio.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                        <td class="align-middle">@c.DataFimPrevista.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                        <td class="align-middle">
+                                            <div class="progress" style="height: 14px;">
+                                                <div class="progress-bar bg-info" role="progressbar"
+                                                     style="width: @pct%;" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
+                                                    @c.ItensDecididos / @c.TotalItens
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <button class="btn btn-xs btn-outline-primary" @onclick="() => AbrirDetalhe(c.Id)">
+                                                <i class="fas fa-eye mr-1"></i>@Lang["audit.col_details"]
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @if (MostrarModalNova)
+        {
+            <div class="modal fade show" style="display:block;" tabindex="-1" aria-modal="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title mb-0"><i class="fas fa-plus mr-2"></i>@Lang["campaign.new"]</h5>
+                            <button type="button" class="close text-white" @onclick="FecharModalNova">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body p-3">
+                            <div class="form-group">
+                                <label>@Lang["campaign.name"]</label>
+                                <input class="form-control form-control-sm" @bind="Form.Nome" />
+                            </div>
+                            <div class="form-group">
+                                <label>@Lang["campaign.plants"]</label>
+                                <div class="plantas-checkboxes">
+                                    @if (Plantas.Count == 0)
+                                    {
+                                        <small class="text-muted">@Lang["users.no_plant"]</small>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var p in Plantas)
+                                        {
+                                            var marcada = Form.PlantaIds.Contains(p.Id);
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="camp_planta_@p.Id"
+                                                       checked="@marcada"
+                                                       @onchange="@(e => TogglePlanta(p.Id, (bool)e.Value!))" />
+                                                <label class="form-check-label" for="camp_planta_@p.Id">
+                                                    @p.Nome (@p.Codigo)
+                                                </label>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>@Lang["campaign.due_date"]</label>
+                                <input type="date" class="form-control form-control-sm"
+                                       min="@DataMinConclusao" @bind="Form.DataFimPrevista" />
+                            </div>
+                            <div class="form-group">
+                                <label>@Lang["campaign.notes"]</label>
+                                <textarea class="form-control form-control-sm" rows="6"
+                                          style="height: auto !important; min-height: 140px;"
+                                          @bind="Form.Notas"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer d-flex justify-content-between">
+                            <button class="btn btn-outline-secondary btn-sm" disabled="@Criando" @onclick="FecharModalNova">@Lang["common.no"]</button>
+                            <button class="btn btn-primary btn-sm" disabled="@Criando" @onclick="CriarAsync">
+                                @if (Criando)
+                                {
+                                    <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["common.processing"]</span>
+                                }
+                                else
+                                {
+                                    <span><i class="fas fa-paper-plane mr-1"></i>@Lang["campaign.create_button"]</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show"></div>
+        }
+
+        @if (CampanhaSelecionadaId.HasValue)
+        {
+            <CampanhaDetalheModal Id="CampanhaSelecionadaId.Value"
+                                  OnFechar="FecharDetalhe"
+                                  OnAtualizado="CarregarAsync" />
+        }
+    </div>
+</section>
+
+<style>
+    .campaign-table th, .campaign-table td { font-size: 0.78rem; padding: 0.3rem 0.4rem; }
+
+    .plantas-checkboxes {
+        max-height: 180px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 8px 10px;
+        border-radius: 4px;
+    }
+</style>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private List<CampanhaRevalidacaoDto> Itens { get; set; } = new();
+    private List<PlantasDto> Plantas { get; set; } = new();
+    private bool MostrarModalNova { get; set; }
+    private CriarCampanhaDto Form { get; set; } = new();
+    private int? UsuarioIdLogado { get; set; }
+
+    // Data mínima para conclusão prevista = amanhã (precisa ser futura).
+    private string DataMinConclusao => DateTime.UtcNow.Date.AddDays(1).ToString("yyyy-MM-dd");
+
+    private void TogglePlanta(int plantaId, bool marcada)
+    {
+        if (marcada)
+        {
+            if (!Form.PlantaIds.Contains(plantaId)) Form.PlantaIds.Add(plantaId);
+        }
+        else
+        {
+            Form.PlantaIds.Remove(plantaId);
+        }
+    }
+
+    // Campanha aberta em modal de detalhe (substitui a navegação para /campanhas/{id}).
+    private int? CampanhaSelecionadaId { get; set; }
+    private void AbrirDetalhe(int id) => CampanhaSelecionadaId = id;
+    private void FecharDetalhe() => CampanhaSelecionadaId = null;
+
+    // #9: indicadores de carregamento
+    private bool Carregando { get; set; } = true;
+    private bool Criando { get; set; }
+
+    // Linha selecionada no datagrid
+    private int? LinhaSelecionadaId { get; set; }
+    private void SelecionarLinha(int id) => LinhaSelecionadaId = LinhaSelecionadaId == id ? null : id;
+
+    protected override void OnInitialized() => Lang.OnLanguageChanged += StateHasChanged;
+    public void Dispose() => Lang.OnLanguageChanged -= StateHasChanged;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateTask;
+        var user = state.User;
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+        if (!user.IsInRole("Administrador") && !user.IsInRole("SuperGestor"))
+        {
+            Nav.NavigateTo("/restricted", forceLoad: true);
+            return;
+        }
+
+        if (int.TryParse(user.FindFirst("UserId")?.Value, out var uid))
+            UsuarioIdLogado = uid;
+
+        Plantas = (await PlantaService.ListarAsync()).OrderBy(p => p.Nome).ToList();
+        await CarregarAsync();
+    }
+
+    private async Task CarregarAsync()
+    {
+        try
+        {
+            Carregando = true;
+            Itens = await CampanhaSvc.ListarAsync();
+        }
+        finally
+        {
+            Carregando = false;
+        }
+    }
+
+    private void AbrirModalNova()
+    {
+        Form = new CriarCampanhaDto();
+        MostrarModalNova = true;
+    }
+
+    private void FecharModalNova() => MostrarModalNova = false;
+
+    private async Task CriarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Form.Nome))
+        {
+            await Js.InvokeVoidAsync("adminlteToasts.show", "error",
+                Lang["common.error"], Lang["campaign.toast.name_required"]);
+            return;
+        }
+
+        if (Form.PlantaIds.Count == 0)
+        {
+            await Js.InvokeVoidAsync("adminlteToasts.show", "error",
+                Lang["common.error"], Lang["campaign.toast.plants_required"]);
+            return;
+        }
+
+        if (!Form.DataFimPrevista.HasValue)
+        {
+            await Js.InvokeVoidAsync("adminlteToasts.show", "error",
+                Lang["common.error"], Lang["campaign.toast.due_required"]);
+            return;
+        }
+
+        try
+        {
+            Criando = true;
+            Form.ExecutadoPorId = UsuarioIdLogado ?? 0;
+            var id = await CampanhaSvc.CriarCampanhaAsync(Form);
+            MostrarModalNova = false;
+            await Js.InvokeVoidAsync("adminlteToasts.show", "success",
+                Lang["common.success"], Lang["campaign.toast.created"]);
+            await CarregarAsync();
+            AbrirDetalhe(id);
+        }
+        catch (Exception ex)
+        {
+            await Js.InvokeVoidAsync("adminlteToasts.show", "error",
+                Lang["common.error"], ex.Message);
+        }
+        finally
+        {
+            Criando = false;
+        }
+    }
+
+    private string TraduzirStatus(int s) => s switch
+    {
+        1 => Lang["campaign.status_planned"],
+        2 => Lang["campaign.status_running"],
+        3 => Lang["campaign.status_completed"],
+        4 => Lang["campaign.status_cancelled"],
+        _ => s.ToString()
+    };
+
+    private static string StatusBadge(int s) => s switch
+    {
+        2 => "bg-info text-white",
+        3 => "bg-success text-white",
+        4 => "bg-danger text-white",
+        _ => "bg-secondary text-white"
+    };
+}
