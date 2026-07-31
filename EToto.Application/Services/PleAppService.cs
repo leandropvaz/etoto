@@ -143,8 +143,8 @@ namespace EToto.Application.Services
 
             // Permissoes por novo status:
             // - Finalizado: EXCLUSIVO do Comando Central com acesso a planta (nem Admin/SuperGestor finalizam).
-            // - Cancelado: criador, delegado, Admin, SuperGestor (cancela em qualquer ponto, inclusive InicioDesbloqueio)
-            //              ou Lider de Bloqueio (UsuarioFinal+treino) com acesso a planta.
+            // - Cancelado: criador, delegado, Admin, SuperGestor ou Lider de Bloqueio (UsuarioFinal+treino)
+            //              com acesso a planta. SOMENTE a partir de EmAndamento (não em InicioDesbloqueio).
             // - InicioDesbloqueio: criador, delegado, Admin, SuperGestor ou Lider de Bloqueio (UsuarioFinal+treino) com acesso a planta.
             // - EmAndamento (iniciar): criador, delegado, Admin, SuperGestor.
             if (novoStatus == StatusPle.Finalizado)
@@ -201,6 +201,9 @@ namespace EToto.Application.Services
 
             if (novoStatus == StatusPle.InicioDesbloqueio && ple.Status != StatusPle.EmAndamento)
                 throw new InvalidOperationException("Só é possível iniciar o desbloqueio de um PLE em andamento.");
+
+            if (novoStatus == StatusPle.Cancelado && ple.Status != StatusPle.EmAndamento)
+                throw new InvalidOperationException("Só é possível cancelar um PLE em andamento. Após o início do desbloqueio, o fluxo segue para finalização.");
 
             var statusAnterior = ple.Status;
             ple.Status = novoStatus;

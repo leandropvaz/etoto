@@ -40,7 +40,7 @@
                         <button class="btn btn-xs btn-primary" @onclick="() => EditPle(sel)"><i class="fas fa-edit mr-1"></i> @Lang["common.edit"]</button>
                         <button class="btn btn-xs btn-outline-danger" @onclick="OpenDeleteModal"><i class="fas fa-trash mr-1"></i> @Lang["ple.action.delete"]</button>
                     }
-                    @if ((st == StatusPle.EmAndamento || st == StatusPle.InicioDesbloqueio) && PodeCancelarSel())
+                    @if (st == StatusPle.EmAndamento && PodeCancelarSel())
                     {
                         <button class="btn btn-xs btn-outline-danger" @onclick="OpenCancelModal"><i class="fas fa-ban mr-1"></i> @Lang["ple.action.cancel_ple"]</button>
                     }
@@ -381,6 +381,8 @@
 
 @code {
     [CascadingParameter] private Task<AuthenticationState>? AuthStateTask { get; set; }
+    // Abertura direta de um PLE via /ple?abrir={id} (ex.: clique no Painel de Alertas).
+    [Parameter, SupplyParameterFromQuery(Name = "abrir")] public Guid? AbrirId { get; set; }
     private int userId; private string userName = ""; private bool IsUsuarioFinal, IsUsuario, IsComandoCentral, TreinamentoConcluido;
     // Comando Central nao cria/edita; apenas finaliza/imprime (regras especificas no item 2).
     private bool SomenteConsulta => !(IsAdmin || IsSuperGestor || (IsUsuarioFinal && TreinamentoConcluido));
@@ -459,6 +461,10 @@
         usuariosDisponiveis = (await UsuarioService.ListarAsync()).Where(u => u.Ativa).ToList();
         if (plantas.Count == 1) { filtroPlantaId = plantas[0].Id; await LoadPles(); }
         else if (userPlantaId.HasValue) { filtroPlantaId = userPlantaId.Value; await LoadPles(); }
+
+        // Abertura direta vinda do Painel de Alertas (/ple?abrir={id}).
+        if (AbrirId.HasValue) { await ViewPle(AbrirId.Value); }
+
         StateHasChanged();
     }
 
@@ -568,7 +574,8 @@
     // Finalizar (InicioDesbloqueio → Finalizado): EXCLUSIVO do Comando Central. Backend valida acesso à planta.
     private bool PodeFinalizarSel() => sel != null && IsComandoCentral;
 
-    // Cancelar Bloqueio (EmAndamento ou InicioDesbloqueio → Cancelado): criador/delegado/Lider com planta + Admin/SuperGestor (sempre)
+    // Cancelar Bloqueio (somente EmAndamento → Cancelado): criador/delegado/Lider com planta + Admin/SuperGestor (sempre)
+    // Após "Início do Desbloqueio" não é permitido cancelar — o fluxo segue para finalização (Comando Central).
     private bool PodeCancelarSel()
     {
         if (sel == null) return false;

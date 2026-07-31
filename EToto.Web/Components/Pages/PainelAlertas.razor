@@ -1,0 +1,175 @@
+@page "/painel"
+@rendermode InteractiveServer
+
+@using EToto.Application.Dto
+@using EToto.Application.Services
+@using EToto.Web.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject PainelAlertasService Painel
+@inject PlantasService PlantaService
+@inject LanguageService Lang
+@inject NavigationManager Nav
+@implements IDisposable
+
+<PageTitle>Lototo — @Lang["mural.panel_title"]</PageTitle>
+
+<div class="painel-wrap">
+    <div class="painel-toolbar">
+        <div>
+            <div class="painel-title"><i class="fas fa-lock mr-2"></i>@Lang["mural.panel_title"]</div>
+            <div class="painel-updated">
+                <i class="fas fa-sync-alt mr-1"></i>@string.Format(Lang["mural.updated_at"], _atualizadoEm.ToString("HH:mm:ss"))
+                <span class="mural-sep">·</span>
+                @string.Format(Lang["mural.auto_refresh"], RefreshMinutos)
+            </div>
+        </div>
+
+        <div class="painel-actions">
+            @if (_plantas.Count > 1)
+            {
+                <select class="form-control form-control-sm painel-select"
+                        @bind="PlantaSelecionadaId" @bind:after="Recarregar">
+                    @foreach (var p in _plantas)
+                    {
+                        <option value="@p.Id">@p.Nome</option>
+                    }
+                </select>
+            }
+
+            <button class="btn btn-sm btn-outline-primary" @onclick="Recarregar" title="@Lang["mural.refresh"]">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+
+            @if (_dados is not null && !string.IsNullOrWhiteSpace(_dados.PlantaCodigo))
+            {
+                <a class="btn btn-sm btn-outline-secondary"
+                   href="@($"/mural/{_dados.PlantaCodigo}")" target="_blank"
+                   title="@Lang["mural.open_tv"]">
+                    <i class="fas fa-tv mr-1"></i>@Lang["mural.tv"]
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (_dados is null)
+    {
+        <div class="mural-empty">@Lang["mural.select_plant"]</div>
+    }
+    else
+    {
+        <MuralGrid Equipamentos="_dados.Equipamentos"
+                   MostrarDetalhe="_mostrarDetalhe"
+                   Clicavel="true"
+                   OnCardClick="AbrirPle" />
+    }
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthTask { get; set; }
+
+    private List<PlantasDto> _plantas = new();
+    private PainelAlertaDto? _dados;
+    private bool _mostrarDetalhe;
+    private bool _atualizando;
+    private int _plantaSelecionadaId;
+    private DateTime _atualizadoEm = DateTime.Now;
+    private Timer? _timer;
+    private const int RefreshSegundos = 60;
+    private static int RefreshMinutos => Math.Max(1, RefreshSegundos / 60);
+
+    private int PlantaSelecionadaId
+    {
+        get => _plantaSelecionadaId;
+        set => _plantaSelecionadaId = value;
+    }
+
+    protected override void OnInitialized() => Lang.OnLanguageChanged += StateHasChanged;
+
+    protected override async Task OnInitializedAsync() => await CarregarContexto();
+
+    private async Task CarregarContexto()
+    {
+        var isSuper = false;
+        var idsUsuario = new List<int>();
+
+        if (AuthTask is not null)
+        {
+            var auth = await AuthTask;
+            var user = auth.User;
+
+            isSuper = user.IsInRole("SuperGestor");
+            // Detalhe (líderes + requisições) só para Comando Central e SuperGestor.
+            _mostrarDetalhe = user.IsInRole("ComandoCentral") || user.IsInRole("SuperGestor");
+
+            idsUsuario = user.Claims.Where(c => c.Type == "PlantasIds")
+                .Select(c => int.TryParse(c.Value, out var v) ? v : 0)
+                .Where(v => v > 0)
+                .ToList();
+
+            if (idsUsuario.Count == 0)
+            {
+                var single = user.Claims.FirstOrDefault(c => c.Type == "PlantaId");
+                if (single is not null && int.TryParse(single.Value, out var v))
+                    idsUsuario.Add(v);
+            }
+        }
+
+        var todas = (await PlantaService.ListarAsync()).OrderBy(p => p.Nome).ToList();
+        _plantas = isSuper ? todas : todas.Where(p => idsUsuario.Contains(p.Id)).ToList();
+
+        if (_plantas.Count > 0)
+        {
+            _plantaSelecionadaId = _plantas[0].Id;
+            await Recarregar();
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _timer = new Timer(async _ => await Recarregar(), null,
+                TimeSpan.FromSeconds(RefreshSegundos), TimeSpan.FromSeconds(RefreshSegundos));
+        }
+    }
+
+    private async Task Recarregar()
+    {
+        if (_plantaSelecionadaId <= 0 || _atualizando) return;
+        _atualizando = true;
+        try
+        {
+            // Requisições sempre (para navegar ao PLE); líderes só para perfis autorizados.
+            _dados = await Painel.GetPainelAsync(_plantaSelecionadaId, incluirRequisicoes: true, incluirLideres: _mostrarDetalhe);
+            _atualizadoEm = DateTime.Now;
+        }
+        catch
+        {
+            // Mantém a última leitura em caso de falha momentânea.
+        }
+        finally
+        {
+            _atualizando = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void AbrirPle(PainelAlertaEquipamentoDto e)
+    {
+        if (e.Livre) return;
+
+        // Abre o PLE mais avançado (bloqueio ativo) que originou o bloqueio deste equipamento.
+        var pleId = e.Requisicoes
+            .OrderByDescending(r => r.Status)
+            .Select(r => (Guid?)r.PleId)
+            .FirstOrDefault();
+
+        Nav.NavigateTo(pleId.HasValue ? $"/ple?abrir={pleId.Value}" : "/ple");
+    }
+
+    public void Dispose()
+    {
+        Lang.OnLanguageChanged -= StateHasChanged;
+        _timer?.Dispose();
+    }
+}

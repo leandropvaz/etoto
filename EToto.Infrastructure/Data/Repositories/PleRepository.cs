@@ -100,6 +100,20 @@ namespace EToto.Infrastructure.Data.Repositories
                 .ToDictionary(g => g.Key, g => g.Max(x => x.Status));
         }
 
+        public Task<List<Ple>> GetPlesAtivosComDetalheAsync(int plantId, CancellationToken ct = default)
+        {
+            return _context.Ples
+                .Include(p => p.Equipamentos)
+                .Include(p => p.CriadoPor)
+                .Include(p => p.UsuariosPermitidos).ThenInclude(up => up.Usuario)
+                .Where(p => p.PlantaId == plantId
+                         && !p.IsDeleted
+                         && (p.Status == StatusPle.Criado
+                          || p.Status == StatusPle.EmAndamento
+                          || p.Status == StatusPle.InicioDesbloqueio))
+                .ToListAsync(ct);
+        }
+
         public async Task<int> GetProximoNumeroAsync(string codigoPlanta, CancellationToken ct = default)
         {
             var prefix = $"PLE-{codigoPlanta}-";

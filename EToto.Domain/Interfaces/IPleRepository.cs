@@ -14,6 +14,9 @@ namespace EToto.Domain.Interfaces
         Task<List<Guid>> GetEquipamentosComPleAtivoAsync(int plantId, CancellationToken ct = default);
         Task<Dictionary<Guid, StatusPle>> GetEquipamentosComPleAtivoStatusAsync(int plantId, CancellationToken ct = default);
 
+        // PLEs ativos da planta com equipamentos, criador e líderes permitidos (para o painel de alertas).
+        Task<List<Ple>> GetPlesAtivosComDetalheAsync(int plantId, CancellationToken ct = default);
+
         Task<int> GetProximoNumeroAsync(string codigoPlanta, CancellationToken ct = default);
 
         Task AddAsync(Ple ple, CancellationToken ct = default);

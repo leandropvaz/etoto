@@ -102,6 +102,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<EToto.Web.Services.LanguageService>();
 builder.Services.AddSingleton<EToto.Web.Services.AmbienteInfo>();
+builder.Services.AddScoped<EToto.Application.Services.PainelAlertasService>();
 builder.Services.AddScoped<EToto.Web.Services.PlePdfService>();
 
 var app = builder.Build();

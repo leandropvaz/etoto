@@ -1,0 +1,73 @@
+@using EToto.Application.Dto
+@using EToto.Domain.Enums
+@using EToto.Web.Services
+@inject LanguageService Lang
+
+<div class="mural-legend">
+    <span class="mural-legend-item"><span class="badge badge-primary">@Lang["ple.status.em_andamento"]</span></span>
+    <span class="mural-legend-item"><span class="badge badge-warning">@Lang["ple.status.inicio_desbloqueio"]</span></span>
+    <span class="mural-legend-item"><span class="badge badge-secondary">@Lang["ple.maintenance_badge"]</span></span>
+</div>
+
+@if (Equipamentos is null || Equipamentos.Count == 0)
+{
+    <div class="mural-empty"><i class="fas fa-check-circle text-success mr-1"></i>@Lang["mural.none_blocked"]</div>
+}
+else
+{
+    <div class="mural-grid">
+        @foreach (var e in Equipamentos)
+        {
+            var info = Info(e);
+            var temDetalhe = MostrarDetalhe && e.Requisicoes.Count > 0;
+            var clicavel = Clicavel && !e.Livre;
+
+            <div class="mural-card @info.Css @(temDetalhe ? "tem-detalhe" : "") @(clicavel ? "clicavel" : "")"
+                 tabindex="@(temDetalhe || clicavel ? "0" : "-1")"
+                 @onclick="() => OnCardClick.InvokeAsync(e)">
+
+                <div class="mural-icon"><i class="@info.Icon @(info.Blink ? "ple-blink" : "")"></i></div>
+
+                <div class="mural-tag">@e.Tag</div>
+                @if (!string.IsNullOrWhiteSpace(e.Nome))
+                {
+                    <div class="mural-nome">@e.Nome</div>
+                }
+
+                <span class="badge @info.Badge mural-badge">@info.Label</span>
+
+                @if (temDetalhe)
+                {
+                    <div class="mural-tip">
+                        @foreach (var r in e.Requisicoes)
+                        {
+                            <div class="mural-tip-req">
+                                <div class="mural-tip-num"><i class="fas fa-clipboard-check mr-1"></i>@r.Numero</div>
+                                @if (r.Lideres.Count > 0)
+                                {
+                                    <div class="mural-tip-lead"><i class="fas fa-user-shield mr-1"></i>@string.Join(", ", r.Lideres)</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public List<PainelAlertaEquipamentoDto>? Equipamentos { get; set; }
+    [Parameter] public bool MostrarDetalhe { get; set; }
+    [Parameter] public bool Clicavel { get; set; }
+    [Parameter] public EventCallback<PainelAlertaEquipamentoDto> OnCardClick { get; set; }
+
+    // Mesma semântica visual da tela /ple (label, cor de badge e ícone por status).
+    private (string Css, string Badge, string Icon, bool Blink, string Label) Info(PainelAlertaEquipamentoDto e) => e.Status switch
+    {
+        StatusPle.EmAndamento       => ("st-andamento",   "badge-primary",   "fas fa-lock",             true,  Lang["ple.status.em_andamento"]),
+        StatusPle.InicioDesbloqueio => ("st-desbloqueio", "badge-warning",   "fas fa-unlock",           true,  Lang["ple.status.inicio_desbloqueio"]),
+        StatusPle.Criado            => ("st-criado",      "badge-secondary", "fas fa-hourglass-half",   false, Lang["ple.maintenance_badge"]),
+        _                           => ("st-livre",       "badge-success",   "fas fa-check-circle",     false, Lang["mural.state_free"]),
+    };
+}

@@ -1,0 +1,105 @@
+@page "/mural/{Codigo}"
+@rendermode InteractiveServer
+@layout MuralLayout
+
+@using EToto.Application.Dto
+@using EToto.Application.Services
+@using EToto.Domain.Enums
+@using EToto.Web.Services
+@inject PainelAlertasService Painel
+@inject LanguageService Lang
+@implements IDisposable
+
+<PageTitle>Lototo — @(_dados?.PlantaNome ?? "Painel")</PageTitle>
+
+<div class="mural-screen">
+    @if (_dados is null && _carregando)
+    {
+        <div class="mural-status"><i class="fas fa-circle-notch fa-spin mural-spinner"></i></div>
+    }
+    else if (_dados is null)
+    {
+        <div class="mural-status">@Lang["mural.plant_not_found"]: @Codigo</div>
+    }
+    else
+    {
+        <div class="mural-header">
+            <div>
+                <div class="mural-title"><i class="fas fa-lock"></i>@_dados.PlantaNome</div>
+                <div class="mural-updated">
+                    <i class="fas fa-sync-alt mr-1"></i>@string.Format(Lang["mural.updated_at"], _atualizadoEm.ToString("HH:mm:ss"))
+                    <span class="mural-sep">·</span>
+                    @string.Format(Lang["mural.auto_refresh"], RefreshMinutos)
+                </div>
+            </div>
+            <div class="mural-counts">
+                <div class="mural-count mc-andamento">
+                    <span class="mc-num">@Contar(StatusPle.EmAndamento)</span>
+                    <span class="mc-lbl">@Lang["ple.status.em_andamento"]</span>
+                </div>
+                <div class="mural-count mc-desbloqueio">
+                    <span class="mc-num">@Contar(StatusPle.InicioDesbloqueio)</span>
+                    <span class="mc-lbl">@Lang["ple.status.inicio_desbloqueio"]</span>
+                </div>
+                <div class="mural-count mc-criado">
+                    <span class="mc-num">@Contar(StatusPle.Criado)</span>
+                    <span class="mc-lbl">@Lang["ple.maintenance_badge"]</span>
+                </div>
+            </div>
+        </div>
+
+        <MuralGrid Equipamentos="_dados.Equipamentos" MostrarDetalhe="false" Clicavel="false" />
+    }
+</div>
+
+@code {
+    [Parameter] public string Codigo { get; set; } = string.Empty;
+
+    private PainelAlertaDto? _dados;
+    private bool _carregando = true;
+    private bool _atualizando;
+    private DateTime _atualizadoEm = DateTime.Now;
+    private Timer? _timer;
+    private const int RefreshSegundos = 60;
+    private static int RefreshMinutos => Math.Max(1, RefreshSegundos / 60);
+
+    private int Contar(StatusPle status) =>
+        _dados?.Equipamentos.Count(e => e.Status == status) ?? 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Recarregar();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _timer = new Timer(async _ => await Recarregar(), null,
+                TimeSpan.FromSeconds(RefreshSegundos), TimeSpan.FromSeconds(RefreshSegundos));
+        }
+    }
+
+    private async Task Recarregar()
+    {
+        if (_atualizando) return; // evita sobreposição (segurança p/ DbContext)
+        _atualizando = true;
+        try
+        {
+            _dados = await Painel.GetPainelPorCodigoAsync(Codigo);
+            _atualizadoEm = DateTime.Now;
+        }
+        catch
+        {
+            // Mantém a última leitura no mural em caso de falha momentânea.
+        }
+        finally
+        {
+            _carregando = false;
+            _atualizando = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}
