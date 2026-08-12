@@ -26,21 +26,29 @@
         <div class="row mb-3">
         <div class="col-12">
         <div class="card card-outline @StatusCardColor(sel.Status)">
-            @* ── Header com toolbar centralizada ── *@
-            <div class="card-header py-2 d-flex align-items-center">
-                <h3 class="card-title mb-0 mr-3">
-                    <i class="fas fa-file-alt mr-1"></i> @sel.Numero
-                </h3>
 
-                <div class="d-flex flex-grow-1 justify-content-center flex-wrap" style="gap:4px;">
+            @* ── Faixa de estado: vem antes de qualquer ação ── *@
+            <div class="pw-sigband pw-sigband--sheet @StatusBandClass(sel.Status) pw-stamp" role="status">
+                <span class="pw-sigband__id pw-num">@sel.Numero</span>
+                <span class="pw-sigband__name">@StatusName(sel.Status)</span>
+                <span class="pw-sigband__note">@StatusNote(sel.Status)</span>
+            </div>
+
+            @* ── Header com a toolbar de etapa ── *@
+            <div class="card-header">
+                <div class="pw-actions pw-actions--stack ple-toolbar">
                     @{ var st = sel.Status; }
                     @if (!SomenteConsulta && TemPermissaoNoSel() && st == StatusPle.Criado)
                     {
                         <button class="btn btn-xs btn-success" @onclick="() => ChangeStatus(StatusPle.EmAndamento)"><i class="fas fa-play mr-1"></i> @Lang["ple.action.start"]</button>
                         <button class="btn btn-xs btn-primary" @onclick="() => EditPle(sel)"><i class="fas fa-edit mr-1"></i> @Lang["common.edit"]</button>
+                    }
+                    @* Excluir: apenas Admin/SuperGestor, no status Criado (limpeza de lançamentos indevidos). *@
+                    @if (st == StatusPle.Criado && (IsAdmin || IsSuperGestor))
+                    {
                         <button class="btn btn-xs btn-outline-danger" @onclick="OpenDeleteModal"><i class="fas fa-trash mr-1"></i> @Lang["ple.action.delete"]</button>
                     }
-                    @if (st == StatusPle.EmAndamento && PodeCancelarSel())
+                    @if (st == StatusPle.Criado && PodeCancelarSel())
                     {
                         <button class="btn btn-xs btn-outline-danger" @onclick="OpenCancelModal"><i class="fas fa-ban mr-1"></i> @Lang["ple.action.cancel_ple"]</button>
                     }
@@ -58,51 +66,75 @@
                     }
                 </div>
 
-                <button class="btn btn-xs btn-secondary ml-3" @onclick="CloseDetail"><i class="fas fa-times"></i></button>
+                <button class="btn btn-xs btn-secondary ple-close" @onclick="CloseDetail" title="@Lang["common.close"]">
+                    <i class="fas fa-times"></i><span class="ple-close__label">@Lang["common.close"]</span>
+                </button>
             </div>
 
             <div class="card-body">
-                @* ── Info organizado em tabela compacta ── *@
-                <table class="table table-sm table-bordered mb-3" style="font-size:0.8rem;">
-                    <tbody>
-                        <tr>
-                            <th class="bg-light" style="width:15%;">@Lang["ple.number"]</th>
-                            <td style="width:35%;">@sel.Numero</td>
-                            <th class="bg-light" style="width:15%;">@Lang["ple.status"]</th>
-                            <td style="width:35%;">@StatusBadge(sel.Status)</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">@Lang["ple.start_date"]</th>
-                            <td>@sel.DataInicio.ToString("dd/MM/yyyy HH:mm")</td>
-                            <th class="bg-light">@Lang["ple.end_date"]</th>
-                            <td>@(sel.DataFim?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
-                        </tr>
-                        <tr>
-                            <th class="bg-light">@Lang["ple.created_by"]</th>
-                            <td>@sel.CriadoPorNome &nbsp;<small class="text-muted">@sel.DataCriacao.ToString("dd/MM HH:mm")</small></td>
-                            <th class="bg-light">@Lang["ple.finalized_by"]</th>
-                            <td>@(sel.FinalizadoPorNome ?? "-") @if (sel.DataFinalizacao.HasValue) { <text>&nbsp;</text><small class="text-muted">@sel.DataFinalizacao?.ToString("dd/MM HH:mm")</small> }</td>
-                        </tr>
-                        @if (sel.UsuariosPermitidos.Any())
+                @* ── Identificação do PLE ── *@
+                <div class="pw-tblock">
+                    <div class="pw-tblock__field pw-tblock__field--anchor">
+                        <span class="pw-tblock__key">@Lang["ple.number"]</span>
+                        <span class="pw-tblock__val pw-num">@sel.Numero</span>
+                    </div>
+                    <div class="pw-tblock__field">
+                        <span class="pw-tblock__key">@Lang["ple.start_date"]</span>
+                        <span class="pw-tblock__val">@sel.DataInicio.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div class="pw-tblock__field">
+                        <span class="pw-tblock__key">@Lang["ple.end_date"]</span>
+                        <span class="pw-tblock__val">@(sel.DataFim?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
+                    </div>
+                    <div class="pw-tblock__field">
+                        <span class="pw-tblock__key">@Lang["ple.created_by"]</span>
+                        <span class="pw-tblock__val">
+                            @sel.CriadoPorNome
+                            <small class="text-muted d-block">@sel.DataCriacao.ToString("dd/MM HH:mm")</small>
+                        </span>
+                    </div>
+                    <div class="pw-tblock__field">
+                        <span class="pw-tblock__key">@Lang["ple.finalized_by"]</span>
+                        <span class="pw-tblock__val">
+                            @(sel.FinalizadoPorNome ?? "—")
+                            @if (sel.DataFinalizacao.HasValue)
+                            {
+                                <small class="text-muted d-block">@sel.DataFinalizacao?.ToString("dd/MM HH:mm")</small>
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                @* ── Pontos de isolamento: cada equipamento é um chip numerado ── *@
+                <div class="ple-points">
+                    <span class="pw-label ple-points__title">@Lang["ple.equipment"]</span>
+                    <ol class="ple-points__list">
+                        @{ var pontos = sel.Equipamentos
+                               .GroupBy(e => string.IsNullOrWhiteSpace(e.TagDispositivo) ? e.Tag : e.TagDispositivo)
+                               .Select(g => g.First()).ToList(); }
+                        @for (int i = 0; i < pontos.Count; i++)
                         {
-                            <tr>
-                                <th class="bg-light">@Lang["ple.authorized_users"]</th>
-                                <td colspan="3">
-                                    @foreach (var u in sel.UsuariosPermitidos) { <span class="badge badge-secondary mr-1">@u.NomeCompleto</span> }
-                                </td>
-                            </tr>
+                            var eq = pontos[i];
+                            <li class="ple-point">
+                                <span class="pw-balloon">@(i + 1)</span>
+                                <span class="pw-tag">@(string.IsNullOrWhiteSpace(eq.TagDispositivo) ? eq.Tag : eq.TagDispositivo)</span>
+                            </li>
                         }
-                        <tr>
-                            <th class="bg-light">@Lang["ple.equipment"]</th>
-                            <td colspan="3">
-                                @foreach (var eq in sel.Equipamentos.GroupBy(e => string.IsNullOrWhiteSpace(e.TagDispositivo) ? e.Tag : e.TagDispositivo).Select(g => g.First()))
-                                {
-                                    <span class="badge badge-info mr-1">@(string.IsNullOrWhiteSpace(eq.TagDispositivo) ? eq.Tag : eq.TagDispositivo)</span>
-                                }
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                    </ol>
+                </div>
+
+                @if (sel.UsuariosPermitidos.Any())
+                {
+                    <div class="ple-points">
+                        <span class="pw-label ple-points__title">@Lang["ple.authorized_users"]</span>
+                        <div class="ple-points__list">
+                            @foreach (var u in sel.UsuariosPermitidos)
+                            {
+                                <span class="pw-tag">@u.NomeCompleto</span>
+                            }
+                        </div>
+                    </div>
+                }
 
                 @if (!string.IsNullOrWhiteSpace(sel.MotivoCancelamento))
                 {
@@ -111,32 +143,28 @@
                     </div>
                 }
 
-                @* ── Timeline Horizontal ── *@
+                @* ── Histórico do bloqueio: linha do tempo vertical ── *@
                 @if (sel.Historico.Any())
                 {
-                    <h6 class="mb-2 text-center"><i class="fas fa-stream mr-1"></i> @Lang["ple.history"]</h6>
-                    <div class="d-flex flex-nowrap overflow-auto pb-2 justify-content-center align-items-start">
-                        @for (int i = 0; i < HistoricoOrdenado.Count; i++)
-                        {
-                            var h = HistoricoOrdenado[i];
-                            var isLast = i == HistoricoOrdenado.Count - 1;
-                            @* ── Círculo ── *@
-                            <div class="text-center flex-shrink-0" style="width:100px;">
-                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center @TimelineBg(h.Acao)" style="width:30px;height:30px;">
-                                    <i class="fas @TimelineIcon(h.Acao) text-white" style="font-size:0.7rem;"></i>
-                                </div>
-                                <div class="mt-1">
-                                    <strong style="font-size:0.7rem;" class="@TimelineColor(h.Acao)">@TimelineLabel(h.Acao)</strong><br/>
-                                    <small class="text-muted" style="font-size:0.65rem;">@h.UsuarioNome</small><br/>
-                                    <small class="text-muted" style="font-size:0.6rem;">@h.DataAcao.ToString("dd/MM HH:mm")</small>
-                                </div>
-                            </div>
-                            @* ── Linha conectora ── *@
-                            @if (!isLast)
+                    <div class="pw-timeline-block">
+                        <span class="pw-label pw-timeline-block__title">@Lang["ple.history"]</span>
+                        <ol class="pw-timeline">
+                            @foreach (var h in HistoricoOrdenado)
                             {
-                                <div class="flex-shrink-0 align-self-center" style="width:40px;height:2px;background:#adb5bd;margin-top:-30px;"></div>
+                                <li class="pw-timeline__item">
+                                    <span class="pw-timeline__dot @TimelineTone(h.Acao)">
+                                        <i class="fas @TimelineIcon(h.Acao)"></i>
+                                    </span>
+                                    <span class="pw-timeline__body">
+                                        <span class="pw-timeline__act">@TimelineLabel(h.Acao)</span>
+                                        <span class="pw-timeline__meta">
+                                            <span>@h.UsuarioNome</span>
+                                            <span class="pw-num">@h.DataAcao.ToString("dd/MM HH:mm")</span>
+                                        </span>
+                                    </span>
+                                </li>
                             }
-                        }
+                        </ol>
                     </div>
                 }
             </div>
@@ -188,23 +216,34 @@
             </div>
 
             @if (loading) { <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div> }
-            else if (!filtered.Any()) { <p class="text-muted text-center py-3">Nenhum PLE encontrado.</p> }
+            else if (!filtered.Any()) { <div class="pw-empty"><i class="fas fa-file-alt"></i>@Lang["ple.none_found"]</div> }
             else
             {
-                <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm">
-                    <thead class="bg-pw-blue"><tr><th>@Lang["ple.number"]</th><th>@Lang["ple.equipment"]</th><th>@Lang["ple.tag_disp"]</th><th>@Lang["ple.start_date"]</th><th>@Lang["ple.status"]</th><th>@Lang["ple.created_by"]</th><th style="width:36px;"></th></tr></thead>
+                @* A chave das formas. Sem ela, o sistema de triângulo/losango/
+                   círculo/X é ornamento arbitrário na frente de um auditor. *@
+                <div class="pw-legend">
+                    <span class="pw-label pw-legend__title">@Lang["ple.legend"]</span>
+                    <span class="pw-legend__item"><span class="pw-sig pw-sig--idle">@Lang["ple.status.criado"]</span></span>
+                    <span class="pw-legend__item"><span class="pw-sig pw-sig--danger">@Lang["ple.status.em_andamento"]</span></span>
+                    <span class="pw-legend__item"><span class="pw-sig pw-sig--warn">@Lang["ple.status.inicio_desbloqueio"]</span></span>
+                    <span class="pw-legend__item"><span class="pw-sig pw-sig--safe">@Lang["ple.status.finalizado"]</span></span>
+                    <span class="pw-legend__item"><span class="pw-sig pw-sig--void">@Lang["ple.status.cancelado"]</span></span>
+                </div>
+
+                <div class="table-responsive pw-table-cards">
+                <table class="table table-hover selectable-table">
+                    <thead><tr><th>@Lang["ple.number"]</th><th>@Lang["ple.equipment"]</th><th>@Lang["ple.tag_disp"]</th><th>@Lang["ple.start_date"]</th><th>@Lang["ple.status"]</th><th>@Lang["ple.created_by"]</th><th style="width:52px;"><span class="sr-only">@Lang["common.actions"]</span></th></tr></thead>
                     <tbody>
                         @foreach (var p in filtered)
                         {
-                            <tr @onclick="() => ViewPle(p.Id)" style="cursor:pointer;" class="@(sel?.Id == p.Id ? "table-active" : "")">
-                                <td>@p.Numero</td>
-                                <td>@p.EquipamentoTagPlusNomeDistinct</td>
-                                <td>@p.TagsDispDistinct</td>
-                                <td>@p.DataInicio.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@StatusBadge(p.Status)</td>
-                                <td>@p.CriadoPorNome</td>
-                                <td class="text-center"><button class="btn btn-xs btn-outline-info" @onclick:stopPropagation @onclick="() => ViewPle(p.Id)"><i class="fas fa-eye"></i></button></td>
+                            <tr @onclick="() => ViewPle(p.Id)" class="@StatusRowClass(p.Status) @(sel?.Id == p.Id ? "row-selected" : "")">
+                                <td data-label="@Lang["ple.number"]"><span class="pw-num">@p.Numero</span></td>
+                                <td data-label="@Lang["ple.equipment"]">@p.EquipamentoTagPlusNomeDistinct</td>
+                                <td data-label="@Lang["ple.tag_disp"]">@p.TagsDispDistinct</td>
+                                <td data-label="@Lang["ple.start_date"]">@p.DataInicio.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="pw-cell--state" data-label="@Lang["ple.status"]">@StatusBadge(p.Status)</td>
+                                <td data-label="@Lang["ple.created_by"]">@p.CriadoPorNome</td>
+                                <td class="text-center ple-rowaction"><button class="btn btn-xs pw-btn-row" @onclick:stopPropagation @onclick="() => ViewPle(p.Id)" title="@Lang["common.view"]"><i class="fas fa-eye"></i></button></td>
                             </tr>
                         }
                     </tbody>
@@ -218,15 +257,61 @@
 </div>
 </section>
 
+<style>
+    /* ── Barra de ações do detalhe ───────────────────────────────────────── */
+    .ple-toolbar { flex: 1 1 auto; }
+    .ple-close { margin-left: auto; flex: 0 0 auto; }
+    .ple-close__label { display: none; }
+
+    /* ── Pontos de isolamento e usuários autorizados ─────────────────────── */
+    .ple-points { margin-bottom: var(--pw-5); }
+    .ple-points__title { display: block; margin-bottom: var(--pw-2); }
+
+    .ple-points__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--pw-2);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Cada ponto é um chip: número em círculo azul-claro + tag, numa cápsula. */
+    .ple-point {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--pw-2);
+        padding: 4px 14px 4px 4px;
+        border-radius: var(--pw-r-pill);
+        background: var(--pw-vellum);
+    }
+    .ple-point .pw-tag { background: transparent; padding: 0; color: var(--pw-ink); }
+
+    @@media (max-width: 767.98px) {
+        /* No polegar a ação é alvo cheio; o "fechar" entra na pilha, por último. */
+        .card-header { flex-direction: column; align-items: stretch; }
+        .ple-toolbar { width: 100%; }
+        .ple-close {
+            order: 9;
+            width: 100%;
+            margin: 0;
+            min-height: var(--pw-tap);
+        }
+        .ple-close__label { display: inline; }
+
+        .pw-table-cards .ple-rowaction { display: none; }
+    }
+</style>
+
 @* ═══ MODAL: Criar/Editar PLE ═══ *@
 @if (showModal)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);z-index:1050;">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
-        <div class="modal-header bg-pw-blue-light py-2">
-            <h5 class="modal-title text-white"><i class="fas fa-clipboard-check mr-1"></i> @(editing != null ? Lang["ple.edit"] : Lang["ple.new"])</h5>
-            <button type="button" class="close text-white" @onclick="() => showModal = false"><span>&times;</span></button>
+        <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-clipboard-check mr-1"></i> @(editing != null ? Lang["ple.edit"] : Lang["ple.new"])</h5>
+            <button type="button" class="close" @onclick="() => showModal = false"><span>&times;</span></button>
         </div>
         <div class="modal-body">
             @* Avatar *@
@@ -571,11 +656,11 @@
         return false;
     }
 
-    // Finalizar (InicioDesbloqueio → Finalizado): EXCLUSIVO do Comando Central. Backend valida acesso à planta.
-    private bool PodeFinalizarSel() => sel != null && IsComandoCentral;
+    // Finalizar (InicioDesbloqueio → Finalizado): Comando Central e SuperGestor.
+    // Backend valida acesso à planta.
+    private bool PodeFinalizarSel() => sel != null && (IsComandoCentral || IsSuperGestor);
 
-    // Cancelar Bloqueio (somente EmAndamento → Cancelado): criador/delegado/Lider com planta + Admin/SuperGestor (sempre)
-    // Após "Início do Desbloqueio" não é permitido cancelar — o fluxo segue para finalização (Comando Central).
+    // Cancelar Bloqueio (só no status Criado): criador/delegado/Líder com planta + Admin/SuperGestor (sempre)
     private bool PodeCancelarSel()
     {
         if (sel == null) return false;
@@ -595,30 +680,81 @@
     }
     private void ToggleEq(Guid id, bool on) { if (on && !form.EquipamentoIds.Contains(id)) form.EquipamentoIds.Add(id); else if (!on) form.EquipamentoIds.Remove(id); }
 
+    // O estado do PLE fala pelo sistema-sinal: cor + rótulo + forma.
+    // "Em andamento" é PERIGO, não "primário": há energia isolada e gente trabalhando.
     private RenderFragment StatusBadge(StatusPle s) => s switch
     {
-        StatusPle.Criado => Badge("badge-secondary", Lang["ple.status.criado"]),
-        StatusPle.EmAndamento => Badge("badge-primary", Lang["ple.status.em_andamento"]),
-        StatusPle.Cancelado => Badge("badge-danger", Lang["ple.status.cancelado"]),
-        StatusPle.InicioDesbloqueio => Badge("badge-warning", Lang["ple.status.inicio_desbloqueio"]),
-        StatusPle.Finalizado => Badge("badge-success", Lang["ple.status.finalizado"]),
-        _ => Badge("badge-light", s.ToString()),
+        StatusPle.Criado => Sig("pw-sig--idle", Lang["ple.status.criado"]),
+        StatusPle.EmAndamento => Sig("pw-sig--danger", Lang["ple.status.em_andamento"]),
+        StatusPle.Cancelado => Sig("pw-sig--void", Lang["ple.status.cancelado"]),
+        StatusPle.InicioDesbloqueio => Sig("pw-sig--warn", Lang["ple.status.inicio_desbloqueio"]),
+        StatusPle.Finalizado => Sig("pw-sig--safe", Lang["ple.status.finalizado"]),
+        _ => Sig("pw-sig--idle", s.ToString()),
     };
-    private RenderFragment Badge(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"badge {c}"); b.AddContent(2, t); b.CloseElement(); };
+    private RenderFragment Sig(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"pw-sig {c}"); b.AddContent(2, t); b.CloseElement(); };
+
+    private string StatusName(StatusPle s) => s switch
+    {
+        StatusPle.Criado => Lang["ple.status.criado"],
+        StatusPle.EmAndamento => Lang["ple.status.em_andamento"],
+        StatusPle.Cancelado => Lang["ple.status.cancelado"],
+        StatusPle.InicioDesbloqueio => Lang["ple.status.inicio_desbloqueio"],
+        StatusPle.Finalizado => Lang["ple.status.finalizado"],
+        _ => s.ToString(),
+    };
+
+    // A linha que diz o que o estado significa no mundo físico.
+    private string StatusNote(StatusPle s) => s switch
+    {
+        StatusPle.Criado => Lang["ple.state_note.criado"],
+        StatusPle.EmAndamento => Lang["ple.state_note.em_andamento"],
+        StatusPle.Cancelado => Lang["ple.state_note.cancelado"],
+        StatusPle.InicioDesbloqueio => Lang["ple.state_note.inicio_desbloqueio"],
+        StatusPle.Finalizado => Lang["ple.state_note.finalizado"],
+        _ => string.Empty,
+    };
+
+    private string StatusBandClass(StatusPle s) => s switch
+    {
+        StatusPle.Criado => "pw-sigband--idle",
+        StatusPle.EmAndamento => "pw-sigband--danger",
+        StatusPle.Cancelado => "pw-sigband--idle",
+        StatusPle.InicioDesbloqueio => "pw-sigband--warn",
+        StatusPle.Finalizado => "pw-sigband--safe",
+        _ => "pw-sigband--notice",
+    };
+
+    // A linha inteira reporta o estado, não só o chip de 11px.
+    private string StatusRowClass(StatusPle s) => s switch
+    {
+        StatusPle.EmAndamento => "table-danger",
+        StatusPle.InicioDesbloqueio => "table-warning",
+        StatusPle.Finalizado => "table-success",
+        StatusPle.Cancelado => "table-void",
+        _ => string.Empty,
+    };
 
     private string StatusCardColor(StatusPle s) => s switch
     {
         StatusPle.Criado => "card-secondary",
-        StatusPle.EmAndamento => "card-primary",
-        StatusPle.Cancelado => "card-danger",
+        StatusPle.EmAndamento => "card-danger",
+        StatusPle.Cancelado => "card-secondary",
         StatusPle.InicioDesbloqueio => "card-warning",
         StatusPle.Finalizado => "card-success",
         _ => "card-info",
     };
 
+    // Tom do marcador na linha do tempo: o mesmo vocabulário de estado do PLE.
+    private string TimelineTone(string a) => a switch
+    {
+        "Iniciado" => "pw-timeline__dot--danger",
+        "InicioDesbloqueio" => "pw-timeline__dot--warn",
+        "Finalizado" => "pw-timeline__dot--safe",
+        "Modificado" => "pw-timeline__dot--notice",
+        _ => string.Empty,
+    };
+
     private string TimelineIcon(string a) => a switch { "Criado" => "fa-plus-circle", "Iniciado" => "fa-play-circle", "Cancelado" => "fa-ban", "InicioDesbloqueio" => "fa-unlock", "Finalizado" => "fa-flag-checkered", "Modificado" => "fa-edit", "Excluído" => "fa-trash", _ => "fa-circle" };
-    private string TimelineColor(string a) => a switch { "Criado" => "text-secondary", "Iniciado" => "text-success", "Cancelado" => "text-danger", "InicioDesbloqueio" => "text-warning", "Finalizado" => "text-dark", "Modificado" => "text-primary", _ => "text-muted" };
-    private string TimelineBg(string a) => a switch { "Criado" => "bg-secondary", "Iniciado" => "bg-success", "Cancelado" => "bg-danger", "InicioDesbloqueio" => "bg-warning", "Finalizado" => "bg-dark", "Modificado" => "bg-primary", _ => "bg-secondary" };
     private string TimelineLabel(string a) => a switch
     {
         "Criado" => Lang["timeline.action.created"],

@@ -1,0 +1,265 @@
+@charset "UTF-8";
+/* =============================================================================
+   PAINEL DE BLOQUEIO — duas superfícies, um vocabulário
+
+   /painel        : dentro do app, com toda a moldura normal
+   /mural/{codigo}: tela cheia para TV fixa na parede, sem menu nem cabeçalho
+
+   As duas usam a MESMA grade de cards e as MESMAS cores de estado do /ple.
+   A TV apenas amplia: quem lê está a metros de distância, não a 60cm.
+   Herda os tokens de etoto.css, inclusive a escala --pw-t-tv-* criada para a TV.
+   ============================================================================= */
+
+/* =============================================================================
+   /painel — dentro do app
+   ============================================================================= */
+
+.painel-wrap {
+    background: var(--pw-sheet);
+    border: 1px solid var(--pw-hair);
+    border-radius: var(--pw-r-3);
+    box-shadow: var(--pw-sh-1);
+    padding: var(--pw-5);
+}
+
+.painel-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--pw-3);
+    margin-bottom: var(--pw-5);
+}
+
+.painel-title {
+    font-size: var(--pw-t-lg);
+    font-weight: 700;
+    color: var(--pw-ink);
+    display: flex;
+    align-items: center;
+    gap: var(--pw-2);
+}
+.painel-title i { color: var(--pw-ink-3); }
+
+.painel-updated {
+    font-size: var(--pw-t-sm);
+    color: var(--pw-ink-3);
+    margin-top: 2px;
+}
+
+.painel-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--pw-2);
+    flex-wrap: wrap;
+}
+.painel-select { min-width: 200px; }
+
+.mural-sep { margin: 0 6px; opacity: .5; }
+
+/* =============================================================================
+   Grade de cards — compartilhada
+   ============================================================================= */
+
+.mural-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pw-2) var(--pw-3);
+    padding: var(--pw-3) var(--pw-4);
+    border-radius: var(--pw-r-2);
+    background: var(--pw-vellum-2);
+    margin-bottom: var(--pw-4);
+}
+.mural-legend__title { margin-right: var(--pw-1); }
+
+.mural-empty { margin: 0; }
+
+.mural-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--pw-4);
+}
+
+.mural-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pw-2);
+    padding: var(--pw-4);
+    background: var(--pw-sheet);
+    border: 1px solid var(--pw-hair);
+    border-radius: var(--pw-r-3);
+    box-shadow: var(--pw-sh-1);
+    transition: box-shadow .15s var(--pw-ease), transform .15s var(--pw-ease);
+}
+
+.mural-card.is-clicavel { cursor: pointer; }
+.mural-card.is-clicavel:hover,
+.mural-card.is-clicavel:focus-visible {
+    box-shadow: var(--pw-sh-3);
+    transform: translateY(-2px);
+    outline: none;
+}
+.mural-card.is-clicavel:focus-visible { box-shadow: var(--pw-ring), var(--pw-sh-2); }
+
+.mural-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pw-2);
+}
+
+/* O ícone repete o estado em forma, para quem não distingue a cor. */
+.mural-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    font-size: var(--pw-t-base);
+    background: var(--pw-idle-bg);
+    color: var(--pw-ink-3);
+}
+.st-andamento   .mural-icon { background: var(--pw-danger-bg); color: var(--pw-danger-ink); }
+.st-desbloqueio .mural-icon { background: var(--pw-warn-bg);   color: var(--pw-warn); }
+.st-livre       .mural-icon { background: var(--pw-safe-bg);   color: var(--pw-safe); }
+
+.mural-tag {
+    font-size: var(--pw-t-lg);
+    font-weight: 700;
+    color: var(--pw-ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.mural-nome {
+    font-size: var(--pw-t-sm);
+    color: var(--pw-ink-2);
+    line-height: 1.4;
+}
+
+.mural-detalhe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pw-1);
+    margin-top: var(--pw-1);
+    padding-top: var(--pw-3);
+    border-top: 1px solid var(--pw-hair);
+}
+
+.mural-req { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--pw-2); }
+.mural-req__num { font-size: var(--pw-t-sm); font-weight: 600; color: var(--pw-ink); }
+.mural-req__lead { font-size: var(--pw-t-xs); color: var(--pw-ink-3); }
+
+/* =============================================================================
+   /mural/{codigo} — a TV
+   Sem moldura do app. Tudo cresce: o leitor está do outro lado do galpão.
+   ============================================================================= */
+
+.mural-root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--pw-paper);
+}
+
+.mural-screen {
+    padding: var(--pw-6);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+.mural-status {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--pw-t-xl);
+    color: var(--pw-ink-3);
+}
+.mural-spinner { font-size: var(--pw-t-tv); color: var(--pw-notice); }
+
+.mural-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--pw-5);
+    padding-bottom: var(--pw-5);
+    margin-bottom: var(--pw-5);
+    border-bottom: 1px solid var(--pw-line);
+}
+
+.mural-title {
+    display: flex;
+    align-items: center;
+    gap: var(--pw-3);
+    font-size: var(--pw-t-tv);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--pw-ink);
+    line-height: 1.1;
+}
+.mural-title i { color: var(--pw-ink-3); font-size: var(--pw-t-tv-sm); }
+
+.mural-updated {
+    font-size: var(--pw-t-md);
+    color: var(--pw-ink-3);
+    margin-top: var(--pw-2);
+}
+
+/* Os contadores: o dado que se lê primeiro, de longe. */
+.mural-counts { display: flex; flex-wrap: wrap; gap: var(--pw-3); }
+
+.mural-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 128px;
+    padding: var(--pw-3) var(--pw-5);
+    border-radius: var(--pw-r-3);
+    background: var(--pw-idle-bg);
+    color: var(--pw-ink-2);
+}
+.mc-num { font-size: var(--pw-t-tv-lg); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.mc-lbl { font-size: var(--pw-t-sm); font-weight: 600; margin-top: var(--pw-2); text-align: center; }
+
+.mc-andamento   { background: var(--pw-danger); color: #fff; }
+.mc-desbloqueio { background: var(--pw-warn);   color: #fff; }
+.mc-criado      { background: var(--pw-idle);   color: #fff; }
+
+/* Na TV a grade e os cards crescem. */
+.mural-screen .mural-legend { display: none; }
+
+.mural-screen .mural-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--pw-5);
+}
+
+.mural-screen .mural-card { padding: var(--pw-5); gap: var(--pw-3); }
+.mural-screen .mural-icon { width: 48px; height: 48px; font-size: var(--pw-t-lg); }
+.mural-screen .mural-tag  { font-size: var(--pw-t-tv-sm); }
+.mural-screen .mural-nome { font-size: var(--pw-t-md); }
+.mural-screen .pw-sig     { font-size: var(--pw-t-base); padding: 6px 16px; }
+
+/* Telas realmente grandes: mais colunas, mesma leitura. */
+@media (min-width: 1600px) {
+    .mural-screen .mural-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+    .mural-title { font-size: var(--pw-t-tv-lg); }
+    .mc-num { font-size: var(--pw-t-tv-xl); }
+}
+
+@media (max-width: 767.98px) {
+    .painel-wrap { padding: var(--pw-4); }
+    .mural-screen { padding: var(--pw-4); }
+    .mural-grid { grid-template-columns: 1fr; gap: var(--pw-3); }
+    .mural-title { font-size: var(--pw-t-xl); }
+    .mural-counts { width: 100%; }
+    .mural-count { flex: 1 1 0; min-width: 0; padding: var(--pw-3); }
+    .mc-num { font-size: var(--pw-t-2xl); }
+}

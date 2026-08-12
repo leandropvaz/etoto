@@ -10,345 +10,131 @@
 
 <PageTitle>E-toto</PageTitle>
 
-<div class="wrapper">
+@* ── Barra branca: marca, contexto e conta ─────────────────────────────── *@
+<header class="pw-top">
 
-    <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-dark bg-pw-blue-light">
-        <div class="container-fluid d-flex align-items-center justify-content-between">
-
-            <!-- Esquerda: Logo E-toto -->
-            <div class="d-flex align-items-center">
-                <img src="images/etoto-branco.png"
-                     alt="E-toto"
-                     class="brand-image mr-2"
-                     style="height: 25px;" />
-            </div>
-
-            <!-- Centro: Data, Planta, Usuário -->
-            <div class="d-flex align-items-center justify-content-center flex-grow-1 top-center-info">
-                <span class="nav-link d-flex align-items-center m-0">
-                    <i class="far fa-calendar-alt mr-1"></i>
-                    @DateTime.Now.ToString("dd/MM/yyyy")
-                </span>
-                        @if (!IsSuperGestor)
-                        {
-                <span class="nav-link d-flex align-items-center m-0">
-                    <i class="fas fa-map-marker-alt mr-1"></i>
-                    @PlantaAtual
-                </span>
-                }
-
-                <span class="nav-link d-flex align-items-center m-0">
-                    <i class="fas fa-user-circle mr-1"></i>
-                    <span>@UserName</span>
-                </span>
-
-                @if (Ambiente.EhHomologacao)
-                {
-                    <span class="nav-link d-flex align-items-center m-0">
-                        <span class="badge bg-warning text-dark">
-                            <i class="fas fa-flask mr-1"></i>@Lang["env.homologacao"]
-                        </span>
-                    </span>
-                }
-            </div>
-
-            <!-- Direita: Seletor de idioma + Botão Sair -->
-            <div class="d-flex align-items-center" style="gap: 8px;">
-                <LanguageSwitcher />
-                @if (!string.IsNullOrWhiteSpace(UserName))
-                {
-                    <button class="btn btn-sm btn-outline-light"
-                            @onclick="Logout"
-                            title="@Lang["nav.logout"]">
-                        <i class="fas fa-sign-out-alt mr-1"></i> @Lang["nav.logout"]
-                    </button>
-                }
-            </div>
-        </div>
-    </nav>
-    <!-- /.navbar -->
-    <!-- Content Wrapper -->
-    <div class="content-wrapper">
-
-        <!-- Abas de navegação (AdminLTE nav-tabs style) -->
-        <div class="content-header pb-0">
-            <div class="container-fluid">
-                <ul class="nav nav-tabs nav-fill bg-white" style="border-bottom: 1px solid #dee2e6;">
-
-                    <!-- Home (sempre visível e habilitada) -->
-                    <li class="nav-item">
-                        <a class="@GetTabClass("/home")" href="/home">
-                            <i class="fas fa-search mr-1"></i>
-                            @Lang["nav.search"]
-                        </a>
-                    </li>
-
-                    <!-- Equipamentos -->
-                    <li class="nav-item">
-                        @if (IsAdmin || IsSuperGestor)
-                        {
-                            <a class="@GetTabClass("/equipamentos")" href="/equipamentos">
-                                <i class="fas fa-tools mr-1"></i>
-                                @Lang["nav.equipments"]
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="nav-link disabled"
-                               href="#"
-                               tabindex="-1"
-                               aria-disabled="true"
-                               title="@Lang["nav.restricted_admin"]"
-                               data-toggle="tooltip">
-                                <i class="fas fa-tools mr-1"></i>
-                                @Lang["nav.equipments"]
-                            </a>
-                        }
-                    </li>
-
-                    <!-- PLE -->
-                    <li class="nav-item">
-                        @if (true)
-                        {
-                            <a class="@GetTabClass("/ple")" href="/ple">
-                                <i class="fas fa-clipboard-check mr-1"></i>
-                                @Lang["nav.ple"]
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="nav-link disabled"
-                               href="#"
-                               tabindex="-1"
-                               aria-disabled="true"
-                               title="@Lang["nav.restricted_admin"]"
-                               data-toggle="tooltip">
-                                <i class="fas fa-clipboard-check mr-1"></i>
-                                @Lang["nav.ple"]
-                            </a>
-                        }
-                    </li>
-
-                    <!-- Painel de Alertas -->
-                    <li class="nav-item">
-                        <a class="@GetTabClass("/painel")" href="/painel">
-                            <i class="fas fa-tv mr-1"></i>
-                            @Lang["nav.panel"]
-                        </a>
-                    </li>
-
-                    <!-- Avaliação de Risco -->
-                    <li class="nav-item">
-                        @if (true)
-                        {
-                            <a class="@GetTabClass("/avaliacao-risco")" href="/avaliacao-risco">
-                                <i class="fas fa-exclamation-triangle mr-1"></i>
-                                @Lang["nav.risk_assessment"]
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true"
-                               title="@Lang["nav.restricted_admin"]">
-                                <i class="fas fa-exclamation-triangle mr-1"></i>
-                                @Lang["nav.risk_assessment"]
-                            </a>
-                        }
-                    </li>
-
-                    <!-- Usuários -->
-                    <li class="nav-item">
-                        @if (IsAdmin || IsSuperGestor)
-                        {
-                            <a class="@GetTabClass("/usuarios")" href="/usuarios">
-                                <i class="fas fa-users-cog mr-1"></i>
-                                @Lang["nav.users"]
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="nav-link disabled"
-                               href="#"
-                               tabindex="-1"
-                               aria-disabled="true"
-                               title="@Lang["nav.restricted_admin"]"
-                               data-toggle="tooltip">
-                                <i class="fas fa-users-cog mr-1"></i>
-                                @Lang["nav.users"]
-                            </a>
-                        }
-                    </li>
-
-                    <!-- Plantas -->
-                    <li class="nav-item">
-                        @if (IsSuperGestor)
-                        {
-                            <a class="@GetTabClass("/plantas")" href="/plantas">
-                                <i class="fas fa-industry mr-1"></i>
-                                @Lang["nav.plants"]
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="nav-link disabled"
-                               href="#"
-                               tabindex="-1"
-                               aria-disabled="true"
-                               title="@Lang["nav.restricted_super"]"
-                               data-toggle="tooltip">
-                                <i class="fas fa-industry mr-1"></i>
-                                @Lang["nav.plants"]
-                            </a>
-                        }
-                    </li>
-
-                    @* #4: Auditoria, Relatórios e Revalidação foram consolidados como sub-abas
-                          dentro da página de Usuários (toolbox). *@
-                </ul>
-            </div>
-        </div>
-
-
-        <!-- Conteúdo das páginas -->
-        <section class="content pt-2">
-            @Body
-        </section>
+    <div class="pw-top__brand">
+        <img src="images/etoto.png" alt="E-toto" />
     </div>
 
-    <!-- Footer -->
-    <footer class="main-footer bg-pw-blue-light">
-        <div class="d-flex justify-content-center align-items-center">
-
-            <a href="https://www.powerwavesolutions.net"
-               target="_blank"
-               class="d-flex align-items-center footer-link">
-
-                <img src="images/logo2.png"
-                     alt="Power Wave Solutions"
-                     class="footer-logo mr-2" style="height: 25px;" />
-
-                <img src="images/logo3.png"
-                     alt="Power Wave Solutions"
-                     class="footer-logo" style="height: 25px; filter: brightness(0) invert(1);" />
-            </a>
-
+    <div class="pw-top__meta">
+        <div class="pw-field pw-field--desk">
+            <span class="pw-field__key">@Lang["nav.date"]</span>
+            <span class="pw-field__val">@DateTime.Now.ToString("dd/MM/yyyy")</span>
         </div>
-    </footer>
 
-
-    <style>
-        /* ======== GERAL – REDUZIR FONTE E ESPAÇAMENTO ======== */
-
-        body, label, p, span, small {
-            font-size: 0.80rem !important;
+        @if (!IsSuperGestor)
+        {
+            <div class="pw-field">
+                <span class="pw-field__key">@Lang["nav.plant_label"]</span>
+                <span class="pw-field__val">@PlantaAtual</span>
+            </div>
         }
 
-        h1, h2, h3, h4, h5, h6 {
-            font-size: 0.95rem !important;
-            margin-bottom: 0.35rem !important;
+        @if (!string.IsNullOrWhiteSpace(UserName))
+        {
+            <div class="pw-field pw-field--wide">
+                <span class="pw-field__key">@Lang["nav.operator"]</span>
+                <span class="pw-field__val">@UserName</span>
+            </div>
         }
 
-        /* Inputs menores */
-        .form-control {
-            font-size: 0.78rem !important;
-            height: calc(1.4rem + 2px) !important;
-            padding: 0.22rem 0.45rem !important;
+        @* Nunca some: sem este marcador, o celular mostra uma interface
+           indistinguível da produção sobre dados fictícios. *@
+        @if (Ambiente.EhHomologacao)
+        {
+            <div class="pw-field pw-field--env">
+                <span class="pw-field__key">@Lang["nav.environment"]</span>
+                <span class="pw-field__val">@Lang["env.homologacao"]</span>
+            </div>
         }
+    </div>
 
-        /* Botões menores */
-        .btn {
-            font-size: 0.75rem !important;
-            padding: 0.25rem 0.6rem !important;
+    <div class="pw-top__actions">
+        <LanguageSwitcher />
+        @if (!string.IsNullOrWhiteSpace(UserName))
+        {
+            <button class="pw-btn-ghost-dark" @onclick="Logout" title="@Lang["nav.logout"]">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="d-none d-sm-inline">@Lang["nav.logout"]</span>
+            </button>
         }
+    </div>
+</header>
 
-        .btn-sm {
-            font-size: 0.72rem !important;
-            padding: 0.2rem 0.45rem !important;
-        }
+@* ── Trilho: abas em pílula na mesa, barra no polegar ──────────────────── *@
+<nav class="pw-rail" aria-label="@Lang["nav.sections"]">
 
-        .btn-xs {
-            font-size: 0.68rem !important;
-            padding: 0.15rem 0.35rem !important;
-        }
+    <a class="@RailClass("/home")" href="/home">
+        <i class="fas fa-search"></i><span>@Lang["nav.search"]</span>
+    </a>
 
-        /* Tabela compacta */
-        table.table td,
-        table.table th {
-            padding: 0.25rem !important;
-            font-size: 0.75rem !important;
-        }
+    @if (IsAdmin || IsSuperGestor)
+    {
+        <a class="@RailClass("/equipamentos")" href="/equipamentos">
+            <i class="fas fa-tools"></i><span>@Lang["nav.equipments"]</span>
+        </a>
+    }
+    else
+    {
+        <a class="pw-rail__item is-locked" href="#" tabindex="-1" aria-disabled="true" title="@Lang["nav.restricted_admin"]">
+            <i class="fas fa-tools"></i><span>@Lang["nav.equipments"]</span><i class="fas fa-lock pw-rail__lock"></i>
+        </a>
+    }
 
-        /* Cores */
-        .bg-pw-blue {
-            background-color: #006CB5 !important;
-            color: white !important;
-        }
+    <a class="@RailClass("/ple")" href="/ple">
+        <i class="fas fa-clipboard-check"></i><span>@Lang["nav.ple"]</span>
+    </a>
 
-        .bg-pw-blue-light {
-            /* azul mais claro só para o topo */
-            background-color: #1F86D1 !important;
-            color: white !important;
-        }
+    <a class="@RailClass("/avaliacao-risco")" href="/avaliacao-risco">
+        <i class="fas fa-exclamation-triangle"></i><span>@Lang["nav.risk_assessment"]</span>
+    </a>
 
-        /* Full width sem sidebar */
-        .sidebar-mini .main-header,
-        .sidebar-mini .main-footer,
-        .sidebar-mini .content-wrapper,
-        .content-wrapper {
-            margin-left: 0 !important;
-        }
+    <a class="@RailClass("/painel")" href="/painel">
+        <i class="fas fa-tv"></i><span>@Lang["nav.panel"]</span>
+    </a>
 
-        /* Centralização melhor dos itens do topo */
-        .top-center-info .nav-link {
-            padding-top: 0;
-            padding-bottom: 0;
-            margin: 0 0.75rem;
-        }
+    @if (IsAdmin || IsSuperGestor)
+    {
+        <a class="@RailClass("/usuarios")" href="/usuarios">
+            <i class="fas fa-users-cog"></i><span>@Lang["nav.users"]</span>
+        </a>
+    }
+    else
+    {
+        <a class="pw-rail__item is-locked" href="#" tabindex="-1" aria-disabled="true" title="@Lang["nav.restricted_admin"]">
+            <i class="fas fa-users-cog"></i><span>@Lang["nav.users"]</span><i class="fas fa-lock pw-rail__lock"></i>
+        </a>
+    }
 
-        /* Estilo das abas (AdminLTE-like) */
-        .nav-tabs .nav-link {
-            border-radius: 0.25rem 0.25rem 0 0;
-            border: 1px solid transparent;
-            color: #495057;
-        }
+    @if (IsSuperGestor)
+    {
+        <a class="@RailClass("/plantas")" href="/plantas">
+            <i class="fas fa-industry"></i><span>@Lang["nav.plants"]</span>
+        </a>
+    }
+    else
+    {
+        <a class="pw-rail__item is-locked" href="#" tabindex="-1" aria-disabled="true" title="@Lang["nav.restricted_super"]">
+            <i class="fas fa-industry"></i><span>@Lang["nav.plants"]</span><i class="fas fa-lock pw-rail__lock"></i>
+        </a>
+    }
 
-            .nav-tabs .nav-link:hover {
-                border-color: #e9ecef #e9ecef #dee2e6;
-                background-color: #f8f9fa;
-            }
+    @* #4: Auditoria, Relatórios e Revalidação são sub-abas dentro de /usuarios. *@
+</nav>
 
-            .nav-tabs .nav-link.active {
-                color: #006CB5;
-                background-color: #ffffff;
-                border-color: #dee2e6 #dee2e6 #ffffff;
-                font-weight: 600;
-            }
+<main class="pw-main">
+    @Body
+</main>
 
-            /* Abas desabilitadas */
-            .nav-tabs .nav-link.disabled {
-                color: #adb5bd !important;
-                cursor: not-allowed !important;
-                background-color: #f8f9fa !important;
-                border-color: transparent !important;
-            }
-
-        .main-header .nav-link {
-            display: flex;
-            align-items: center;
-        }
-
-        /* Badge PLE piscante */
-        .ple-blink {
-            animation: pleBlink 1s ease-in-out infinite;
-        }
-
-        @@keyframes pleBlink {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(1.15); }
-        }
-    </style>
-</div>
+<footer class="pw-foot">
+    <a href="https://www.powerwavesolutions.net" target="_blank" rel="noopener">
+        <img src="images/logo2.png" alt="Power Wave Solutions" />
+        @* Sem filtro: a inversão existia para o rodapé escuro antigo e deixava
+           a marca branca sobre branco, portanto invisível. *@
+        <img src="images/logo3.png" alt="" />
+    </a>
+</footer>
 
 @code {
     [CascadingParameter]
@@ -393,7 +179,7 @@
 
             var plantaId = user.FindFirst("plantaId")?.Value;
             PlantaAtual = !string.IsNullOrWhiteSpace(plantaId)
-                ? $"{Lang["nav.plant_label"]} {user.FindFirst("PlantaNome")?.Value}"
+                ? (user.FindFirst("PlantaNome")?.Value ?? Lang["nav.no_plant"])
                 : Lang["nav.no_plant"];
 
             IsAdmin = user.IsInRole("Administrador");
@@ -417,14 +203,9 @@
         Nav.NavigateTo("/", forceLoad: true);
     }
 
-    // Define a classe da aba (ativa/normal/desabilitada)
-    private string GetTabClass(string href, bool enabled = true)
+    // Marca a aba correspondente à rota atual.
+    private string RailClass(string href)
     {
-        var baseClass = "nav-link";
-
-        if (!enabled)
-            return baseClass + " disabled";
-
         var currentPath = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').ToLowerInvariant();
         var targetPath = Nav.ToAbsoluteUri(href).AbsolutePath.TrimEnd('/').ToLowerInvariant();
 
@@ -432,10 +213,7 @@
             currentPath = "/";
 
         return currentPath == targetPath
-            ? baseClass + " active"
-            : baseClass;
+            ? "pw-rail__item is-active"
+            : "pw-rail__item";
     }
-
-    // Overload para as abas sempre habilitadas (Home)
-    private string GetTabClass(string href) => GetTabClass(href, true);
 }

@@ -5,12 +5,15 @@
 <html lang="pt">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#FFFFFF" />
     <base href="/" />
 
-    <!-- Google Font -->
+    <!-- Figtree — humanista geométrica; o registro "SaaS moderno" do brief -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+          href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 
     <!-- AdminLTE CSS -->
     <link rel="stylesheet" href="AdminLTE/plugins/fontawesome-free/css/all.min.css" />
@@ -22,18 +25,37 @@
     <!-- Flag Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css" />
 
-    <!-- Custom CSS -->
+    <!-- Blazor error UI / validação -->
     <link rel="stylesheet" href="css/app.css" />
-    <link rel="stylesheet" href="css/custom.css" />
-    <link rel="stylesheet" href="css/mural.css" />
+
+    <!-- Sistema visual do E-toto. Carrega por último: manda em tudo. -->
+    <link rel="stylesheet" href="css/etoto.css" />
+
+    <!-- Painel de bloqueio e mural de TV — herda os tokens acima. -->
+    <link rel="stylesheet" href="css/painel.css" />
 
     <HeadOutlet />
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition layout-top-nav">
+<!--
+THESIS: Software de segurança do trabalho não precisa parecer papel de fábrica para ser
+levado a sério. Recusa a estética de prancha técnica; entrega o padrão SaaS moderno
+executado com rigor total.
+OWN-WORLD: Claro e arredondado — fundo cinza-azulado, cartão branco flutuando com sombra
+difusa, cantos de 8 a 20px, azul da marca modernizado (#1570DB) para ação e navegação,
+Figtree em caixa normal, e o estado do bloqueio como pílula sólida de cor cheia.
+STORY: O líder reconhece na hora o tipo de ferramenta que está usando, vê o estado do
+bloqueio numa pílula que salta da lista, e age com o polegar.
+FIRST VIEWPORT: Barra branca com a marca, abas em pílula, faixa de estado tingida no topo
+do cartão com o nº do PLE, e a lista com pílulas de status.
+FORM: Convenção da categoria, escolhida pelo usuário. Régua de acabamento: Monday, Asana,
+ClickUp. Preferência permanente registrada em PRODUCT.md.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review,
+the verdict, and DESIGN.md
+-->
 
     <CascadingAuthenticationState>
-        <!-- AQUI ESTÁ A CORREÇÃO -->
         <Routes @rendermode="InteractiveServer" />
     </CascadingAuthenticationState>
 

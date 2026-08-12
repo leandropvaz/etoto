@@ -102,7 +102,7 @@
                     </div>
                 </div>
 
-                <div class="table-responsive">
+                <div class="table-responsive pw-table-cards">
                     <table class="table table-bordered table-hover table-sm mb-0 report-table selectable-table">
                         <thead class="thead-light">
                             <tr>
@@ -138,13 +138,13 @@
                                 @foreach (var u in ItensFiltrados)
                                 {
                                     <tr class="@RowClass(u)" @onclick="() => SelecionarLinha(u.Id)">
-                                        <td>
+                                        <td data-label="@(Lang["report.users.col_user"])">
                                             <div class="font-weight-bold">@u.NomeCompleto</div>
                                             <small class="text-muted">@u.Login</small>
                                         </td>
-                                        <td>@string.Join(", ", u.PerfisNomes)</td>
-                                        <td>@(u.PlantasNomes.Count > 0 ? string.Join(", ", u.PlantasNomes) : Lang["users.no_plant"])</td>
-                                        <td>
+                                        <td data-label="@(Lang["report.users.col_profiles"])">@string.Join(", ", u.PerfisNomes)</td>
+                                        <td data-label="@(Lang["report.users.col_plants"])">@(u.PlantasNomes.Count > 0 ? string.Join(", ", u.PlantasNomes) : Lang["users.no_plant"])</td>
+                                        <td data-label="@(Lang["report.users.col_bond"])">
                                             @if (u.TipoVinculo == 2)
                                             {
                                                 <div>@Lang["users.bond_contractor"]</div>
@@ -158,7 +158,7 @@
                                                 <span class="text-muted">@Lang["users.bond_employee"]</span>
                                             }
                                         </td>
-                                        <td>
+                                        <td data-label="@(Lang["report.users.col_validity"])">
                                             @if (u.DataValidadeAcesso.HasValue)
                                             {
                                                 <span class="badge @BadgeClass(u.StatusValidadeAcesso) badge-sm">
@@ -167,7 +167,7 @@
                                             }
                                             else { <span class="text-muted">—</span> }
                                         </td>
-                                        <td>
+                                        <td data-label="@(Lang["report.users.col_training"])">
                                             @if (!u.ExigeTreinamento)
                                             {
                                                 <span class="text-muted small">@Lang["report.users.not_required"]</span>
@@ -185,10 +185,10 @@
                                                 </span>
                                             }
                                         </td>
-                                        <td>
+                                        <td data-label="@(Lang["report.users.col_last_login"])">
                                             @(u.DataUltimoLogin?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")
                                         </td>
-                                        <td>
+                                        <td data-label="@(Lang["report.users.col_responsibles"])">
                                             <small class="text-muted d-block">
                                                 @Lang["report.users.created_by_short"]: @(u.CriadoPorNome ?? "—")
                                             </small>
@@ -214,7 +214,7 @@
 </section>
 
 <style>
-    .report-table th, .report-table td { font-size: 0.78rem; padding: 0.3rem 0.4rem; }
+    .report-table thead th { white-space: nowrap; }
 </style>
 
 @code {

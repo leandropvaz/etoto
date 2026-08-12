@@ -1,0 +1,1177 @@
+@charset "UTF-8";
+/* =============================================================================
+   E-TOTO — SISTEMA VISUAL
+   SaaS moderno, claro e arredondado. Régua de acabamento: Monday, Asana, ClickUp.
+   Direção fixada pelo usuário e registrada em PRODUCT.md.
+
+   Carrega depois do AdminLTE e manda nele.
+
+   Três regras que governam tudo:
+
+   1. SUPERFÍCIE FLUTUA. Cartão branco sobre fundo cinza-azulado, canto
+      arredondado e sombra difusa. Nada de moldura pesada: a separação vem da
+      elevação e do respiro, não de traço grosso.
+   2. ESTADO É PÍLULA SÓLIDA. O estado do PLE aparece como pílula de cor cheia
+      com texto branco — o padrão de status do Monday. O rótulo escrito é a
+      redundância que não depende de cor.
+   3. COR TEM DONO. Azul = ação e navegação. Vermelho/âmbar/verde = estado do
+      bloqueio, nunca decoração. Cinza = tudo o mais.
+   ============================================================================= */
+
+:root {
+    /* ---- Superfícies ---------------------------------------------------- */
+    --pw-paper:      #F5F7FA;  /* fundo da aplicação */
+    --pw-sheet:      #FFFFFF;  /* cartão */
+    --pw-vellum:     #F0F3F8;  /* cabeçalho de tabela, faixa recuada */
+    --pw-vellum-2:   #F8FAFC;  /* zebra, hover */
+
+    /* ---- Texto ----------------------------------------------------------- */
+    --pw-ink:        #1C2333;  /* título e corpo (14.6:1) */
+    --pw-ink-2:      #4E5875;  /* secundário    (7.1:1) */
+    --pw-ink-3:      #5C6580;  /* rótulo, meta  (5.8:1 na folha, 5.4:1 no fundo) */
+    --pw-ink-4:      #A3ABBF;  /* indisponível — nunca texto de leitura */
+    --pw-ink-press:  #0A4E9E;
+    --pw-ink-on-dark:#FFFFFF;
+
+    /* ---- Bordas — finas, quase invisíveis --------------------------------- */
+    --pw-hair:       #EDF0F5;  /* divisória de linha */
+    --pw-line:       #DFE4EE;  /* contorno de campo e cartão */
+    --pw-heavy:      #C6CDDC;  /* contorno em foco/hover */
+
+    /* ---- Azul da marca, modernizado --------------------------------------
+       O #006CB5 institucional continua no logo. Para a interface, um azul da
+       mesma família, mais limpo e mais claro. */
+    --pw-notice:     #1570DB;
+    --pw-notice-ink: #0F55A8;
+    --pw-notice-bg:  #EAF2FE;
+
+    /* ---- Estado do bloqueio — pílulas sólidas, texto branco ---------------
+       Todas MEDIDAS em ≥4.5:1 com branco em cima — não estimadas. */
+    --pw-danger:     #D1344B;  /* bloqueio ativo */
+    --pw-danger-ink: #A8253A;
+    --pw-danger-bg:  #FDECEF;
+    --pw-warn:       #9C5607;  /* desbloqueio em curso, vencendo (5.6:1 com branco) */
+    --pw-warn-ink:   #7E4506;  /* hover do botão âmbar */
+    --pw-warn-bg:    #FDF2E5;
+    --pw-caution:    #8A6A00;  /* pendência */
+    --pw-caution-bg: #FDF7E3;
+    --pw-safe:       #0F7B4F;  /* finalizado, vigente */
+    --pw-safe-ink:   #0B6440;  /* hover do botão verde */
+    --pw-safe-bg:    #E8F6EF;
+    --pw-idle:       #626B82;  /* criado, sem estado (5.3:1 com branco) */
+    --pw-idle-bg:    #F0F2F7;
+
+    /* Derivados do texto e da primária — nomeados para não virarem literais soltos. */
+    --pw-ink-deep:   #10162A;  /* hover do botão escuro */
+    --pw-shadow-rgb: 28, 35, 51;
+    --pw-notice-rgb: 21, 112, 219;
+
+    /* ---- Tipografia ------------------------------------------------------ */
+    --pw-font:       'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --pw-font-nar:   var(--pw-font);   /* família única neste sistema */
+
+    --pw-t-2xs:    0.6875rem; /* 11px — meta miúda */
+    --pw-t-label:  0.8125rem; /* 13px — rótulo de campo, caixa normal */
+    --pw-t-xs:     0.75rem;   /* 12px — pílula de estado */
+    --pw-t-sm:     0.8125rem; /* 13px */
+    --pw-t-base:   0.875rem;  /* 14px — corpo da interface */
+    --pw-t-md:     1rem;      /* 16px — campos (abaixo disso o iOS dá zoom) */
+    --pw-t-lg:     1.125rem;
+    --pw-t-xl:     1.5rem;
+    --pw-t-2xl:    2rem;
+
+    /* Escala de TV — só o mural (/mural/{codigo}) usa. O leitor está a metros de
+       distância, não a 60cm, então a escala do app não serve. */
+    --pw-t-tv-sm:  1.75rem;
+    --pw-t-tv:     2.25rem;
+    --pw-t-tv-lg:  2.75rem;
+    --pw-t-tv-xl:  3.25rem;
+
+    /* ---- Ritmo ----------------------------------------------------------- */
+    --pw-1: 4px;  --pw-2: 8px;   --pw-3: 12px;  --pw-4: 16px;
+    --pw-5: 24px; --pw-6: 32px;  --pw-7: 48px;  --pw-8: 64px;
+
+    /* ---- Raio — nada é quadrado ------------------------------------------ */
+    --pw-r-0: 0;
+    --pw-r-xs: 6px;   /* controles miúdos: caixa de seleção, rádio */
+    --pw-r-1: 8px;    /* campos, botões pequenos */
+    --pw-r-2: 10px;   /* botões */
+    --pw-r-3: 14px;   /* cartões */
+    --pw-r-4: 20px;   /* modais, superfícies grandes */
+    --pw-r-pill: 999px;
+
+    /* ---- Alvo de toque ---------------------------------------------------- */
+    --pw-tap: 40px;
+    --pw-tap-lg: 48px;
+
+    /* ---- Elevação — difusa e suave, nunca dura ----------------------------- */
+    --pw-sh-1: 0 1px 2px rgba(var(--pw-shadow-rgb),.05), 0 1px 3px rgba(var(--pw-shadow-rgb),.06);
+    --pw-sh-2: 0 2px 6px rgba(var(--pw-shadow-rgb),.06), 0 4px 12px rgba(var(--pw-shadow-rgb),.06);
+    --pw-sh-3: 0 8px 20px rgba(var(--pw-shadow-rgb),.09), 0 2px 6px rgba(var(--pw-shadow-rgb),.05);
+    --pw-lift: 0 20px 48px rgba(var(--pw-shadow-rgb),.16), 0 6px 16px rgba(var(--pw-shadow-rgb),.08);
+    --pw-ring: 0 0 0 3px rgba(var(--pw-notice-rgb), .22);
+
+    --pw-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+    --pw-top-h: 60px;
+    --pw-rail-h: 52px;
+    --pw-bottom-h: 0px;
+}
+
+/* =============================================================================
+   BASE
+   ============================================================================= */
+
+html { -webkit-text-size-adjust: 100%; }
+
+body,
+body.hold-transition {
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-base);
+    line-height: 1.5;
+    color: var(--pw-ink);
+    background-color: var(--pw-paper);
+    -webkit-font-smoothing: antialiased;
+}
+
+.wrapper, .content-wrapper,
+.main-header, .main-footer { margin-left: 0 !important; }
+
+.content-wrapper { background-color: var(--pw-paper); min-height: auto; }
+.content { padding-top: 0; }
+
+:focus-visible { outline: none; box-shadow: var(--pw-ring); border-radius: var(--pw-r-1); }
+.btn:focus, .btn:active:focus,
+.form-control:focus, .form-check-input:focus,
+.btn-link.nav-link:focus { box-shadow: var(--pw-ring) !important; }
+
+::selection { background: rgba(var(--pw-notice-rgb), .18); }
+
+/* =============================================================================
+   TIPOGRAFIA — caixa normal, sem caixa-alta espaçada
+   ============================================================================= */
+
+h1,h2,h3,h4,h5,h6,.h1,.h2,.h3,.h4,.h5,.h6 {
+    font-family: var(--pw-font);
+    font-weight: 700;
+    color: var(--pw-ink);
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    margin-top: 0;
+}
+
+h1,.h1 { font-size: var(--pw-t-xl); margin-bottom: var(--pw-3); }
+h2,.h2 { font-size: var(--pw-t-lg); margin-bottom: var(--pw-3); }
+h3,.h3 { font-size: var(--pw-t-md); margin-bottom: var(--pw-2); }
+h4,.h4 { font-size: var(--pw-t-md); margin-bottom: var(--pw-2); }
+h5,.h5,h6,.h6 { font-size: var(--pw-t-base); margin-bottom: var(--pw-2); }
+
+small,.small { font-size: var(--pw-t-xs); }
+.text-muted { color: var(--pw-ink-3) !important; }
+
+a { color: var(--pw-notice); text-decoration: none; }
+a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Rótulo: cinza, peso médio, caixa normal. */
+.pw-label,
+.pw-tblock__key,
+.table thead th,
+.card-header .card-title {
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-label);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--pw-ink-3);
+}
+
+.pw-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.table td .pw-num, .table th .pw-num { white-space: nowrap; }
+
+/* =============================================================================
+   SHELL — barra branca, abas em pílula
+   ============================================================================= */
+
+.pw-top {
+    display: flex;
+    align-items: center;
+    gap: var(--pw-4);
+    min-height: var(--pw-top-h);
+    padding: 0 var(--pw-5);
+    padding-left: max(var(--pw-5), env(safe-area-inset-left));
+    padding-right: max(var(--pw-5), env(safe-area-inset-right));
+    background: var(--pw-sheet);
+    border-bottom: 1px solid var(--pw-hair);
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+
+.pw-top__brand { display: flex; align-items: center; flex: 0 0 auto; }
+.pw-top__brand img { height: 30px; width: auto; display: block; }
+
+.pw-top__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--pw-2);
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+}
+
+/* Cada dado do topo é uma pastilha discreta, não uma coluna com filete. */
+.pw-field {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px var(--pw-3);
+    border-radius: var(--pw-r-pill);
+    background: var(--pw-vellum);
+    min-width: 0;
+}
+.pw-field__key { font-size: var(--pw-t-2xs); font-weight: 600; color: var(--pw-ink-3); }
+.pw-field__val {
+    font-size: var(--pw-t-sm); font-weight: 600; color: var(--pw-ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.pw-field--env { background: var(--pw-caution-bg); }
+.pw-field--env .pw-field__key { display: none; }
+.pw-field--env .pw-field__val { color: var(--pw-caution); }
+
+.pw-top__actions { display: flex; align-items: center; gap: var(--pw-2); flex: 0 0 auto; }
+
+.pw-top .btn-outline-light,
+.pw-btn-ghost-dark {
+    min-height: 36px;
+    border: 1px solid var(--pw-line);
+    color: var(--pw-ink-2);
+    background: var(--pw-sheet);
+    border-radius: var(--pw-r-2);
+    font-size: var(--pw-t-sm);
+    font-weight: 600;
+    padding: 0 var(--pw-3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color .15s var(--pw-ease), border-color .15s var(--pw-ease);
+}
+.pw-top .btn-outline-light:hover,
+.pw-btn-ghost-dark:hover { background: var(--pw-vellum); border-color: var(--pw-heavy); color: var(--pw-ink); }
+
+/* ---- Trilho de navegação — pílulas ------------------------------------- */
+
+.pw-rail {
+    display: flex;
+    align-items: center;
+    gap: var(--pw-1);
+    background: var(--pw-sheet);
+    border-bottom: 1px solid var(--pw-hair);
+    padding: 0 var(--pw-5) var(--pw-2);
+    position: sticky;
+    top: var(--pw-top-h);
+    z-index: 1020;
+    overflow-x: auto;
+    scrollbar-width: none;
+    list-style: none;
+    margin: 0;
+}
+.pw-rail::-webkit-scrollbar { display: none; }
+
+.pw-rail__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 0 var(--pw-3);
+    border-radius: var(--pw-r-2);
+    color: var(--pw-ink-2);
+    background: transparent;
+    border: 0;
+    white-space: nowrap;
+    text-decoration: none;
+    font-size: var(--pw-t-base);
+    font-weight: 600;
+    transition: background-color .15s var(--pw-ease), color .15s var(--pw-ease);
+}
+.pw-rail__item i { font-size: 1rem; opacity: .85; }
+.pw-rail__item:hover { color: var(--pw-ink); background: var(--pw-vellum); text-decoration: none; }
+
+.pw-rail__item.is-active {
+    color: var(--pw-notice-ink);
+    background: var(--pw-notice-bg);
+}
+.pw-rail__item.is-active i { opacity: 1; }
+
+.pw-rail__item.is-locked { color: var(--pw-ink-4); cursor: not-allowed; }
+.pw-rail__item.is-locked:hover { background: transparent; color: var(--pw-ink-4); }
+.pw-rail__item.is-locked i.pw-rail__lock { font-size: var(--pw-t-xs); }
+
+.pw-main {
+    padding: var(--pw-5) 0 var(--pw-7);
+    padding-bottom: calc(var(--pw-7) + var(--pw-bottom-h) + env(safe-area-inset-bottom));
+}
+
+/* O rodapé fecha a área de conteúdo em vez de flutuar solto: filete fino no
+   topo, marca em escala discreta e alinhada à mesma largura do conteúdo.
+   É chrome permanente — precisa ler como moldura, não como elemento. */
+.pw-foot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--pw-3);
+    margin: var(--pw-6) auto 0;
+    padding: var(--pw-4) var(--pw-5);
+    padding-bottom: calc(var(--pw-4) + var(--pw-bottom-h) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--pw-hair);
+    background: transparent;
+    margin-left: 0 !important;
+}
+.pw-foot a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pw-2);
+    padding: var(--pw-1) var(--pw-2);
+    border-radius: var(--pw-r-1);
+    transition: background-color .15s var(--pw-ease);
+}
+.pw-foot a:hover { background: var(--pw-vellum); }
+.pw-foot img { height: 18px; width: auto; display: block; }
+
+@media (max-width: 767.98px) {
+    .pw-foot { margin-top: var(--pw-5); padding: var(--pw-3) var(--pw-4); }
+    .pw-foot img { height: 16px; }
+}
+
+/* =============================================================================
+   CARTÃO — branco, arredondado, sombra difusa
+   ============================================================================= */
+
+.card {
+    background: var(--pw-sheet);
+    border: 1px solid var(--pw-hair);
+    border-radius: var(--pw-r-3);
+    box-shadow: var(--pw-sh-1);
+    margin-bottom: var(--pw-4);
+}
+
+/* O AdminLTE pinta uma barra no topo do card-outline. Aqui não há barra:
+   a cor de estado vive na pílula, não na moldura. */
+.card.card-outline,
+.card.card-primary.card-outline, .card.card-info.card-outline,
+.card.card-success.card-outline, .card.card-warning.card-outline,
+.card.card-danger.card-outline, .card.card-secondary.card-outline,
+.card.card-dark.card-outline { border-top: 1px solid var(--pw-hair); }
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--pw-hair);
+    border-radius: var(--pw-r-3) var(--pw-r-3) 0 0;
+    padding: var(--pw-4) var(--pw-5);
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--pw-3);
+}
+.card-header .card-title {
+    margin: 0; float: none;
+    display: inline-flex; align-items: center; gap: var(--pw-2);
+    color: var(--pw-ink);
+    font-size: var(--pw-t-md);
+    font-weight: 700;
+}
+.card-header .card-title i { color: var(--pw-ink-3); }
+.card-header .card-tools { margin-left: auto; position: static; float: none; display: flex; gap: var(--pw-2); align-items: center; }
+
+.card-body { padding: var(--pw-5); }
+.card-footer { background: var(--pw-vellum-2); border-top: 1px solid var(--pw-hair); padding: var(--pw-4) var(--pw-5); border-radius: 0 0 var(--pw-r-3) var(--pw-r-3); }
+
+.card .card { border: 1px solid var(--pw-line); box-shadow: none; border-radius: var(--pw-r-2); margin-bottom: var(--pw-3); }
+
+/* =============================================================================
+   BLOCO DE INFORMAÇÃO (detalhe do PLE)
+   ============================================================================= */
+
+.pw-tblock {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--pw-4);
+    padding: var(--pw-4) var(--pw-5);
+    border: 1px solid var(--pw-hair);
+    border-radius: var(--pw-r-3);
+    background: var(--pw-vellum-2);
+    margin-bottom: var(--pw-5);
+}
+@media (min-width: 576px)  { .pw-tblock { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (min-width: 992px)  { .pw-tblock { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+
+.pw-tblock__field { min-width: 0; border: 0; padding: 0; }
+.pw-tblock__key { display: block; margin-bottom: 2px; }
+.pw-tblock__val { font-size: var(--pw-t-base); font-weight: 600; color: var(--pw-ink); word-break: break-word; }
+
+.pw-tblock__field--anchor { grid-column: 1 / -1; }
+.pw-tblock__field--anchor .pw-tblock__val {
+    font-size: var(--pw-t-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+@media (min-width: 992px) { .pw-tblock__field--anchor { grid-column: span 2; } }
+
+/* =============================================================================
+   ESTADO — pílula sólida
+   ============================================================================= */
+
+.pw-sig {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: var(--pw-r-pill);
+    border: 0;
+    font-size: var(--pw-t-xs);
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+    line-height: 1.5;
+    color: #fff;
+}
+.pw-sig--danger  { background: var(--pw-danger); }
+.pw-sig--warn    { background: var(--pw-warn); }
+.pw-sig--caution { background: var(--pw-caution); }
+.pw-sig--safe    { background: var(--pw-safe); }
+.pw-sig--notice  { background: var(--pw-notice); }
+.pw-sig--idle    { background: var(--pw-idle); }
+/* Anulado: contorno, não preenchimento — o registro existe mas não vale. */
+.pw-sig--void {
+    background: transparent;
+    color: var(--pw-ink-3);
+    border: 1px solid var(--pw-line);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+/* Faixa de estado: bloco tingido suave com um marcador redondo. */
+.pw-sigband {
+    display: flex;
+    align-items: center;
+    gap: var(--pw-3);
+    padding: var(--pw-4) var(--pw-5);
+    border: 0;
+    border-radius: var(--pw-r-3);
+    margin-bottom: var(--pw-5);
+    font-weight: 600;
+}
+.pw-sigband::before {
+    content: "";
+    width: 10px; height: 10px; flex: 0 0 auto;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 4px rgba(255,255,255,.7);
+}
+.pw-sigband__id {
+    font-size: var(--pw-t-base);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--pw-ink);
+}
+.pw-sigband__name { font-size: var(--pw-t-base); font-weight: 700; }
+.pw-sigband__note { font-size: var(--pw-t-sm); font-weight: 500; color: var(--pw-ink-2); }
+
+.pw-sigband--danger  { color: var(--pw-danger-ink); background: var(--pw-danger-bg); }
+.pw-sigband--warn    { color: var(--pw-warn);   background: var(--pw-warn-bg); }
+.pw-sigband--safe    { color: var(--pw-safe);   background: var(--pw-safe-bg); }
+.pw-sigband--notice  { color: var(--pw-notice-ink); background: var(--pw-notice-bg); }
+.pw-sigband--idle    { color: var(--pw-ink-2);  background: var(--pw-idle-bg); }
+
+/* Variante colada no topo do cartão. */
+.pw-sigband--sheet {
+    margin: 0;
+    border-radius: var(--pw-r-3) var(--pw-r-3) 0 0;
+    flex-wrap: wrap;
+    position: sticky;
+    top: calc(var(--pw-top-h) + var(--pw-rail-h) + var(--pw-2));
+    z-index: 6;
+}
+
+/* Chip numerado do ponto de isolamento. */
+.pw-balloon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; flex: 0 0 auto;
+    border: 0; border-radius: 50%;
+    background: var(--pw-notice-bg);
+    font-size: var(--pw-t-2xs); font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--pw-notice-ink);
+    line-height: 1;
+}
+
+/* Tag de equipamento. */
+.pw-tag {
+    display: inline-flex; align-items: center;
+    padding: 4px 10px;
+    border: 0; border-radius: var(--pw-r-pill);
+    background: var(--pw-vellum);
+    color: var(--pw-ink-2);
+    font-size: var(--pw-t-xs);
+    font-weight: 600;
+}
+
+.pw-legend {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: var(--pw-2) var(--pw-3);
+    padding: var(--pw-3) var(--pw-4);
+    border: 0; border-radius: var(--pw-r-2);
+    background: var(--pw-vellum-2);
+    margin-bottom: var(--pw-4);
+}
+.pw-legend__title { margin-right: var(--pw-1); }
+.pw-legend__item { display: inline-flex; align-items: center; }
+
+/* =============================================================================
+   LINHA DO TEMPO — horizontal, compartilhada por PLE e Avaliação de Risco.
+   O marcador usa a MESMA cor do estado correspondente na lista, para que a
+   sequência e o status contem a mesma história.
+   ============================================================================= */
+
+.pw-timeline-block { margin-bottom: var(--pw-5); }
+.pw-timeline-block__title { display: block; margin-bottom: var(--pw-2); }
+
+.pw-timeline {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    list-style: none;
+    margin: 0;
+    padding: var(--pw-2) 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+/* Largura fixa: com flex:1 dois eventos se espalhavam pela tela inteira e a
+   sequência sumia. O evento tem o tamanho que precisa; o excesso rola de lado. */
+.pw-timeline__item {
+    position: relative;
+    flex: 0 0 auto;
+    width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 var(--pw-1);
+}
+
+/* O fio vai da borda deste marcador até a borda do próximo. */
+.pw-timeline__item::after {
+    content: "";
+    position: absolute;
+    top: 17px;
+    left: calc(50% + 22px);
+    width: calc(100% - 44px);
+    height: 2px;
+    background: var(--pw-line);
+    border-radius: var(--pw-r-pill);
+}
+.pw-timeline__item:last-child::after { display: none; }
+
+.pw-timeline__dot {
+    position: relative;
+    z-index: 1;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--pw-t-xs);
+    background: var(--pw-idle-bg);
+    color: var(--pw-ink-3);
+    flex: 0 0 auto;
+}
+.pw-timeline__dot--danger { background: var(--pw-danger); color: #fff; }
+.pw-timeline__dot--warn   { background: var(--pw-warn);   color: #fff; }
+.pw-timeline__dot--safe   { background: var(--pw-safe);   color: #fff; }
+.pw-timeline__dot--notice { background: var(--pw-notice); color: #fff; }
+
+.pw-timeline__body { min-width: 0; width: 100%; margin-top: var(--pw-2); }
+.pw-timeline__act {
+    display: block;
+    font-size: var(--pw-t-sm);
+    font-weight: 600;
+    color: var(--pw-ink);
+    line-height: 1.3;
+}
+.pw-timeline__meta {
+    display: block;
+    font-size: var(--pw-t-2xs);
+    color: var(--pw-ink-3);
+    line-height: 1.4;
+    margin-top: 2px;
+}
+.pw-timeline__meta span { display: block; }
+
+@media (max-width: 767.98px) {
+    .pw-timeline__item { width: 124px; }
+}
+
+.pw-stamp { animation: pw-rise .28s var(--pw-ease) both; }
+@keyframes pw-rise { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* =============================================================================
+   TABELAS — arejadas, sem grade
+   ============================================================================= */
+
+.table {
+    color: var(--pw-ink);
+    font-size: var(--pw-t-base);
+    margin-bottom: 0;
+    border-color: var(--pw-hair);
+    width: 100%;
+}
+
+.table thead th {
+    background: transparent;
+    color: var(--pw-ink-3);
+    font-weight: 600;
+    border-top: 0;
+    border-bottom: 1px solid var(--pw-line) !important;
+    padding: var(--pw-3) var(--pw-4);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table tbody td, .table tbody th {
+    padding: var(--pw-3) var(--pw-4);
+    border-top: 1px solid var(--pw-hair);
+    vertical-align: middle;
+    line-height: 1.45;
+}
+
+.table tbody tr { transition: background-color .12s var(--pw-ease); }
+.table tbody tr:hover { background: var(--pw-vellum-2); }
+
+.table-bordered, .table-bordered td, .table-bordered th { border-color: var(--pw-hair); }
+.table-sm td, .table-sm th { padding: var(--pw-2) var(--pw-3); }
+
+.table thead.bg-pw-blue, .table thead.bg-pw-blue th {
+    background: transparent !important; color: var(--pw-ink-3) !important;
+}
+
+/* Estado na linha: tinta suavíssima. A pílula carrega o peso. */
+.table .table-active, .table tbody tr.row-selected { background: var(--pw-notice-bg) !important; }
+.table tbody tr.row-selected td { font-weight: 600; }
+.table .table-danger  { background: var(--pw-danger-bg) !important; }
+.table .table-warning { background: var(--pw-caution-bg) !important; }
+.table .table-success { background: var(--pw-safe-bg) !important; }
+
+.selectable-table tbody tr { cursor: pointer; }
+
+.table-responsive {
+    border: 1px solid var(--pw-hair);
+    border-radius: var(--pw-r-2);
+    background: var(--pw-sheet);
+    overflow-x: auto;
+}
+.card-body > .table-responsive { margin: 0; }
+
+/* =============================================================================
+   CAMPOS
+   ============================================================================= */
+
+.form-control, .custom-select, select.form-control {
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-md);
+    height: var(--pw-tap);
+    min-height: var(--pw-tap);
+    padding: 0 var(--pw-3);
+    color: var(--pw-ink);
+    background-color: var(--pw-sheet);
+    border: 1px solid var(--pw-line);
+    border-radius: var(--pw-r-1);
+    box-shadow: none;
+    transition: border-color .15s var(--pw-ease), box-shadow .15s var(--pw-ease);
+}
+textarea.form-control { height: auto; min-height: 96px; padding: var(--pw-2) var(--pw-3); line-height: 1.5; }
+
+.form-control:hover { border-color: var(--pw-heavy); }
+.form-control:focus { border-color: var(--pw-notice); background: var(--pw-sheet); }
+.form-control::placeholder { color: var(--pw-ink-3); opacity: 1; }
+.form-control:disabled, .form-control[readonly] {
+    background: var(--pw-vellum); color: var(--pw-ink-3); cursor: not-allowed;
+}
+
+.form-control-sm { height: 36px; min-height: 36px; font-size: var(--pw-t-md); }
+
+label, .form-label {
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-label);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--pw-ink-2);
+    margin-bottom: 6px;
+}
+
+.form-group { margin-bottom: var(--pw-4); }
+
+.invalid, .form-control.invalid { border-color: var(--pw-danger); }
+.valid.modified:not([type=checkbox]) { border-color: var(--pw-safe); outline: none; }
+.validation-message { color: var(--pw-danger-ink); font-size: var(--pw-t-xs); font-weight: 500; margin-top: var(--pw-1); display: block; }
+
+.input-group-text {
+    background: var(--pw-vellum); border: 1px solid var(--pw-line);
+    border-radius: var(--pw-r-1); color: var(--pw-ink-2); font-size: var(--pw-t-sm);
+}
+
+/* =============================================================================
+   SELEÇÃO — caixas e rádios
+   O projeto usa CINCO padrões diferentes de marcação para a mesma coisa:
+     1. .form-check + .form-check-input        (Usuários, Revalidação, Plantas)
+     2. .icheck-primary + checkbox             (Plantas, Usuários)
+     3. .icheck-primary.radio-small + radio    (Equipamentos)
+     4. .custom-control.custom-checkbox        (Usuários — treinamento)
+     5. <label><input class="mr-2"> …          (PLE, Avaliação de Risco)
+   Remendar caso a caso foi o erro anterior. Aqui os cinco são normalizados
+   de uma vez, e os dois que são de plugin têm a caixa redesenhada por nós.
+   ============================================================================= */
+
+/* ---- 1. Base: todo input de seleção volta ao fluxo, com tamanho e cor ------
+   O Bootstrap põe .form-check-input em position:absolute com margem negativa,
+   contando com um padding no container. Qualquer container diferente disso
+   fazia a caixa flutuar POR CIMA do texto. */
+input[type=checkbox],
+input[type=radio] {
+    position: static;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    margin: 0;
+    padding: 0;
+    transform: none;
+    accent-color: var(--pw-notice);
+    flex: 0 0 auto;
+    vertical-align: middle;
+    cursor: pointer;
+}
+input[type=checkbox]:disabled,
+input[type=radio]:disabled { cursor: not-allowed; opacity: .55; }
+
+/* ---- 2. Containers ganham respiro em vez de margem negativa --------------- */
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: var(--pw-2);
+    padding-left: 0;
+    margin-bottom: 0;
+    min-height: 30px;
+}
+.form-check-label,
+.form-check > label {
+    margin-bottom: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-base);
+    font-weight: 500;
+    color: var(--pw-ink);
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+}
+
+/* Padrão 5: o input mora dentro do próprio rótulo. */
+label > input[type=checkbox],
+label > input[type=radio] { margin-right: var(--pw-2); }
+
+/* ---- 3. Plugins de caixa desenhada: desligados ---------------------------
+   icheck-bootstrap e .custom-control escondem o input real e desenham a caixa
+   nos pseudo-elementos do rótulo. Disputar esse desenho por especificidade é
+   uma briga que se perde em algum canto — e se perdeu: o quadrado azul ficava
+   sem tique porque o ::after do plugin vencia o nosso e desenhava fora da caixa.
+   Aqui os dois plugins são desligados e o input REAL volta a ser a caixa, com
+   o mesmo mecanismo do .form-check, que já funciona. Um mecanismo só. */
+.icheck-primary,
+.custom-control.custom-checkbox,
+.custom-control.custom-radio {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pw-2);
+    padding-left: 0;
+    min-height: 30px;
+    margin-bottom: 0;
+}
+
+.icheck-primary > input[type=checkbox],
+.icheck-primary > input[type=radio],
+.custom-control-input {
+    position: static !important;
+    opacity: 1 !important;
+    z-index: auto !important;
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    accent-color: var(--pw-notice);
+    flex: 0 0 auto;
+    pointer-events: auto;
+}
+
+.icheck-primary > label,
+.custom-control-label {
+    padding-left: 0 !important;
+    margin-bottom: 0;
+    min-height: 0;
+    cursor: pointer;
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-base);
+    font-weight: 500;
+    color: var(--pw-ink);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* Nenhuma caixa desenhada sobra para conflitar. */
+.icheck-primary > label::before,
+.icheck-primary > label::after,
+.custom-control-label::before,
+.custom-control-label::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* Grupos de rádio empilham com respiro, não colados. */
+.icheck-primary + .icheck-primary { margin-top: var(--pw-2); }
+.radio-small { display: flex; }
+
+/* =============================================================================
+   BOTÕES
+   ============================================================================= */
+
+.btn {
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-base);
+    font-weight: 600;
+    letter-spacing: 0;
+    min-height: var(--pw-tap);
+    padding: 0 var(--pw-4);
+    border-radius: var(--pw-r-2);
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: none;
+    transition: background-color .15s var(--pw-ease), border-color .15s var(--pw-ease), color .15s var(--pw-ease), box-shadow .15s var(--pw-ease);
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-sm  { min-height: 36px; padding: 0 var(--pw-3); font-size: var(--pw-t-sm); border-radius: var(--pw-r-1); }
+.btn-xs, .btn-xxs { min-height: 34px; padding: 0 var(--pw-3); font-size: var(--pw-t-sm); font-weight: 600; border-radius: var(--pw-r-1); }
+.btn-lg  { min-height: var(--pw-tap-lg); padding: 0 var(--pw-5); font-size: var(--pw-t-md); }
+.btn-block { width: 100%; }
+
+.btn-primary { background: var(--pw-notice); border-color: var(--pw-notice); color: #fff; box-shadow: var(--pw-sh-1); }
+.btn-primary:hover { background: var(--pw-notice-ink); border-color: var(--pw-notice-ink); color: #fff; box-shadow: var(--pw-sh-2); }
+
+.btn-secondary, .btn-info {
+    background: var(--pw-sheet); border-color: var(--pw-line); color: var(--pw-ink-2);
+}
+.btn-secondary:hover, .btn-info:hover { background: var(--pw-vellum); border-color: var(--pw-heavy); color: var(--pw-ink); }
+
+.btn-success { background: var(--pw-safe); border-color: var(--pw-safe); color: #fff; }
+.btn-success:hover { background: var(--pw-safe-ink); border-color: var(--pw-safe-ink); color: #fff; }
+
+.btn-warning { background: var(--pw-warn); border-color: var(--pw-warn); color: #fff; }
+.btn-warning:hover { background: var(--pw-warn-ink); border-color: var(--pw-warn-ink); color: #fff; }
+
+.btn-danger { background: var(--pw-danger); border-color: var(--pw-danger); color: #fff; }
+.btn-danger:hover { background: var(--pw-danger-ink); border-color: var(--pw-danger-ink); color: #fff; }
+
+.btn-dark { background: var(--pw-ink); border-color: var(--pw-ink); color: #fff; }
+.btn-dark:hover { background: var(--pw-ink-deep); border-color: var(--pw-ink-deep); color: #fff; }
+
+.btn.btn-outline-danger  { background-color: var(--pw-danger-bg); border-color: transparent; color: var(--pw-danger-ink); }
+.btn.btn-outline-danger:hover { background-color: var(--pw-danger); border-color: transparent; color: #fff; }
+.btn.btn-outline-primary { background-color: var(--pw-notice-bg); border-color: transparent; color: var(--pw-notice-ink); }
+.btn.btn-outline-primary:hover { background-color: var(--pw-notice); border-color: transparent; color: #fff; }
+.btn.btn-outline-secondary { background-color: var(--pw-sheet); border-color: var(--pw-line); color: var(--pw-ink-2); }
+.btn.btn-outline-secondary:hover { background-color: var(--pw-vellum); color: var(--pw-ink); border-color: var(--pw-heavy); }
+
+/* ---- Ações de linha --------------------------------------------------------
+   Botões de ícone fantasmas: cinza em repouso, cor só no hover. Dois botões
+   tingidos lado a lado numa coluna estreita pesavam mais que o próprio dado
+   e ainda quebravam linha. */
+.pw-rowactions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+}
+
+.btn.pw-btn-row {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--pw-ink-3);
+    min-height: 32px;
+    width: 32px;
+    padding: 0;
+    border-radius: var(--pw-r-1);
+}
+.btn.pw-btn-row:hover { background-color: var(--pw-notice-bg); color: var(--pw-notice-ink); }
+.btn.pw-btn-row--danger:hover { background-color: var(--pw-danger-bg); color: var(--pw-danger-ink); }
+.btn.pw-btn-row:disabled { background-color: transparent; color: var(--pw-ink-4); }
+
+/* No toque não existe hover: a cor fica sempre visível. */
+@media (hover: none) {
+    .btn.pw-btn-row { color: var(--pw-notice-ink); background-color: var(--pw-notice-bg); }
+    .btn.pw-btn-row--danger { color: var(--pw-danger-ink); background-color: var(--pw-danger-bg); }
+}
+
+.btn:disabled, .btn.disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.pw-actions { display: flex; flex-wrap: wrap; gap: var(--pw-2); align-items: center; }
+
+/* =============================================================================
+   ETIQUETAS
+   ============================================================================= */
+
+.badge {
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-xs);
+    font-weight: 600;
+    letter-spacing: 0;
+    padding: 4px 10px;
+    border-radius: var(--pw-r-pill);
+    border: 0;
+    vertical-align: middle;
+    line-height: 1.5;
+}
+.badge-sm { font-size: var(--pw-t-2xs); padding: 2px 8px; }
+
+.badge-primary, .badge-info, .bg-info { background: var(--pw-notice-bg) !important; color: var(--pw-notice-ink) !important; }
+.badge-success, .bg-success { background: var(--pw-safe-bg) !important; color: var(--pw-safe) !important; }
+.badge-warning, .bg-warning { background: var(--pw-caution-bg) !important; color: var(--pw-caution) !important; }
+.badge-danger, .bg-danger { background: var(--pw-danger-bg) !important; color: var(--pw-danger-ink) !important; }
+.badge-secondary, .badge-light { background: var(--pw-vellum) !important; color: var(--pw-ink-2) !important; }
+.badge-dark { background: var(--pw-ink) !important; color: #fff !important; }
+
+/* =============================================================================
+   AVISOS
+   ============================================================================= */
+
+.alert {
+    border: 0;
+    border-radius: var(--pw-r-2);
+    padding: var(--pw-4);
+    font-size: var(--pw-t-base);
+    margin-bottom: var(--pw-4);
+}
+.alert-danger  { color: var(--pw-danger-ink); background: var(--pw-danger-bg); }
+.alert-warning { color: var(--pw-warn);   background: var(--pw-warn-bg); }
+.alert-success { color: var(--pw-safe);   background: var(--pw-safe-bg); }
+.alert-info    { color: var(--pw-notice-ink); background: var(--pw-notice-bg); }
+.alert strong { font-weight: 700; }
+
+/* =============================================================================
+   SUB-ABAS
+   ============================================================================= */
+
+.nav-pills { gap: var(--pw-1); flex-wrap: wrap; }
+.nav-pills .nav-link {
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-base);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--pw-ink-2);
+    background: transparent;
+    border: 0;
+    border-radius: var(--pw-r-2);
+    min-height: 38px;
+    padding: 0 var(--pw-4);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.nav-pills .nav-link:hover { background: var(--pw-vellum); color: var(--pw-ink); }
+.nav-pills .nav-link.active {
+    background: var(--pw-notice-bg) !important;
+    color: var(--pw-notice-ink) !important;
+}
+
+/* =============================================================================
+   SOBREPOSIÇÃO
+   ============================================================================= */
+
+.modal-content {
+    border: 0;
+    border-radius: var(--pw-r-4);
+    box-shadow: var(--pw-lift);
+    background: var(--pw-sheet);
+    overflow: hidden;
+}
+.modal-header { background: transparent; border-bottom: 1px solid var(--pw-hair); padding: var(--pw-4) var(--pw-5); }
+/* Alguns modais ainda pedem .bg-primary/.bg-dark no cabeçalho, herança do tema
+   antigo. Cabeçalho de modal aqui é branco: a intenção vive no botão do rodapé. */
+.modal-header.bg-primary, .modal-header.bg-info, .modal-header.bg-secondary,
+.modal-header.bg-dark, .modal-header.bg-danger, .modal-header.bg-warning,
+.modal-header.bg-pw-blue, .modal-header.bg-pw-blue-light {
+    background: transparent !important;
+    color: var(--pw-ink) !important;
+}
+.modal-header.bg-primary .modal-title, .modal-header.bg-dark .modal-title,
+.modal-header.bg-danger .modal-title, .modal-header .modal-title.text-white,
+.modal-header .text-white { color: var(--pw-ink) !important; }
+.modal-header .modal-title i { color: var(--pw-ink-3); }
+.modal-header .close {
+    color: var(--pw-ink-3) !important;
+    opacity: 1;
+    text-shadow: none;
+    font-weight: 400;
+    padding: 0 var(--pw-2);
+}
+.modal-header .close:hover { color: var(--pw-ink) !important; }
+.modal-title { font-size: var(--pw-t-lg); font-weight: 700; }
+.modal-body { padding: var(--pw-5); }
+.modal-footer { background: var(--pw-vellum-2); border-top: 1px solid var(--pw-hair); padding: var(--pw-4) var(--pw-5); gap: var(--pw-2); }
+.modal-backdrop.show { opacity: .45; background: var(--pw-ink); }
+
+/* =============================================================================
+   CARREGAMENTO E VAZIO
+   ============================================================================= */
+
+.spinner-border { border-width: 2px; color: var(--pw-notice); }
+
+.pw-empty {
+    padding: var(--pw-8) var(--pw-4);
+    text-align: center;
+    color: var(--pw-ink-3);
+    border: 0;
+    border-radius: var(--pw-r-3);
+    background: var(--pw-vellum-2);
+}
+.pw-empty i {
+    font-size: var(--pw-t-xl);
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--pw-sheet);
+    color: var(--pw-ink-4);
+    box-shadow: var(--pw-sh-1);
+    margin-bottom: var(--pw-3);
+}
+
+/* =============================================================================
+   ADAPTAÇÃO
+   ============================================================================= */
+
+@media (max-width: 991.98px) {
+    .pw-field--optional { display: none; }
+    .card-body { padding: var(--pw-4); }
+    .card-header { padding: var(--pw-3) var(--pw-4); }
+    .pw-top, .pw-rail { padding-left: var(--pw-4); padding-right: var(--pw-4); }
+}
+
+@media (max-width: 767.98px) {
+    :root { --pw-bottom-h: 62px; }
+
+    .pw-top { gap: var(--pw-2); padding-left: max(var(--pw-3), env(safe-area-inset-left)); padding-right: max(var(--pw-3), env(safe-area-inset-right)); }
+    .pw-top__brand img { height: 26px; }
+    .pw-field--desk, .pw-field--wide { display: none; }
+
+    /* O trilho desce para o polegar. */
+    .pw-rail {
+        position: fixed; top: auto; bottom: 0; left: 0; right: 0;
+        border-top: 1px solid var(--pw-hair); border-bottom: 0;
+        box-shadow: 0 -2px 12px rgba(var(--pw-shadow-rgb),.06);
+        padding: var(--pw-1) var(--pw-1);
+        padding-bottom: calc(var(--pw-1) + env(safe-area-inset-bottom));
+        justify-content: space-around;
+        z-index: 1040;
+    }
+    .pw-rail__item {
+        flex: 1 0 auto; min-width: 68px; max-width: 110px;
+        flex-direction: column; justify-content: center; gap: 2px;
+        min-height: 54px; padding: var(--pw-1) 4px;
+        border-radius: var(--pw-r-2);
+        font-size: var(--pw-t-2xs); font-weight: 600;
+    }
+    .pw-rail__item i { font-size: var(--pw-t-lg); }
+    .pw-rail__item > span {
+        display: block; max-width: 100%;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+    }
+    .pw-rail__lock { display: none; }
+
+    .pw-main { padding-top: var(--pw-4); }
+    .pw-sigband--sheet { top: var(--pw-top-h); }
+    .pw-sigband { padding: var(--pw-3) var(--pw-4); }
+    .pw-sigband__id { width: 100%; }
+
+    .pw-tblock { padding: var(--pw-4); gap: var(--pw-3); }
+    .pw-tblock__field--anchor .pw-tblock__val { font-size: var(--pw-t-xl); }
+
+    .pw-actions--stack { flex-direction: column; align-items: stretch; }
+    .pw-actions--stack > .btn { width: 100%; min-height: var(--pw-tap-lg); }
+
+    .card { margin-bottom: var(--pw-3); border-radius: var(--pw-r-2); }
+    .card-header { border-radius: var(--pw-r-2) var(--pw-r-2) 0 0; }
+
+    /* Tabela vira ficha. */
+    .pw-table-cards { border: 0; background: transparent; border-radius: 0; }
+    .pw-table-cards table, .pw-table-cards thead, .pw-table-cards tbody,
+    .pw-table-cards tr, .pw-table-cards td { display: block; width: 100%; }
+    .pw-table-cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .pw-table-cards tbody tr {
+        display: flex; flex-direction: column;
+        border: 1px solid var(--pw-hair);
+        border-radius: var(--pw-r-2);
+        background: var(--pw-sheet);
+        box-shadow: var(--pw-sh-1);
+        margin-bottom: var(--pw-3);
+        padding: var(--pw-2) 0;
+    }
+    .pw-table-cards tbody td {
+        border: 0; border-top: 1px solid var(--pw-hair);
+        padding: var(--pw-2) var(--pw-4);
+        display: flex; align-items: baseline; gap: var(--pw-3);
+        font-size: var(--pw-t-base);
+    }
+    .pw-table-cards tbody td:first-child { border-top: 0; }
+    .pw-table-cards tbody td::before {
+        content: attr(data-label);
+        flex: 0 0 40%; max-width: 40%;
+        font-size: var(--pw-t-label); font-weight: 600; color: var(--pw-ink-3);
+    }
+    .pw-table-cards tbody td:empty { display: none; }
+    .pw-table-cards tbody td.pw-cell--state { order: -1; border-top: 0; }
+    .pw-table-cards tbody tr.row-selected,
+    .pw-table-cards tbody tr.table-active { box-shadow: 0 0 0 2px var(--pw-notice); }
+}
+
+@media (min-width: 1400px) { .container-fluid { max-width: 1680px; } }
+
+/* =============================================================================
+   MOVIMENTO E IMPRESSÃO
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+    }
+}
+
+.ple-blink { animation: pw-blink 1.6s ease-in-out infinite; }
+@keyframes pw-blink { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+@media print {
+    .pw-top, .pw-rail, .pw-foot, .pw-actions, .card-tools { display: none !important; }
+    .pw-main { padding: 0; }
+    .card { border: 1px solid var(--pw-ink); box-shadow: none; break-inside: avoid; }
+    body { background: #fff; }
+}

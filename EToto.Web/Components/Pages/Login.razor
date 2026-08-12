@@ -18,186 +18,175 @@
 
 @layout EmptyLayout
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="row w-100 justify-content-center">
-        <div class="col-11 col-sm-7 col-md-5 col-lg-4">
-            <div class="card shadow login-card">
-                <div class="card-body p-3 p-sm-4">
+<div class="login-page">
+    <div class="login-sheet">
 
-                    <!-- Logo -->
-                    <img src="/images/etoto.png"
-                         alt="E-toto"
-                         class="mb-3 d-block mx-auto login-logo" />
+        <div class="login-sheet__head">
+            <img src="/images/etoto.png" alt="E-toto" class="login-logo" />
 
-                    <div class="login-title-wrapper text-center mb-3">
-                        <i class="nav-icon fas fa-tools login-title-icon"></i>
-                        <span class="login-title-text">E-toto</span>
-                    </div>
+            @if (Ambiente.EhHomologacao)
+            {
+                <span class="pw-sig pw-sig--caution">@Lang["env.homologacao"]</span>
+            }
+        </div>
 
-                    @if (Ambiente.EhHomologacao)
-                    {
-                        <div class="text-center mb-3">
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-flask mr-1"></i>@Lang["env.homologacao"]
-                            </span>
-                        </div>
-                    }
+        <div class="login-sheet__body">
+            <EditForm Model="@vm" OnValidSubmit="LoginAsync">
+                <DataAnnotationsValidator />
 
-                    <!-- Formulário de Login -->
-                    <EditForm Model="@vm" OnValidSubmit="LoginAsync">
-                        <DataAnnotationsValidator />
-
-                        <div class="mb-2 text-start">
-                            <label class="form-label login-label">@Lang["login.login"]</label>
-                            <InputText @bind-Value="vm.Login"
-                                       class="form-control form-control-sm login-input"
-                                       @oninput="OnLoginChanged" />
-                            <ValidationMessage For="@(() => vm.Login)" />
-                        </div>
-
-                        <div class="mb-2 text-start">
-                            <label class="form-label login-label">
-                                @Lang["login.password"]
-                                @if (PermiteLoginSemSenha)
-                                {
-                                    <span class="badge badge-info badge-senha-desabilitada">
-                                        <i class="fas fa-lock-open"></i> @Lang["login.direct_access"]
-                                    </span>
-                                }
-                            </label>
-                            <InputText @bind-Value="vm.Senha"
-                                       type="password"
-                                       class="form-control form-control-sm login-input"
-                                       disabled="@PermiteLoginSemSenha"
-                                       placeholder="@(PermiteLoginSemSenha ? Lang["login.field_blocked"] : "")" />
-                        </div>
-
-                        <div class="mb-3 text-start">
-                            <label class="form-label login-label">@Lang["login.plant"]</label>
-                            <InputSelect @bind-Value="vm.PlantaId"
-                                         class="form-control form-control-sm login-input">
-                                <option value="">@Lang["login.select"]</option>
-                                @foreach (var planta in Plantas)
-                                {
-                                    <option value="@planta.Id">
-                                        @planta.Nome (@planta.Codigo)
-                                    </option>
-                                }
-                            </InputSelect>
-                        </div>
-
-                        <button class="btn btn-primary w-100 btn-sm btn-login" disabled="@Entrando">
-                            @if (Entrando)
-                            {
-                                <span><i class="fas fa-sync-alt fa-spin mr-1"></i>@Lang["login.signing_in"]</span>
-                            }
-                            else
-                            {
-                                @Lang["login.enter"]
-                            }
-                        </button>
-
-                        @if (!string.IsNullOrEmpty(errorMessage))
-                        {
-                            <div class="alert alert-warning mt-2 py-2 px-2 login-alert">
-                                @errorMessage
-                            </div>
-                        }
-
-                        @* #2/#3: avisos de validade (acesso/treinamento). Mostrados APÓS o login, com Continuar. *@
-                        @if (warningMessages.Count > 0)
-                        {
-                            <div class="alert alert-info mt-2 py-2 px-2 login-alert">
-                                @foreach (var msg in warningMessages)
-                                {
-                                    <div><i class="fas fa-exclamation-triangle mr-1"></i>@msg</div>
-                                }
-                            </div>
-                            <button type="button" class="btn btn-outline-primary w-100 btn-sm mt-2 btn-login"
-                                    @onclick="ProsseguirAposAvisoAsync">
-                                @Lang["login.continue"]
-                            </button>
-                        }
-                    </EditForm>
-
+                <div class="form-group">
+                    <label class="form-label" for="login-user">@Lang["login.login"]</label>
+                    <InputText @bind-Value="vm.Login"
+                               id="login-user"
+                               class="form-control"
+                               autocomplete="username"
+                               @oninput="OnLoginChanged" />
+                    <ValidationMessage For="@(() => vm.Login)" />
                 </div>
-            </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="login-pass">
+                        @Lang["login.password"]
+                        @if (PermiteLoginSemSenha)
+                        {
+                            <span class="pw-sig pw-sig--notice login-label-flag">@Lang["login.direct_access"]</span>
+                        }
+                    </label>
+                    <InputText @bind-Value="vm.Senha"
+                               id="login-pass"
+                               type="password"
+                               class="form-control"
+                               autocomplete="current-password"
+                               disabled="@PermiteLoginSemSenha"
+                               placeholder="@(PermiteLoginSemSenha ? Lang["login.field_blocked"] : "")" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="login-plant">@Lang["login.plant"]</label>
+                    <InputSelect @bind-Value="vm.PlantaId" id="login-plant" class="form-control">
+                        <option value="">@Lang["login.select"]</option>
+                        @foreach (var planta in Plantas)
+                        {
+                            <option value="@planta.Id">
+                                @planta.Nome (@planta.Codigo)
+                            </option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <button class="btn btn-primary btn-lg btn-block" disabled="@Entrando">
+                    @if (Entrando)
+                    {
+                        <span><i class="fas fa-sync-alt fa-spin"></i> @Lang["login.signing_in"]</span>
+                    }
+                    else
+                    {
+                        @Lang["login.enter"]
+                    }
+                </button>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="pw-sigband pw-sigband--danger mt-3 mb-0">
+                        <span>@errorMessage</span>
+                    </div>
+                }
+
+                @* #2/#3: avisos de validade (acesso/treinamento). Mostrados APÓS o login, com Continuar. *@
+                @if (warningMessages.Count > 0)
+                {
+                    <div class="pw-sigband pw-sigband--warn mt-3 mb-0 login-warnings">
+                        <div>
+                            @foreach (var msg in warningMessages)
+                            {
+                                <div class="login-warning">@msg</div>
+                            }
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-lg btn-block mt-2"
+                            @onclick="ProsseguirAposAvisoAsync">
+                        @Lang["login.continue"]
+                    </button>
+                }
+            </EditForm>
+        </div>
+
+        <div class="login-sheet__foot">
+            @* Símbolo + escrito. O escrito (logo3) faltava aqui, então a marca
+               aparecia pela metade. Sem filtro e sem opacidade: é marca de
+               cliente, não elemento decorativo. *@
+            <a href="https://www.powerwavesolutions.net" target="_blank" rel="noopener">
+                <img src="/images/logo2.png" alt="Power Wave Solutions" />
+                <img src="/images/logo3.png" alt="" />
+            </a>
         </div>
     </div>
 </div>
 
 <style>
-    .login-title-wrapper {
+    /* Cena clara e macia: fundo cinza-azulado com um halo de cor bem lavado,
+       e o cartão flutuando no centro. Sem grade de papel milimetrado. */
+    .login-page {
+        min-height: 100vh;
+        min-height: 100dvh;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        padding: var(--pw-5);
+        padding-top: max(var(--pw-5), env(safe-area-inset-top));
+        padding-bottom: max(var(--pw-5), env(safe-area-inset-bottom));
+        background:
+            radial-gradient(90ch 60ch at 50% -10%, rgba(21,112,219,.10), transparent 60%),
+            var(--pw-paper);
     }
 
-    .login-title-text {
-        font-weight: 500;
-        font-size: 1rem;
-        letter-spacing: 1px;
-        color: #444;
+    .login-sheet {
+        width: 100%;
+        max-width: 420px;
+        background: var(--pw-sheet);
+        border: 1px solid var(--pw-hair);
+        border-radius: var(--pw-r-4);
+        box-shadow: var(--pw-sh-3);
+        overflow: hidden;
     }
 
-    .login-title-icon {
-        font-size: 0.9rem;
-        opacity: 0.7;
+    .login-sheet__head {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--pw-3);
+        padding: var(--pw-7) var(--pw-5) var(--pw-4);
     }
 
-    .login-card {
-        background-color: #ede8e2;
-        border-radius: 14px;
-        font-size: 0.85rem;
+    .login-logo { max-width: 190px; width: 100%; height: auto; display: block; }
+
+    .login-sheet__body { padding: 0 var(--pw-5) var(--pw-5); }
+
+    .login-label-flag { margin-left: var(--pw-2); vertical-align: middle; }
+
+    .login-warning + .login-warning { margin-top: var(--pw-1); }
+    .login-warnings { align-items: flex-start; }
+
+    .login-sheet__foot {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--pw-4);
+        background: var(--pw-vellum-2);
+        border-top: 1px solid var(--pw-hair);
     }
 
-    .login-logo {
-        max-width: 170px;
-        height: auto;
+    .login-sheet__foot a {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--pw-2);
     }
 
-    .login-label {
-        font-size: 0.78rem;
-        margin-bottom: 0.1rem;
-    }
+    .login-sheet__foot img { height: 22px; width: auto; display: block; }
 
-    .login-input {
-        font-size: 0.80rem;
-        height: calc(1.4rem + 2px);
-        padding: 0.2rem 0.4rem;
-    }
-
-        .login-input:disabled {
-            background-color: #e9ecef;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-    .badge-senha-desabilitada {
-        font-size: 0.65rem;
-        font-weight: 500;
-        padding: 0.15rem 0.4rem;
-        margin-left: 0.3rem;
-        background-color: #17a2b8;
-        color: white;
-        border-radius: 0.25rem;
-        vertical-align: middle;
-    }
-
-        .badge-senha-desabilitada i {
-            font-size: 0.6rem;
-            margin-right: 0.15rem;
-        }
-
-    .btn-login {
-        font-size: 0.85rem;
-        padding-top: 0.35rem;
-        padding-bottom: 0.35rem;
-    }
-
-    .login-alert {
-        font-size: 0.78rem;
+    @@media (max-width: 460px) {
+        .login-page { padding: var(--pw-3); }
+        .login-sheet { max-width: none; }
     }
 </style>
 

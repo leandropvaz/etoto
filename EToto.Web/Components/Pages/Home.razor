@@ -365,73 +365,28 @@
 </section>
 
 <style>
+    /* Anotação sobre a foto do equipamento — nota de campo na margem da prancha */
     .image-notes-bubble {
-        background-color: #fff3cd;
-        border: 1px solid #f1c453;
-        border-radius: 0.75rem;
-        padding: 0.65rem 0.9rem;
-        font-size: 0.8rem;
-        line-height: 1.3rem;
-        position: relative;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        background-color: var(--pw-caution-bg);
+        border: 1px solid var(--pw-line);
+        border-top: 3px solid var(--pw-caution);
+        border-radius: var(--pw-r-1);
+        padding: var(--pw-3) var(--pw-4);
+        font-size: var(--pw-t-sm);
+        line-height: 1.5;
+        color: var(--pw-ink);
         word-wrap: break-word;
         overflow-wrap: break-word;
     }
 
-        .image-notes-bubble::before {
-            content: "";
-            position: absolute;
-            left: -10px;
-            top: 18px;
-            border-width: 8px 10px 8px 0;
-            border-style: solid;
-            border-color: transparent #f1c453 transparent transparent;
-        }
-
     .conteudo-titulo {
-        font-size: 1.1rem !important;
+        font-size: var(--pw-t-lg);
         font-weight: 600;
     }
 
-    .card-title-compact {
-        font-size: 0.9rem !important;
-    }
-
-    .card-header {
-        padding: 0.45rem 0.9rem !important;
-    }
-
-    .filtros-body {
-        padding: 0.55rem 0.9rem !important;
-    }
-
-    .filtro-label {
-        font-size: 0.78rem !important;
-        margin-bottom: 0.1rem !important;
-    }
-
-    .filtro-input,
-    .form-control-sm {
-        font-size: 0.78rem !important;
-        height: calc(1.4rem + 2px) !important;
-        padding: 0.18rem 0.4rem !important;
-    }
-
-    .form-group {
-        margin-bottom: 0.35rem !important;
-    }
-
-    .btn-compact {
-        font-size: 0.78rem !important;
-        padding: 0.25rem 0.55rem !important;
-    }
-
-    .resultados-info {
-        font-size: 0.76rem !important;
-    }
-
+    /* A tabela rola sob o cabeçalho grudado */
     .table-container {
-        max-height: 600px;
+        max-height: 620px;
         overflow-y: auto;
         position: relative;
     }
@@ -442,27 +397,16 @@
         border-spacing: 0;
     }
 
-        .equip-table th,
-        .equip-table td {
-            font-size: 0.78rem;
-            padding: 0.25rem 0.45rem;
-            vertical-align: top;
-        }
+    .equip-table thead.sticky-header th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: var(--pw-vellum);
+        white-space: nowrap;
+        box-shadow: inset 0 -2px 0 var(--pw-line);
+    }
 
-        .equip-table thead.sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background-color: #f8f9fa;
-        }
-
-            .equip-table thead.sticky-header th {
-                font-size: 0.75rem;
-                white-space: nowrap;
-                background-color: #f8f9fa;
-                box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
-            }
-
+    /* Tipo de energia: filete lateral colorido = classe de energia */
     .energy-type-cell {
         font-weight: 600;
         text-align: center;
@@ -471,14 +415,10 @@
 
     .energy-type-text {
         display: inline-block;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 0.75rem;
-    }
-
-    .modal-image .modal-content {
-        border-radius: 0.75rem;
-        overflow-x: hidden;
+        padding: 2px 7px;
+        border-radius: var(--pw-r-1);
+        font-size: var(--pw-t-xs);
+        font-weight: 600;
     }
 
     .modal-image .modal-dialog {
@@ -487,42 +427,16 @@
         margin: 1.75rem auto;
     }
 
-    .modal-image-content {
-        gap: 1.5rem;
-        width: 100%;
-    }
-
-    .modal-image-wrapper {
-        max-width: 100%;
-    }
-
-        .modal-image-wrapper img {
-            max-height: 420px;
-            object-fit: contain;
-        }
-
-    .modal-notes-wrapper {
-        max-width: 320px;
-        width: 100%;
-    }
+    .modal-image-content { gap: var(--pw-5); width: 100%; }
+    .modal-image-wrapper { max-width: 100%; }
+    .modal-image-wrapper img { max-height: 420px; object-fit: contain; }
+    .modal-notes-wrapper { max-width: 320px; width: 100%; }
 
     @@media (max-width: 768px) {
-        .modal-image .modal-dialog {
-            max-width: 95%;
-            margin: 1rem auto;
-        }
-
-        .modal-image-content {
-            flex-direction: column !important;
-            gap: 1rem;
-        }
-
-        .modal-notes-wrapper {
-            max-width: 100%;
-            width: 100%;
-            margin-left: 0 !important;
-            margin-top: 0.75rem;
-        }
+        .modal-image .modal-dialog { max-width: 95%; margin: var(--pw-3) auto; }
+        .modal-image-content { flex-direction: column !important; gap: var(--pw-4); }
+        .modal-notes-wrapper { max-width: 100%; width: 100%; margin-left: 0 !important; margin-top: var(--pw-3); }
+        .table-container { max-height: none; }
     }
 </style>
 

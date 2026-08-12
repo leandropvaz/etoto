@@ -180,7 +180,7 @@
                         </div>
 
                         <!-- TABELA (AdminLTE) -->
-                        <div class="table-responsive">
+                        <div class="table-responsive pw-table-cards">
                             <table class="table table-bordered table-hover table-sm mb-0 plantas-table selectable-table">
                                 <thead class="thead-light">
                                     <tr>
@@ -206,10 +206,10 @@
                                         {
                                             <tr class="@(LinhaSelecionadaId == p.Id ? "row-selected" : "")"
                                                 @onclick="() => SelecionarLinha(p.Id)">
-                                                <td>@p.Codigo</td>
-                                                <td>@p.Nome</td>
-                                                <td>@p.Localizacao</td>
-                                                <td class="text-center">
+                                                <td data-label="@(Lang["plants.col_code"])">@p.Codigo</td>
+                                                <td data-label="@(Lang["plants.col_name"])">@p.Nome</td>
+                                                <td data-label="@(Lang["plants.col_location"])">@p.Localizacao</td>
+                                                <td data-label="@(Lang["plants.col_active"])" class="text-center">
                                                     @if (p.Ativa)
                                                     {
                                                         <span class="badge bg-success badge-sm">@Lang["plants.active_badge"]</span>
@@ -219,7 +219,7 @@
                                                         <span class="badge bg-secondary badge-sm">@Lang["plants.inactive_badge"]</span>
                                                     }
                                                 </td>
-                                                <td class="text-center">
+                                                <td data-label="@(Lang["common.actions"])" class="text-center">
                                                     <button class="btn btn-xs btn-outline-primary"
                                                             title="@Lang["common.edit"]"
                                                             @onclick="() => IniciarEdicao(p.Id)">
@@ -346,97 +346,30 @@
 </section>
 
 <style>
-    /* Cabeçalhos dos cards menores */
-    .card-title {
-        font-size: 0.9rem !important;
-    }
+    .plantas-table thead th { white-space: nowrap; }
 
-    .card-header {
-        padding: 0.45rem 0.9rem !important;
-    }
-
-    .card-body {
-        padding: 0.6rem 0.9rem !important;
-    }
-
-    /* Labels e textos auxiliares menores */
-    label {
-        font-size: 0.78rem !important;
-        margin-bottom: 0.1rem !important;
-    }
-
-    .form-text,
-    small.text-muted {
-        font-size: 0.75rem !important;
-    }
-
-    /* Inputs mais compactos */
-    .form-control {
-        font-size: 0.8rem !important;
-        height: calc(1.45rem + 2px);
-        padding: 0.2rem 0.45rem;
-    }
-
-    .form-control-sm {
-        font-size: 0.78rem !important;
-        height: calc(1.35rem + 2px);
-        padding: 0.18rem 0.4rem;
-    }
-
-    .form-group {
-        margin-bottom: 0.4rem !important;
-    }
-
-    /* Botões compactos */
-    .btn,
-    .btn-sm {
-        font-size: 0.78rem !important;
-        padding: 0.25rem 0.55rem !important;
-    }
-
-    .btn-xs {
-        font-size: 0.72rem !important;
-        padding: 0.15rem 0.4rem !important;
-    }
-
-    /* Tabela mais enxuta */
-    .plantas-table th,
-    .plantas-table td {
-        font-size: 0.78rem;
-        padding: 0.23rem 0.4rem;
-    }
-
-    .plantas-table thead th {
-        font-size: 0.75rem;
-        white-space: nowrap;
-    }
-
-    /* Paginação menor */
+    .pagination { gap: var(--pw-1); }
     .pagination .page-link {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.4rem;
+        font-size: var(--pw-t-sm);
+        min-width: 38px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--pw-line);
+        border-radius: var(--pw-r-1);
+        color: var(--pw-ink-2);
+    }
+    .pagination .page-item.active .page-link {
+        background: var(--pw-notice);
+        border-color: var(--pw-notice);
+        color: #fff;
     }
 
-    /* Modal confirmação */
-    .confirm-modal {
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-        .confirm-modal .modal-header {
-            border-bottom: none;
-            padding: 12px 16px;
-        }
-
-        .confirm-modal .modal-body {
-            font-size: 0.92rem;
-            padding: 16px;
-        }
-
-        .confirm-modal .modal-footer {
-            border-top: none;
-            padding: 12px 16px;
-        }
+    .confirm-modal { overflow: hidden; }
+    .confirm-modal .modal-header { border-bottom: none; }
+    .confirm-modal .modal-body { font-size: var(--pw-t-base); }
+    .confirm-modal .modal-footer { border-top: none; }
 </style>
 
 @code {
