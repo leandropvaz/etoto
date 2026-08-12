@@ -142,9 +142,9 @@ namespace EToto.Application.Services
                 ?? throw new InvalidOperationException("PLE não encontrado.");
 
             // Permissoes por novo status:
-            // - Finalizado: EXCLUSIVO do Comando Central com acesso a planta (nem Admin/SuperGestor finalizam).
+            // - Finalizado: Comando Central (com acesso a planta) ou SuperGestor.
             // - Cancelado: criador, delegado, Admin, SuperGestor ou Lider de Bloqueio (UsuarioFinal+treino)
-            //              com acesso a planta. SOMENTE a partir de EmAndamento (não em InicioDesbloqueio).
+            //              com acesso a planta. SOMENTE a partir do status "Criado".
             // - InicioDesbloqueio: criador, delegado, Admin, SuperGestor ou Lider de Bloqueio (UsuarioFinal+treino) com acesso a planta.
             // - EmAndamento (iniciar): criador, delegado, Admin, SuperGestor.
             if (novoStatus == StatusPle.Finalizado)
@@ -154,11 +154,11 @@ namespace EToto.Application.Services
                 if (usuario?.PlantaId.HasValue == true) plantasIds.Add(usuario.PlantaId.Value);
 
                 var podeFinalizar = usuario != null
-                    && usuario.EhComandoCentral
-                    && plantasIds.Contains(ple.PlantaId);
+                    && ((usuario.EhComandoCentral && plantasIds.Contains(ple.PlantaId))
+                        || usuario.EhSuperGestor);
 
                 if (!podeFinalizar)
-                    throw new InvalidOperationException("Somente o Comando Central pode finalizar este bloqueio.");
+                    throw new InvalidOperationException("Somente o Comando Central ou o Super Gestor podem finalizar este bloqueio.");
             }
             else
             {
@@ -202,8 +202,8 @@ namespace EToto.Application.Services
             if (novoStatus == StatusPle.InicioDesbloqueio && ple.Status != StatusPle.EmAndamento)
                 throw new InvalidOperationException("Só é possível iniciar o desbloqueio de um PLE em andamento.");
 
-            if (novoStatus == StatusPle.Cancelado && ple.Status != StatusPle.EmAndamento)
-                throw new InvalidOperationException("Só é possível cancelar um PLE em andamento. Após o início do desbloqueio, o fluxo segue para finalização.");
+            if (novoStatus == StatusPle.Cancelado && ple.Status != StatusPle.Criado)
+                throw new InvalidOperationException("Só é possível cancelar um PLE no status \"Criado\". Depois de iniciado, o bloqueio não pode ser cancelado.");
 
             var statusAnterior = ple.Status;
             ple.Status = novoStatus;
@@ -251,6 +251,11 @@ namespace EToto.Application.Services
         {
             var ple = await _repo.GetByIdAsync(id, ct)
                 ?? throw new InvalidOperationException("PLE não encontrado.");
+
+            // Exclusão é restrita a Administrador e Super Gestor (limpeza de lançamentos indevidos).
+            var executor = await _usuarioRepo.ObterComPlantasAsync(usuarioId);
+            if (executor == null || !(executor.EhAdministrador || executor.EhSuperGestor))
+                throw new InvalidOperationException("Somente Administrador ou Super Gestor podem excluir um bloqueio.");
 
             if (ple.Status == StatusPle.Finalizado)
                 throw new InvalidOperationException("Não é possível excluir um PLE finalizado.");

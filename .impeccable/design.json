@@ -1,0 +1,669 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-12T12:00:00Z",
+  "title": "Design System: E-toto",
+  "extensions": {
+    "note": "Token NAMES keep the --pw- prefix and some legacy semantics from a discarded technical-drawing direction (paper, vellum, ink, hair, heavy, notice). The VALUES are all from the current modern-SaaS world. displayName below is the accurate modern name; the key is the CSS variable name minus the leading dashes, so the mapping to EToto.Web/wwwroot/css/etoto.css stays one-to-one.",
+    "colorMeta": {
+      "pw-notice": {
+        "role": "primary",
+        "displayName": "Signal Blue",
+        "canonical": "#1570DB",
+        "cssVar": "--pw-notice",
+        "nameNote": "Named 'notice' from the previous world; it is the single action/navigation blue.",
+        "tonalRamp": [
+          "oklch(15% 0.18 258)",
+          "oklch(26% 0.18 258)",
+          "oklch(37% 0.18 258)",
+          "oklch(48% 0.18 258)",
+          "oklch(58% 0.18 258)",
+          "oklch(70% 0.15 258)",
+          "oklch(82% 0.10 258)",
+          "oklch(95% 0.03 258)"
+        ]
+      },
+      "pw-notice-ink": {
+        "role": "primary",
+        "displayName": "Deep Signal Blue",
+        "canonical": "#0F55A8",
+        "cssVar": "--pw-notice-ink"
+      },
+      "pw-notice-bg": {
+        "role": "primary",
+        "displayName": "Washed Signal Blue",
+        "canonical": "#EAF2FE",
+        "cssVar": "--pw-notice-bg"
+      },
+      "brand-blue": {
+        "role": "primary",
+        "displayName": "Institutional Blue",
+        "canonical": "#006CB5",
+        "cssVar": "(none — brand asset only)",
+        "nameNote": "Power Wave corporate blue. Reserved for the logo and institutional material; it is deliberately NOT an interface token in etoto.css."
+      },
+      "pw-danger": {
+        "role": "secondary",
+        "displayName": "Lockout Red",
+        "canonical": "#D1344B",
+        "cssVar": "--pw-danger",
+        "tonalRamp": [
+          "oklch(15% 0.19 20)",
+          "oklch(26% 0.19 20)",
+          "oklch(37% 0.19 20)",
+          "oklch(48% 0.19 20)",
+          "oklch(58% 0.19 20)",
+          "oklch(70% 0.15 20)",
+          "oklch(82% 0.10 20)",
+          "oklch(95% 0.03 20)"
+        ]
+      },
+      "pw-danger-ink": {
+        "role": "secondary",
+        "displayName": "Deep Lockout Red",
+        "canonical": "#A8253A",
+        "cssVar": "--pw-danger-ink"
+      },
+      "pw-danger-bg": {
+        "role": "secondary",
+        "displayName": "Washed Lockout Red",
+        "canonical": "#FDECEF",
+        "cssVar": "--pw-danger-bg"
+      },
+      "pw-warn": {
+        "role": "secondary",
+        "displayName": "Release Amber",
+        "canonical": "#9C5607",
+        "cssVar": "--pw-warn",
+        "nameNote": "White text on this fill measures ~4.4:1 — just under the system's own 4.5:1 floor.",
+        "tonalRamp": [
+          "oklch(15% 0.13 62)",
+          "oklch(26% 0.13 62)",
+          "oklch(37% 0.13 62)",
+          "oklch(48% 0.13 62)",
+          "oklch(58% 0.13 62)",
+          "oklch(70% 0.12 62)",
+          "oklch(82% 0.08 62)",
+          "oklch(95% 0.03 62)"
+        ]
+      },
+      "pw-warn-ink": {
+        "role": "secondary",
+        "displayName": "Deep Release Amber",
+        "canonical": "#7E4506",
+        "cssVar": "--pw-warn-ink"
+      },
+      "pw-warn-bg": {
+        "role": "secondary",
+        "displayName": "Washed Release Amber",
+        "canonical": "#FDF2E5",
+        "cssVar": "--pw-warn-bg"
+      },
+      "pw-caution": {
+        "role": "secondary",
+        "displayName": "Pending Olive",
+        "canonical": "#8A6A00",
+        "cssVar": "--pw-caution",
+        "tonalRamp": [
+          "oklch(15% 0.11 90)",
+          "oklch(26% 0.11 90)",
+          "oklch(37% 0.11 90)",
+          "oklch(48% 0.11 90)",
+          "oklch(58% 0.11 90)",
+          "oklch(70% 0.10 90)",
+          "oklch(82% 0.07 90)",
+          "oklch(95% 0.03 90)"
+        ]
+      },
+      "pw-caution-bg": {
+        "role": "secondary",
+        "displayName": "Washed Pending Olive",
+        "canonical": "#FDF7E3",
+        "cssVar": "--pw-caution-bg"
+      },
+      "pw-safe": {
+        "role": "secondary",
+        "displayName": "Cleared Green",
+        "canonical": "#0F7B4F",
+        "cssVar": "--pw-safe",
+        "tonalRamp": [
+          "oklch(15% 0.12 158)",
+          "oklch(26% 0.12 158)",
+          "oklch(37% 0.12 158)",
+          "oklch(48% 0.12 158)",
+          "oklch(58% 0.12 158)",
+          "oklch(70% 0.11 158)",
+          "oklch(82% 0.07 158)",
+          "oklch(95% 0.03 158)"
+        ]
+      },
+      "pw-safe-ink": {
+        "role": "secondary",
+        "displayName": "Deep Cleared Green",
+        "canonical": "#0B6440",
+        "cssVar": "--pw-safe-ink"
+      },
+      "pw-safe-bg": {
+        "role": "secondary",
+        "displayName": "Washed Cleared Green",
+        "canonical": "#E8F6EF",
+        "cssVar": "--pw-safe-bg"
+      },
+      "pw-idle": {
+        "role": "secondary",
+        "displayName": "Idle Grey",
+        "canonical": "#626B82",
+        "cssVar": "--pw-idle",
+        "nameNote": "Same value as pw-ink-3, used as a state fill rather than as text. White text on it measures ~4.4:1 — just under the system's own 4.5:1 floor.",
+        "tonalRamp": [
+          "oklch(15% 0.03 265)",
+          "oklch(26% 0.03 265)",
+          "oklch(37% 0.03 265)",
+          "oklch(48% 0.03 265)",
+          "oklch(58% 0.03 265)",
+          "oklch(70% 0.025 265)",
+          "oklch(82% 0.02 265)",
+          "oklch(95% 0.01 265)"
+        ]
+      },
+      "pw-idle-bg": {
+        "role": "secondary",
+        "displayName": "Washed Idle Grey",
+        "canonical": "#F0F2F7",
+        "cssVar": "--pw-idle-bg"
+      },
+      "pw-paper": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "canonical": "#F5F7FA",
+        "cssVar": "--pw-paper",
+        "nameNote": "Named 'paper' from the previous world; it is the cool blue-grey application background that white cards float on.",
+        "tonalRamp": [
+          "oklch(15% 0.008 250)",
+          "oklch(26% 0.008 250)",
+          "oklch(37% 0.008 250)",
+          "oklch(48% 0.008 250)",
+          "oklch(58% 0.008 250)",
+          "oklch(70% 0.007 250)",
+          "oklch(82% 0.006 250)",
+          "oklch(97% 0.005 250)"
+        ]
+      },
+      "pw-sheet": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "#FFFFFF",
+        "cssVar": "--pw-sheet",
+        "nameNote": "The card / bar / field surface. Pure white."
+      },
+      "pw-vellum": {
+        "role": "neutral",
+        "displayName": "Recessed",
+        "canonical": "#F0F3F8",
+        "cssVar": "--pw-vellum",
+        "nameNote": "Legacy name; it is the recessed grey wash for pastilles, tags and disabled fields."
+      },
+      "pw-vellum-2": {
+        "role": "neutral",
+        "displayName": "Whisper",
+        "canonical": "#F8FAFC",
+        "cssVar": "--pw-vellum-2",
+        "nameNote": "The faintest wash — hover rows, card and modal footers, info blocks, empty states."
+      },
+      "pw-ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1C2333",
+        "cssVar": "--pw-ink",
+        "tonalRamp": [
+          "oklch(15% 0.03 265)",
+          "oklch(25% 0.03 265)",
+          "oklch(37% 0.03 265)",
+          "oklch(48% 0.03 265)",
+          "oklch(58% 0.03 265)",
+          "oklch(70% 0.02 265)",
+          "oklch(82% 0.015 265)",
+          "oklch(95% 0.008 265)"
+        ]
+      },
+      "pw-ink-2": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "#4E5875",
+        "cssVar": "--pw-ink-2",
+        "nameNote": "The stylesheet comment claims 7.6:1; measured on white it is ~7.05:1. Still comfortably AA."
+      },
+      "pw-ink-3": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#5C6580",
+        "cssVar": "--pw-ink-3",
+        "nameNote": "The stylesheet comment claims 4.9:1; measured on white it is ~4.41:1 and on the Ground ~4.11:1 — below AA for the 13px labels and table headers that use it."
+      },
+      "pw-ink-4": {
+        "role": "neutral",
+        "displayName": "Ink Faint",
+        "canonical": "#A3ABBF",
+        "cssVar": "--pw-ink-4",
+        "nameNote": "~2.3:1 on white. Unavailability signal only; never reading text. Correctly documented as such in the stylesheet."
+      },
+      "pw-ink-deep": {
+        "role": "neutral",
+        "displayName": "Ink Deep",
+        "canonical": "#10162A",
+        "cssVar": "--pw-ink-deep",
+        "nameNote": "Hover of the dark button only."
+      },
+      "pw-hair": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#EDF0F5",
+        "cssVar": "--pw-hair",
+        "nameNote": "Legacy name; the default near-invisible divider."
+      },
+      "pw-line": {
+        "role": "neutral",
+        "displayName": "Outline",
+        "canonical": "#DFE4EE",
+        "cssVar": "--pw-line"
+      },
+      "pw-heavy": {
+        "role": "neutral",
+        "displayName": "Outline Strong",
+        "canonical": "#C6CDDC",
+        "cssVar": "--pw-heavy",
+        "nameNote": "Legacy name; it is still only a 1px hover/focus stroke, not a heavy rule."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The anchor value of an information block — in practice the PLE number. Tabular figures. Drops to 1.5rem below 768px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page-level h1."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "h2 (1.125rem) and h3 (1rem); card and modal titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The interface default — table cells, paragraphs, buttons, navigation, checkbox labels."
+      },
+      "field": {
+        "displayName": "Field",
+        "purpose": "Every text input, select and textarea. Never below 1rem, to stop iOS zoom-on-focus."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, table headers, info-block keys. Sentence case, no tracking, Ink Muted."
+      },
+      "state": {
+        "displayName": "State",
+        "purpose": "Status pills, badges, tags."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Top-bar pastille keys, timeline timestamps, balloon numbers."
+      }
+    },
+    "fontLoading": {
+      "family": "Figtree",
+      "source": "Google Fonts CDN (https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap), preconnected in App.razor",
+      "fallback": "system-ui, -apple-system, 'Segoe UI', sans-serif",
+      "note": "One family only. --pw-font-nar is an alias of --pw-font and resolves to the same stack; it is a leftover name from the previous world, not a second face."
+    },
+    "shadows": [
+      {
+        "name": "rest",
+        "value": "0 1px 2px rgba(28,35,51,.05), 0 1px 3px rgba(28,35,51,.06)",
+        "cssVar": "--pw-sh-1",
+        "purpose": "Cards, primary buttons at rest, mobile record cards, the empty-state icon disc."
+      },
+      {
+        "name": "raised",
+        "value": "0 2px 6px rgba(28,35,51,.06), 0 4px 12px rgba(28,35,51,.06)",
+        "cssVar": "--pw-sh-2",
+        "purpose": "Hovered primary button. The only hover elevation in the system."
+      },
+      {
+        "name": "floating",
+        "value": "0 8px 20px rgba(28,35,51,.09), 0 2px 6px rgba(28,35,51,.05)",
+        "cssVar": "--pw-sh-3",
+        "purpose": "The login card — a single surface alone on the ground."
+      },
+      {
+        "name": "lifted",
+        "value": "0 20px 48px rgba(28,35,51,.16), 0 6px 16px rgba(28,35,51,.08)",
+        "cssVar": "--pw-lift",
+        "purpose": "Modals only. The largest jump in the system."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px rgba(21,112,219,.22)",
+        "cssVar": "--pw-ring",
+        "purpose": "Replaces the native outline on :focus-visible everywhere, with 8px radius so it hugs rounded controls."
+      },
+      {
+        "name": "tabbar-up",
+        "value": "0 -2px 12px rgba(28,35,51,.06)",
+        "purpose": "The fixed bottom tab bar below 768px — the same diffuse language, inverted."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.2, 0.7, 0.3, 1)",
+        "cssVar": "--pw-ease",
+        "purpose": "The only easing in the system. Applied to colour, border and shadow transitions."
+      },
+      {
+        "name": "state-transition",
+        "value": "150ms",
+        "purpose": "Buttons, fields, nav items — background, border, colour, shadow."
+      },
+      {
+        "name": "row-hover",
+        "value": "120ms",
+        "purpose": "Table row background."
+      },
+      {
+        "name": "stamp-in",
+        "value": "pw-rise 280ms cubic-bezier(0.2,0.7,0.3,1) both — opacity 0 to 1, translateY(-4px) to 0",
+        "purpose": "The state band entering on a record detail (.pw-stamp). The only entrance animation."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce) clamps all animation and transition to .001ms and one iteration",
+        "purpose": "Global escape hatch; it is what keeps the legacy .ple-blink loop from being a hazard."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "576px",
+        "purpose": "Information block goes from one column to two."
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "The shell switch: at 767.98px and below the nav rail becomes a fixed bottom tab bar and .pw-table-cards collapses tables into record cards."
+      },
+      {
+        "name": "lg",
+        "value": "992px",
+        "purpose": "Information block goes to four columns; card padding and shell gutters relax."
+      },
+      {
+        "name": "xxl",
+        "value": "1400px",
+        "purpose": "The fluid container caps at 1680px."
+      }
+    ],
+    "touchTargets": [
+      {
+        "name": "tap",
+        "value": "40px",
+        "cssVar": "--pw-tap",
+        "purpose": "Standard button and field height."
+      },
+      {
+        "name": "tap-lg",
+        "value": "48px",
+        "cssVar": "--pw-tap-lg",
+        "purpose": "Large buttons and stacked phone actions."
+      }
+    ],
+    "shellMetrics": [
+      {
+        "name": "top-bar",
+        "value": "60px",
+        "cssVar": "--pw-top-h"
+      },
+      {
+        "name": "nav-rail",
+        "value": "52px",
+        "cssVar": "--pw-rail-h"
+      },
+      {
+        "name": "bottom-tabbar",
+        "value": "0px at >=768px, 62px below",
+        "cssVar": "--pw-bottom-h",
+        "purpose": "Reserved so page content is never hidden behind the phone tab bar."
+      }
+    ],
+    "deadTokens": [
+      {
+        "name": "--pw-r-0",
+        "value": "0",
+        "note": "Defined in etoto.css, referenced nowhere. Nothing in this system is square; treat it as dead, not as permission."
+      },
+      {
+        "name": "--pw-ink-press",
+        "value": "#0A4E9E",
+        "note": "Defined, referenced nowhere."
+      },
+      {
+        "name": "--pw-ink-on-dark",
+        "value": "#FFFFFF",
+        "note": "Defined, used once (pagination active state in Equipamentos). Not a system token."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single main action on a surface. Signal Blue fill, white label, Rest shadow lifting to Raised on hover.",
+      "html": "<button class=\"ds-btn ds-btn--primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>Salvar</button>",
+      "css": ".ds-btn { font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); font-size: .875rem; font-weight: 600; letter-spacing: 0; min-height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: background-color .15s cubic-bezier(.2,.7,.3,1), border-color .15s cubic-bezier(.2,.7,.3,1), color .15s cubic-bezier(.2,.7,.3,1), box-shadow .15s cubic-bezier(.2,.7,.3,1); } .ds-btn--primary { background: var(--pw-notice, #1570DB); border-color: var(--pw-notice, #1570DB); color: #fff; box-shadow: 0 1px 2px rgba(28,35,51,.05), 0 1px 3px rgba(28,35,51,.06); } .ds-btn--primary:hover { background: var(--pw-notice-ink, #0F55A8); border-color: var(--pw-notice-ink, #0F55A8); box-shadow: 0 2px 6px rgba(28,35,51,.06), 0 4px 12px rgba(28,35,51,.06); } .ds-btn--primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(21,112,219,.22); } .ds-btn--primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The default for anything that is not the main action. White fill, Outline border, Ink Soft label.",
+      "html": "<button class=\"ds-btn2\">Cancelar</button>",
+      "css": ".ds-btn2 { font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); font-size: .875rem; font-weight: 600; min-height: 40px; padding: 0 16px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: var(--pw-sheet, #fff); border: 1px solid var(--pw-line, #DFE4EE); color: var(--pw-ink-2, #4E5875); transition: background-color .15s cubic-bezier(.2,.7,.3,1), border-color .15s cubic-bezier(.2,.7,.3,1), color .15s cubic-bezier(.2,.7,.3,1); } .ds-btn2:hover { background: var(--pw-vellum, #F0F3F8); border-color: var(--pw-heavy, #C6CDDC); color: var(--pw-ink, #1C2333); } .ds-btn2:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(21,112,219,.22); } .ds-btn2:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "The signature component. Lockout state as a solid colour pill with white text and its written label. The 'void' variant is the one outline exception, for cancelled records.",
+      "html": "<span class=\"ds-sig ds-sig--danger\">Em andamento</span> <span class=\"ds-sig ds-sig--warn\">Início desbloqueio</span> <span class=\"ds-sig ds-sig--safe\">Finalizado</span> <span class=\"ds-sig ds-sig--idle\">Criado</span> <span class=\"ds-sig ds-sig--void\">Cancelado</span>",
+      "css": ".ds-sig { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px; border: 0; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); font-size: .75rem; font-weight: 700; letter-spacing: 0; text-transform: none; white-space: nowrap; line-height: 1.5; color: #fff; margin-right: 6px; } .ds-sig--danger { background: var(--pw-danger, #D1344B); } .ds-sig--warn { background: var(--pw-warn, #B4650A); } .ds-sig--caution { background: var(--pw-caution, #8A6A00); } .ds-sig--safe { background: var(--pw-safe, #0F7B4F); } .ds-sig--notice { background: var(--pw-notice, #1570DB); } .ds-sig--idle { background: var(--pw-idle, #6E7891); } .ds-sig--void { background: transparent; color: var(--pw-ink-3, #6E7891); border: 1px solid var(--pw-line, #DFE4EE); text-decoration: line-through; text-decoration-thickness: 1px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The base surface. White sheet on the blue-grey ground, 14px radius, hairline edge, Rest shadow. No coloured frame — state lives in the pill.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card__head\"><span class=\"ds-card__title\">PLE 2026-0148</span><button class=\"ds-card__tool\">Fechar</button></div><div class=\"ds-card__body\">Cartão branco flutuando sobre o fundo cinza-azulado. A separação vem da elevação e do respiro.</div><div class=\"ds-card__foot\">Atualizado há 4 minutos</div></div>",
+      "css": ".ds-card { background: var(--pw-sheet, #fff); border: 1px solid var(--pw-hair, #EDF0F5); border-radius: 14px; box-shadow: 0 1px 2px rgba(28,35,51,.05), 0 1px 3px rgba(28,35,51,.06); overflow: hidden; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); color: var(--pw-ink, #1C2333); } .ds-card__head { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--pw-hair, #EDF0F5); } .ds-card__title { font-size: 1rem; font-weight: 700; } .ds-card__tool { margin-left: auto; background: transparent; border: 1px solid var(--pw-line, #DFE4EE); border-radius: 8px; min-height: 36px; padding: 0 12px; font: inherit; font-size: .8125rem; font-weight: 600; color: var(--pw-ink-2, #4E5875); cursor: pointer; } .ds-card__tool:hover { background: var(--pw-vellum, #F0F3F8); border-color: var(--pw-heavy, #C6CDDC); color: var(--pw-ink, #1C2333); } .ds-card__body { padding: 24px; font-size: .875rem; line-height: 1.5; } .ds-card__foot { background: var(--pw-vellum-2, #F8FAFC); border-top: 1px solid var(--pw-hair, #EDF0F5); padding: 16px 24px; font-size: .8125rem; color: var(--pw-ink-3, #6E7891); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "40px tall, 8px radius, 16px text — the 16px is deliberate, to stop iOS zooming the page on focus.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field__label\" for=\"ds-f1\">Tag do equipamento</label><input class=\"ds-field__input\" id=\"ds-f1\" type=\"text\" placeholder=\"Ex.: BP-1204\" /></div>",
+      "css": ".ds-field { display: block; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); } .ds-field__label { display: block; font-size: .8125rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--pw-ink-2, #4E5875); margin-bottom: 6px; } .ds-field__input { font-family: inherit; font-size: 1rem; height: 40px; width: 100%; padding: 0 12px; color: var(--pw-ink, #1C2333); background: var(--pw-sheet, #fff); border: 1px solid var(--pw-line, #DFE4EE); border-radius: 8px; box-shadow: none; transition: border-color .15s cubic-bezier(.2,.7,.3,1), box-shadow .15s cubic-bezier(.2,.7,.3,1); } .ds-field__input::placeholder { color: var(--pw-ink-3, #6E7891); opacity: 1; } .ds-field__input:hover { border-color: var(--pw-heavy, #C6CDDC); } .ds-field__input:focus { outline: none; border-color: var(--pw-notice, #1570DB); box-shadow: 0 0 0 3px rgba(21,112,219,.22); }"
+    },
+    {
+      "name": "Checkbox Row",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The system's ONE selection mechanism: the native input at 18px with accent-color, in normal flow, 8px from its label. Plugin-drawn boxes (icheck-bootstrap, Bootstrap custom-control) are switched off with content:none and must stay off.",
+      "html": "<label class=\"ds-check\"><input type=\"checkbox\" checked /><span>Ponto de isolamento conferido</span></label><label class=\"ds-check\"><input type=\"checkbox\" /><span>Etiqueta aplicada</span></label>",
+      "css": ".ds-check { display: flex; align-items: center; gap: 8px; min-height: 30px; padding-left: 0; margin-bottom: 0; cursor: pointer; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); font-size: .875rem; font-weight: 500; color: var(--pw-ink, #1C2333); text-transform: none; letter-spacing: 0; } .ds-check input[type=checkbox] { position: static; width: 18px; height: 18px; min-width: 18px; margin: 0; padding: 0; transform: none; accent-color: var(--pw-notice, #1570DB); flex: 0 0 auto; vertical-align: middle; cursor: pointer; } .ds-check input[type=checkbox]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(21,112,219,.22); border-radius: 6px; } .ds-check input[type=checkbox]:disabled { cursor: not-allowed; opacity: .55; }"
+    },
+    {
+      "name": "Nav Rail Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "The navigation pill. A top strip at >=768px; below that the same items detach into a fixed bottom tab bar with icon over label in 54px targets.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail__item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"></circle><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"></line></svg><span>Pesquisa</span></a><a class=\"ds-rail__item is-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 11l3 3L22 4\"></path><path d=\"M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11\"></path></svg><span>PLE</span></a><a class=\"ds-rail__item is-locked\" href=\"#\" aria-disabled=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path></svg><span>Plantas</span></a></nav>",
+      "css": ".ds-rail { display: flex; align-items: center; gap: 4px; background: var(--pw-sheet, #fff); border-bottom: 1px solid var(--pw-hair, #EDF0F5); padding: 8px 24px; list-style: none; margin: 0; overflow-x: auto; scrollbar-width: none; } .ds-rail::-webkit-scrollbar { display: none; } .ds-rail__item { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 12px; border-radius: 10px; color: var(--pw-ink-2, #4E5875); background: transparent; border: 0; white-space: nowrap; text-decoration: none; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); font-size: .875rem; font-weight: 600; transition: background-color .15s cubic-bezier(.2,.7,.3,1), color .15s cubic-bezier(.2,.7,.3,1); } .ds-rail__item svg { opacity: .85; } .ds-rail__item:hover { color: var(--pw-ink, #1C2333); background: var(--pw-vellum, #F0F3F8); text-decoration: none; } .ds-rail__item.is-active { color: var(--pw-notice-ink, #0F55A8); background: var(--pw-notice-bg, #EAF2FE); } .ds-rail__item.is-active svg { opacity: 1; } .ds-rail__item.is-locked { color: var(--pw-ink-4, #A3ABBF); cursor: not-allowed; } .ds-rail__item.is-locked:hover { background: transparent; color: var(--pw-ink-4, #A3ABBF); } .ds-rail__item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(21,112,219,.22); }"
+    },
+    {
+      "name": "State Band",
+      "kind": "custom",
+      "refersTo": "state-band",
+      "description": "Signature. A tinted block carrying the record's identity, state name and note, led by a haloed round marker. The --sheet variant clips to a card's top corners and sticks below the shell while the record scrolls.",
+      "html": "<div class=\"ds-band ds-band--danger\" role=\"status\"><span class=\"ds-band__id\">PLE 2026-0148</span><span class=\"ds-band__name\">Bloqueio ativo</span><span class=\"ds-band__note\">Equipamento isolado — não operar.</span></div><div class=\"ds-band ds-band--safe\" role=\"status\"><span class=\"ds-band__id\">PLE 2026-0132</span><span class=\"ds-band__name\">Finalizado</span><span class=\"ds-band__note\">Liberado em 04/08 09:12.</span></div>",
+      "css": ".ds-band { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border: 0; border-radius: 14px; margin-bottom: 12px; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); font-weight: 600; flex-wrap: wrap; } .ds-band::before { content: \"\"; width: 10px; height: 10px; flex: 0 0 auto; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px rgba(255,255,255,.7); } .ds-band__id { font-size: .875rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--pw-ink, #1C2333); } .ds-band__name { font-size: .875rem; font-weight: 700; } .ds-band__note { font-size: .8125rem; font-weight: 500; color: var(--pw-ink-2, #4E5875); } .ds-band--danger { color: var(--pw-danger-ink, #A8253A); background: var(--pw-danger-bg, #FDECEF); } .ds-band--warn { color: var(--pw-warn, #B4650A); background: var(--pw-warn-bg, #FDF2E5); } .ds-band--safe { color: var(--pw-safe, #0F7B4F); background: var(--pw-safe-bg, #E8F6EF); } .ds-band--notice { color: var(--pw-notice-ink, #0F55A8); background: var(--pw-notice-bg, #EAF2FE); } .ds-band--idle { color: var(--pw-ink-2, #4E5875); background: var(--pw-idle-bg, #F0F2F7); }"
+    },
+    {
+      "name": "Timeline",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature, shared unchanged by the PLE and Risk Assessment surfaces. Horizontal, fixed 140px event columns that overflow into a horizontal scroll rather than stretching. Dot colours match the status pill for the same state, on purpose.",
+      "html": "<ol class=\"ds-tl\"><li class=\"ds-tl__item\"><span class=\"ds-tl__dot ds-tl__dot--notice\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 5v14M5 12h14\"></path></svg></span><span class=\"ds-tl__body\"><span class=\"ds-tl__act\">Criado</span><span class=\"ds-tl__meta\"><span>04/08 07:40</span><span>M. Ribeiro</span></span></span></li><li class=\"ds-tl__item\"><span class=\"ds-tl__dot ds-tl__dot--danger\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path></svg></span><span class=\"ds-tl__body\"><span class=\"ds-tl__act\">Bloqueio ativo</span><span class=\"ds-tl__meta\"><span>04/08 08:05</span><span>M. Ribeiro</span></span></span></li><li class=\"ds-tl__item\"><span class=\"ds-tl__dot ds-tl__dot--safe\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg></span><span class=\"ds-tl__body\"><span class=\"ds-tl__act\">Finalizado</span><span class=\"ds-tl__meta\"><span>04/08 09:12</span><span>Sala de Operações</span></span></span></li></ol>",
+      "css": ".ds-tl { display: flex; align-items: flex-start; flex-wrap: nowrap; list-style: none; margin: 0; padding: 8px 0; overflow-x: auto; scrollbar-width: thin; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); } .ds-tl__item { position: relative; flex: 0 0 auto; width: 140px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 4px; } .ds-tl__item::after { content: \"\"; position: absolute; top: 17px; left: calc(50% + 22px); width: calc(100% - 44px); height: 2px; background: var(--pw-line, #DFE4EE); border-radius: 2px; } .ds-tl__item:last-child::after { display: none; } .ds-tl__dot { position: relative; z-index: 1; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .75rem; background: var(--pw-idle-bg, #F0F2F7); color: var(--pw-ink-3, #6E7891); flex: 0 0 auto; } .ds-tl__dot--danger { background: var(--pw-danger, #D1344B); color: #fff; } .ds-tl__dot--warn { background: var(--pw-warn, #B4650A); color: #fff; } .ds-tl__dot--safe { background: var(--pw-safe, #0F7B4F); color: #fff; } .ds-tl__dot--notice { background: var(--pw-notice, #1570DB); color: #fff; } .ds-tl__body { min-width: 0; width: 100%; margin-top: 8px; } .ds-tl__act { display: block; font-size: .8125rem; font-weight: 600; color: var(--pw-ink, #1C2333); line-height: 1.3; } .ds-tl__meta { display: block; font-size: .6875rem; color: var(--pw-ink-3, #6E7891); line-height: 1.4; margin-top: 2px; } .ds-tl__meta span { display: block; }"
+    },
+    {
+      "name": "Record Card (phone table row)",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "What a table row becomes below 768px under .pw-table-cards. Each cell prints its data-label as a muted key at 40% width; the state cell is ordered first so lockout state leads every card.",
+      "html": "<div class=\"ds-rec\"><div class=\"ds-rec__cell ds-rec__cell--state\" data-label=\"Estado\"><span class=\"ds-sig ds-sig--danger\">Em andamento</span></div><div class=\"ds-rec__cell\" data-label=\"Número\">PLE 2026-0148</div><div class=\"ds-rec__cell\" data-label=\"Planta\">FARC</div><div class=\"ds-rec__cell\" data-label=\"Início\">04/08 08:05</div></div>",
+      "css": ".ds-rec { display: flex; flex-direction: column; border: 1px solid var(--pw-hair, #EDF0F5); border-radius: 10px; background: var(--pw-sheet, #fff); box-shadow: 0 1px 2px rgba(28,35,51,.05), 0 1px 3px rgba(28,35,51,.06); margin-bottom: 12px; padding: 8px 0; font-family: var(--pw-font, 'Figtree', system-ui, sans-serif); color: var(--pw-ink, #1C2333); } .ds-rec__cell { border: 0; border-top: 1px solid var(--pw-hair, #EDF0F5); padding: 8px 16px; display: flex; align-items: baseline; gap: 12px; font-size: .875rem; } .ds-rec__cell::before { content: attr(data-label); flex: 0 0 40%; max-width: 40%; font-size: .8125rem; font-weight: 600; color: var(--pw-ink-3, #6E7891); } .ds-rec__cell:first-child { border-top: 0; } .ds-rec__cell--state { order: -1; border-top: 0; } .ds-rec__cell:empty { display: none; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Clear Board",
+    "overview": "E-toto looks like the tools its users already trust for everything else in their working day. It is a modern light SaaS surface: a soft blue-grey ground, white cards floating on diffuse shadow, generously rounded corners, one humanist sans in sentence case, and a single saturated blue that means *act* or *go here*. The finish bar is explicit and permanent — Monday, Asana, ClickUp — recorded as a brand commitment in PRODUCT.md after the user saw and rejected an authorial technical-drawing direction. Nothing here should read as engineering paper, and nothing should read as a legacy admin theme either.\n\nWhat keeps it from being generic is that colour is rationed to one job. This is lockout / tagout software: a person reads a screen next to an energised machine and has to know, without hesitating, whether the isolation is active, being released, or finished. So the lockout state is the only thing on the page allowed to wear a saturated red, amber, olive or green, and it wears it as a filled pill with white text — the Monday status pattern — carrying its written label inside. Everything else is grey, and everything actionable is blue. Scanning a list, the eye finds the state column first because nothing competes with it.\n\nDensity is comfortable rather than tight: 40px controls, 16px fields, 24px card padding, a 4px-based rhythm. The system is built to survive both scenes the product serves — a long office session on a wide monitor, and a gloved thumb on a phone beside the equipment. Separation between things always comes from elevation and breathing room. Heavy frames, grid lines and coloured card borders are not part of the vocabulary.",
+    "keyCharacteristics": [
+      "White cards floating on a blue-grey ground, 8-20px radius, soft two-layer shadows",
+      "Lockout state as a solid colour pill with a written label, never colour alone",
+      "Colour has an owner: blue acts, red/amber/green report lockout state, grey does the rest",
+      "One typeface (Figtree), sentence case throughout, no tracked capitals",
+      "Comfortable touch density: 40/48px targets, 16px fields, 4px spacing rhythm",
+      "Phone-first shell: pill nav rail becomes a bottom tab bar, tables become record cards"
+    ],
+    "rules": [
+      {
+        "name": "The Colour Has an Owner Rule",
+        "body": "Blue is action and navigation. Red, amber, olive and green are lockout state, never decoration. Grey is everything else. A new colour needs a new job, and there are no new jobs.",
+        "section": "colors"
+      },
+      {
+        "name": "The Solid Pill Rule",
+        "body": "Lockout state renders as a fully filled pill with white text (.pw-sig--*), pill radius, 12px bold. Not a bordered chip, not coloured text, not an icon. Cancelled records are the single exception — .pw-sig--void is a transparent pill with a hairline border and a strikethrough, because the record exists but no longer counts.",
+        "section": "colors"
+      },
+      {
+        "name": "The Written Label Rule",
+        "body": "Every state pill contains its label in words. Colour is reinforcement, never the only carrier. A state list gets a .pw-legend strip above it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reserved Brand Blue Rule",
+        "body": "#006CB5 stays on the logo and institutional material. The interface uses #1570DB from the same family. Do not paint UI with the logo blue.",
+        "section": "colors"
+      },
+      {
+        "name": "The White-Text Floor Rule",
+        "body": "Every solid state fill is chosen so white text on it clears 4.5:1. Two carried values sit just under the bar — Release Amber (≈4.4:1) and Idle Grey (≈4.4:1) — and should be darkened before the palette is treated as verified; do not add a fifth fill below that line, and do not lower the bar to match them.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "This system has a single typeface. --pw-font-nar exists only as an alias of --pw-font and resolves to the same stack; it is a leftover name, not a second family. Do not introduce a display, condensed or monospace face.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "No uppercase, no letter-spaced capitals, anywhere. Labels, table headers, buttons, tabs and pills all set text-transform: none and letter-spacing: 0 explicitly, because the framework underneath sets otherwise.",
+        "section": "typography"
+      },
+      {
+        "name": "The 16px Field Rule",
+        "body": "Text inputs, selects and textareas are 16px and never smaller — including .form-control-sm. Below 16px iOS zooms the page on focus, which is unusable when someone is filling a lockout form one-handed at the machine.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Number Rule",
+        "body": "PLE numbers, timestamps and any figure that appears in a column carry .pw-num (tabular figures, weight 600) so digits line up between rows.",
+        "section": "typography"
+      },
+      {
+        "name": "The Thumb Rail Rule",
+        "body": "The navigation is one component with two forms. At 768px and up it is a horizontal strip of pills below the top bar, horizontally scrollable with the scrollbar hidden. Below 768px it detaches, fixes to the bottom of the viewport, spreads its items evenly, stacks icon over 11px label in 54px targets, and pads itself for the home indicator. The page reserves that height (--pw-bottom-h: 62px) so nothing is ever hidden behind it.",
+        "section": "layout"
+      },
+      {
+        "name": "The Record Card Rule",
+        "body": "On phone, a table marked .pw-table-cards stops being a table: each row becomes a white record card with its own hairline, 10px radius and soft shadow, and each cell prints its data-label as a 13px muted key at 40% width beside the value. Empty cells disappear. The state cell is ordered first (order: -1), so the lockout state is the first thing read on every card. The header row stays in the DOM, visually hidden.",
+        "section": "layout"
+      },
+      {
+        "name": "The No Grid Rule",
+        "body": "Tables have no vertical rules and no filled header. The header is muted 13px text over a single Outline underline; rows are separated by hairlines and distinguished on hover by the Whisper wash. Weight and colour do the work borders would.",
+        "section": "layout"
+      },
+      {
+        "name": "The Floating Surface Rule",
+        "body": "Separation comes from elevation and breathing room, never from a heavy frame. A card is a white sheet with a hairline, a 14px radius and the Rest shadow. If two things need to feel distinct, raise one or space them — do not draw a line.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Diffuse Shadow Rule",
+        "body": "Shadows are wide, soft and low-opacity, tinted with the ink channel. No hard offsets, no dark edges, no coloured glows except the blue focus ring.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Four Steps Rule",
+        "body": "Rest, Raised, Floating, Lifted — and nothing between. Elevation is a ladder with four rungs, not a continuum.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Nothing Is Square Rule",
+        "body": "Every container, control and token carries radius. 0 is not an available corner value — a --pw-r-0 token exists in the stylesheet but is referenced nowhere and should be treated as dead, not as permission.",
+        "section": "shapes"
+      },
+      {
+        "name": "The One Selection Mechanism Rule",
+        "body": "There is exactly one checkbox and one radio in this product: the native input, sized to 18px, tinted with accent-color, sitting in the normal flow with an 8px gap to its label. The icheck-bootstrap and Bootstrap custom-control plugins draw their own boxes on label pseudo-elements; both are switched off with content: none !important. That was not a shortcut — competing with those plugins on specificity failed repeatedly, and re-enabling them will reintroduce the bug where the drawn box loses its tick. Do not restore them, and do not add a third mechanism.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Timeline Echo Rule",
+        "body": "A timeline dot uses exactly the same colour as the status pill for the same state. The sequence and the status must tell one story.",
+        "section": "components"
+      },
+      {
+        "name": "The Neutral Header Rule",
+        "body": "A modal's intent is expressed by the button in its footer, never by a coloured header. Legacy bg-primary / bg-dark / bg-danger header classes are all forced back to white.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do float a white card on the blue-grey ground with a 14px radius, a hairline and the Rest shadow. Elevation and space separate things; lines do not.",
+      "Do render every lockout state as a solid pill with white text and its written label.",
+      "Do keep colour to its owner: blue for action and navigation, the state palette for lockout state only, grey for everything else.",
+      "Do set text inputs, selects and textareas at 16px, including small variants.",
+      "Do use the native input with accent-color for every checkbox and radio.",
+      "Do give tables .pw-table-cards and every cell a data-label, and mark the state cell .pw-cell--state so it leads the record card on phone.",
+      "Do keep touch targets at 40px, and 48px for stacked or primary phone actions.",
+      "Do put tabular figures (.pw-num) on PLE numbers, timestamps and any column of digits.",
+      "Do match a timeline dot's colour to the status pill for the same state.",
+      "Do let the state band stick to the top of a long record so the state never scrolls away."
+    ],
+    "donts": [
+      "Don't reintroduce square corners, a paper/graphite palette, or technical-drawing typography. This is a permanent brand commitment recorded in PRODUCT.md, not a preference.",
+      "Don't set text-transform: uppercase with positive letter-spacing on labels, headers, buttons or tabs. Two page-local styles in Equipamentos and Home still do (.energy-type-text, .template-section-title); they are carried defects, not the pattern.",
+      "Don't paint lockout state on a card border, a card header or a modal header. The pill and the tinted band are the only carriers.",
+      "Don't add a second typeface. --pw-font-nar is an alias of --pw-font, not a slot.",
+      "Don't re-enable the icheck-bootstrap or custom-control drawn boxes. They are disabled deliberately and their pseudo-elements must stay content: none.",
+      "Don't use hard-offset, dark-edged or coloured shadows. The only coloured shadow in the system is the blue focus ring.",
+      "Don't use Ink Faint for anything a user has to read; it is an unavailability signal.",
+      "Don't rely on colour alone for state, and don't ship a state pill without its label.",
+      "Don't add infinitely looping animation. .ple-blink (a 1.6s infinite opacity pulse on the maintenance badge) is legacy carried from the previous theme, not a house pattern; it survives only because prefers-reduced-motion clamps it.",
+      "Don't introduce a new accent, a new radius step or a fifth elevation. The ladders are closed."
+    ]
+  }
+}

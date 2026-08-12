@@ -376,7 +376,7 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive">
+                        <div class="table-responsive pw-table-cards">
                             <table class="table table-bordered table-hover table-sm mb-0 usuarios-table selectable-table">
                                 <thead class="thead-light">
                                     <tr>
@@ -411,10 +411,10 @@
                                             var statusPiorLinha = PiorStatus(statusValidade,
                                                 exigeTreinamento ? statusTreinamento : StatusValidadeAcesso.SemValidade);
                                             <tr class="@MontarClasseLinha(u.Id, statusPiorLinha)" @onclick="() => SelecionarLinha(u.Id)">
-                                                <td>@u.Login</td>
-                                                <td>@u.NomeCompleto</td>
-                                                <td>@DescreverPerfis(u.Perfis, u.Perfil)</td>
-                                                <td>
+                                                <td data-label="@(Lang["users.col_login"])">@u.Login</td>
+                                                <td data-label="@(Lang["users.col_name"])">@u.NomeCompleto</td>
+                                                <td data-label="@(Lang["users.col_profiles"])">@DescreverPerfis(u.Perfis, u.Perfil)</td>
+                                                <td data-label="@(Lang["users.col_bond"])">
                                                     @if (u.TipoVinculo == TipoVinculo.Terceiro)
                                                     {
                                                         <div><strong>@Lang["users.bond_contractor"]</strong></div>
@@ -438,7 +438,7 @@
                                                         <span class="text-muted">@Lang["users.bond_employee"]</span>
                                                     }
                                                 </td>
-                                                <td>
+                                                <td data-label="@(Lang["users.col_training"])">
                                                     @if (!exigeTreinamento)
                                                     {
                                                         <span class="text-muted small">@Lang["users.training_not_required"]</span>
@@ -464,7 +464,7 @@
                                                         </span>
                                                     }
                                                 </td>
-                                                <td>
+                                                <td data-label="@(Lang["users.col_plants"])">
                                                     @if (u.Perfis.Contains(PerfilUsuario.SuperGestor))
                                                     {
                                                         <span class="text-muted">@Lang["users.all_plants"]</span>
@@ -482,7 +482,7 @@
                                                         <span class="text-muted">@Lang["users.no_plant"]</span>
                                                     }
                                                 </td>
-                                                <td class="text-center">
+                                                <td data-label="@(Lang["users.col_active"])" class="text-center">
                                                     @if (u.Ativa)
                                                     {
                                                         <span class="badge bg-success badge-sm">@Lang["common.active"]</span>
@@ -492,7 +492,7 @@
                                                         <span class="badge bg-secondary badge-sm">@Lang["common.inactive"]</span>
                                                     }
                                                 </td>
-                                                <td class="text-center">
+                                                <td data-label="@(Lang["common.actions"])" class="text-center">
                                                     <button class="btn btn-xs btn-outline-primary"
                                                             title="@Lang["common.edit"]"
                                                             @onclick="() => IniciarEdicao(u.Id)">
@@ -625,111 +625,46 @@
 </section>
 
 <style>
-    .card-title {
-        font-size: 0.9rem !important;
-    }
+    .usuarios-table thead th { white-space: nowrap; }
 
-    .card-header {
-        padding: 0.45rem 0.9rem !important;
-    }
-
-    .card-body {
-        padding: 0.6rem 0.9rem !important;
-    }
-
-    label {
-        font-size: 0.78rem !important;
-        margin-bottom: 0.1rem !important;
-    }
-
-    .form-text,
-    small.text-muted {
-        font-size: 0.75rem !important;
-    }
-
-    .form-control {
-        font-size: 0.8rem !important;
-        height: calc(1.45rem + 2px);
-        padding: 0.2rem 0.45rem;
-    }
-
-    .form-control-sm {
-        font-size: 0.78rem !important;
-        height: calc(1.35rem + 2px);
-        padding: 0.18rem 0.4rem;
-    }
-
-    .form-group {
-        margin-bottom: 0.4rem !important;
-    }
-
-    .btn,
-    .btn-sm {
-        font-size: 0.78rem !important;
-        padding: 0.25rem 0.55rem !important;
-    }
-
-    .btn-xs {
-        font-size: 0.72rem !important;
-        padding: 0.15rem 0.4rem !important;
-    }
-
-    .usuarios-table th,
-    .usuarios-table td {
-        font-size: 0.78rem;
-        padding: 0.23rem 0.4rem;
-    }
-
-    .usuarios-table thead th {
-        font-size: 0.75rem;
-        white-space: nowrap;
-    }
-
-    .pagination .page-link {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.4rem;
-    }
-
+    /* Listas de seleção: campo com moldura própria, rolagem interna */
     .plantas-checkboxes,
     .perfis-checkboxes {
-        max-height: 200px;
+        max-height: 220px;
         overflow-y: auto;
-        border: 1px solid #ddd;
-        padding: 10px;
-        border-radius: 4px;
+        border: 1px solid var(--pw-line);
+        background: var(--pw-vellum-2);
+        padding: var(--pw-3);
+        border-radius: var(--pw-r-1);
     }
 
-    .form-check {
-        margin-bottom: 0.3rem;
-    }
+    .form-check { margin-bottom: var(--pw-1); }
 
     .audit-panel {
-        border-top: 1px solid #eee;
-        padding-top: 0.5rem;
+        border-top: 1px solid var(--pw-hair);
+        padding-top: var(--pw-3);
     }
 
-    /* Toolbox de sub-abas (#4) */
-    .usuarios-toolbox {
-        margin-bottom: 0.75rem;
+    .pagination { gap: var(--pw-1); }
+    .pagination .page-link {
+        font-size: var(--pw-t-sm);
+        min-width: 38px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--pw-line);
+        border-radius: var(--pw-r-1);
+        color: var(--pw-ink-2);
     }
-
-    .usuarios-toolbox .nav-pills .nav-link {
-        color: #495057;
-        border: 1px solid transparent;
-        font-weight: 500;
-        padding: 0.3rem 0.8rem !important;
-    }
-
-    .usuarios-toolbox .nav-pills .nav-link:hover {
-        background-color: #f1f5fb;
-        color: #006CB5;
-    }
-
-    .usuarios-toolbox .nav-pills .nav-link.active {
-        background-color: #006CB5;
+    .pagination .page-item.active .page-link {
+        background: var(--pw-notice);
+        border-color: var(--pw-notice);
         color: #fff;
-        font-weight: 600;
     }
+
+    /* Toolbox de sub-abas (#4) — herda .nav-pills do sistema */
+    .usuarios-toolbox { margin-bottom: var(--pw-4); }
 </style>
 
 @code {

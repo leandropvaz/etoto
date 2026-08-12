@@ -254,7 +254,7 @@
                                 @if (ArquivosImportacao.Any())
                                 {
                                     <div class="position-relative">
-                                        <div class="table-responsive">
+                                        <div class="table-responsive pw-table-cards">
                                             <table class="table table-sm table-striped table-bordered mb-2">
                                                 <thead class="thead-light">
                                                     <tr>
@@ -267,8 +267,8 @@
                                                     @foreach (var a in ArquivosImportacao)
                                                     {
                                                         <tr>
-                                                            <td>@a.Nome</td>
-                                                            <td>
+                                                            <td data-label="@(Lang["equip.file_col"])">@a.Nome</td>
+                                                            <td data-label="@(Lang["equip.status_col"])">
                                                                 <span class="@ClasseBadgeStatus(a.Status)">
                                                                     @TranslateImportStatus(a.Status)
                                                                 </span>
@@ -283,7 +283,7 @@
                                                                     </div>
                                                                 }
                                                             </td>
-                                                            <td style="width: 220px;">
+                                                            <td data-label="@(Lang["equip.progress_col"])" style="width: 220px;">
                                                                 <div class="progress progress-xs">
                                                                     <div class="progress-bar @(a.Status == "Erro" ? "bg-danger" : "")"
                                                                          role="progressbar"
@@ -497,18 +497,22 @@
                                                     }
                                                 </td>
                                                 <td class="text-right">
-                                                    <button class="btn btn-xs btn-outline-primary"
-                                                            title="@Lang["common.edit"]"
-                                                            disabled="@Importando"
-                                                            @onclick="() => IniciarEdicao(e)">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button class="btn btn-xs btn-outline-danger"
-                                                            title="@Lang["common.delete"]"
-                                                            disabled="@Importando"
-                                                            @onclick="() => AbrirModalConfirmacaoExclusao(e)">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
+                                                    <span class="pw-rowactions">
+                                                        <button class="btn btn-xs pw-btn-row"
+                                                                title="@Lang["common.edit"]"
+                                                                aria-label="@Lang["common.edit"]"
+                                                                disabled="@Importando"
+                                                                @onclick="() => IniciarEdicao(e)">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-xs pw-btn-row pw-btn-row--danger"
+                                                                title="@Lang["common.delete"]"
+                                                                aria-label="@Lang["common.delete"]"
+                                                                disabled="@Importando"
+                                                                @onclick="() => AbrirModalConfirmacaoExclusao(e)">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </span>
                                                 </td>
                                             </tr>
                                         }
@@ -685,32 +689,32 @@
                                     </thead>
                                     <tbody>
                                         <tr class="table-danger">
-                                            <td><code>D3</code></td>
-                                            <td>D</td>
-                                            <td>@Lang["equip.tmpl.tag_field"]</td>
-                                            <td><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
-                                            <td>@Lang["equip.tmpl.tag_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.cell"])"><code>D3</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">D</td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.tag_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.tag_obs"]</td>
                                         </tr>
                                         <tr class="table-danger">
-                                            <td><code>F3</code></td>
-                                            <td>F</td>
-                                            <td>@Lang["equip.tmpl.name_field"]</td>
-                                            <td><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
-                                            <td>@Lang["equip.tmpl.name_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.cell"])"><code>F3</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">F</td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.name_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.name_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td><code>J3</code></td>
-                                            <td>J</td>
-                                            <td>@Lang["equip.tmpl.factory_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.factory_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.cell"])"><code>J3</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">J</td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.factory_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.factory_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td><code>K3</code></td>
-                                            <td>K</td>
-                                            <td>@Lang["equip.tmpl.revision_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.revision_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.cell"])"><code>K3</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">K</td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.revision_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.revision_obs"]</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -738,32 +742,32 @@
                                     </thead>
                                     <tbody>
                                         <tr class="table-danger">
-                                            <td>2</td>
-                                            <td><code>B</code></td>
-                                            <td>@Lang["equip.tmpl.g1_number_field"]</td>
-                                            <td><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
-                                            <td>@Lang["equip.tmpl.g1_number_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">2</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>B</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g1_number_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-danger">@Lang["equip.tmpl.yes"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g1_number_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>3</td>
-                                            <td><code>C</code></td>
-                                            <td>@Lang["equip.tmpl.g1_type_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g1_type_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">3</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>C</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g1_type_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g1_type_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>4</td>
-                                            <td><code>D</code></td>
-                                            <td>@Lang["equip.tmpl.g1_desc_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g1_desc_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">4</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>D</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g1_desc_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g1_desc_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>5</td>
-                                            <td><code>E</code></td>
-                                            <td>@Lang["equip.tmpl.g1_image_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g1_image_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">5</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>E</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g1_image_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g1_image_obs"]</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -787,46 +791,46 @@
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>9</td>
-                                            <td><code>I</code></td>
-                                            <td>@Lang["equip.tmpl.g2_iso_tag_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g2_iso_tag_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">9</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>I</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g2_iso_tag_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g2_iso_tag_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>10</td>
-                                            <td><code>J</code></td>
-                                            <td>@Lang["equip.tmpl.g2_loc_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g2_loc_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">10</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>J</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g2_loc_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g2_loc_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>11</td>
-                                            <td><code>K</code></td>
-                                            <td>@Lang["equip.tmpl.g2_device_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g2_device_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">11</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>K</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g2_device_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g2_device_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>12</td>
-                                            <td><code>L</code></td>
-                                            <td>@Lang["equip.tmpl.g2_lockout_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g2_lockout_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">12</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>L</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g2_lockout_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g2_lockout_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>13</td>
-                                            <td><code>M</code></td>
-                                            <td>@Lang["equip.tmpl.g2_zero_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g2_zero_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">13</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>M</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g2_zero_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g2_zero_obs"]</td>
                                         </tr>
                                         <tr>
-                                            <td>14</td>
-                                            <td><code>N</code></td>
-                                            <td>@Lang["equip.tmpl.g2_test_field"]</td>
-                                            <td><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
-                                            <td>@Lang["equip.tmpl.g2_test_obs"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.column"])">14</td>
+                                            <td data-label="@(Lang["equip.tmpl.letter"])"><code>N</code></td>
+                                            <td data-label="@(Lang["equip.tmpl.field"])">@Lang["equip.tmpl.g2_test_field"]</td>
+                                            <td data-label="@(Lang["equip.tmpl.required"])"><span class="badge badge-secondary">@Lang["equip.tmpl.no"]</span></td>
+                                            <td data-label="@(Lang["equip.tmpl.observation"])">@Lang["equip.tmpl.g2_test_obs"]</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -929,55 +933,8 @@
 </section>
 
 <style>
-    .card-title {
-        font-size: 0.9rem !important;
-    }
-
-    .card-header {
-        padding: 0.45rem 0.9rem !important;
-    }
-
-    .card-body {
-        padding: 0.6rem 0.9rem !important;
-    }
-
-    label {
-        font-size: 0.78rem !important;
-        margin-bottom: 0.1rem !important;
-    }
-
-    .form-text, small.text-muted {
-        font-size: 0.75rem !important;
-    }
-
-    .form-control {
-        font-size: 0.8rem !important;
-        height: calc(1.45rem + 2px);
-        padding: 0.2rem 0.45rem;
-    }
-
-    .form-control-sm {
-        font-size: 0.78rem !important;
-        height: calc(1.35rem + 2px);
-        padding: 0.18rem 0.4rem;
-    }
-
-    .form-group {
-        margin-bottom: 0.4rem !important;
-    }
-
-    .btn, .btn-sm {
-        font-size: 0.78rem !important;
-        padding: 0.25rem 0.55rem !important;
-    }
-
-    .btn-xs {
-        font-size: 0.72rem !important;
-        padding: 0.15rem 0.4rem !important;
-    }
-
     .table-container {
-        max-height: 600px;
+        max-height: 620px;
         overflow-y: auto;
         position: relative;
     }
@@ -988,25 +945,14 @@
         border-spacing: 0;
     }
 
-        .equip-table th, .equip-table td {
-            font-size: 0.78rem;
-            padding: 0.25rem 0.45rem;
-            vertical-align: top;
-        }
-
-        .equip-table thead.sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background-color: #f8f9fa;
-        }
-
-            .equip-table thead.sticky-header th {
-                font-size: 0.75rem;
-                white-space: nowrap;
-                background-color: #f8f9fa;
-                box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
-            }
+    .equip-table thead.sticky-header th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: var(--pw-vellum);
+        white-space: nowrap;
+        box-shadow: inset 0 -2px 0 var(--pw-line);
+    }
 
     .energy-type-cell {
         font-weight: 600;
@@ -1016,135 +962,77 @@
 
     .energy-type-text {
         display: inline-block;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 0.75rem;
+        padding: 2px 7px;
+        border-radius: var(--pw-r-1);
+        font-size: var(--pw-t-xs);
+        font-weight: 600;
     }
 
+    .pagination { gap: var(--pw-1); }
     .pagination .page-link {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.4rem;
+        font-size: var(--pw-t-sm);
+        min-width: 38px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--pw-line);
+        border-radius: var(--pw-r-1);
+        color: var(--pw-ink-2);
+    }
+    .pagination .page-item.active .page-link {
+        background: var(--pw-ink);
+        border-color: var(--pw-ink);
+        color: var(--pw-ink-on-dark);
     }
 
-    /* Modal imagem */
-    .modal-image .modal-content {
-        border-radius: 0.75rem;
-        overflow-x: hidden;
-    }
-
-    .modal-image .modal-dialog {
-        max-width: 900px;
-        width: 100%;
-        margin: 1.75rem auto;
-    }
-
-    .modal-image-content {
-        gap: 1.5rem;
-        width: 100%;
-    }
-
-    .modal-image-wrapper {
-        max-width: 100%;
-    }
-
-        .modal-image-wrapper img {
-            max-height: 420px;
-            object-fit: contain;
-        }
-
-    .modal-notes-wrapper {
-        max-width: 320px;
-        width: 100%;
-    }
+    .modal-image .modal-dialog { max-width: 900px; width: 100%; margin: 1.75rem auto; }
+    .modal-image-content { gap: var(--pw-5); width: 100%; }
+    .modal-image-wrapper { max-width: 100%; }
+    .modal-image-wrapper img { max-height: 420px; object-fit: contain; }
+    .modal-notes-wrapper { max-width: 320px; width: 100%; }
 
     .image-notes-bubble {
-        background-color: #fff3cd;
-        border: 1px solid #f1c453;
-        border-radius: 0.75rem;
-        padding: 0.65rem 0.9rem;
-        font-size: 0.8rem;
-        line-height: 1.3rem;
-        position: relative;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        background-color: var(--pw-caution-bg);
+        border: 1px solid var(--pw-line);
+        border-top: 3px solid var(--pw-caution);
+        border-radius: var(--pw-r-1);
+        padding: var(--pw-3) var(--pw-4);
+        font-size: var(--pw-t-sm);
+        line-height: 1.5;
+        color: var(--pw-ink);
         word-wrap: break-word;
         overflow-wrap: break-word;
     }
 
-        .image-notes-bubble::before {
-            content: "";
-            position: absolute;
-            left: -10px;
-            top: 18px;
-            border-width: 8px 10px 8px 0;
-            border-style: solid;
-            border-color: transparent #f1c453 transparent transparent;
-        }
+    .confirm-modal .modal-header { border-bottom: none; }
+    .confirm-modal .modal-footer { border-top: none; }
 
-    /* Modal confirmação */
-    .confirm-modal {
-        border-radius: 0.75rem;
-    }
-
-        .confirm-modal .modal-header {
-            border-bottom: none;
-            padding-bottom: 0.25rem;
-        }
-
-        .confirm-modal .modal-body {
-            padding-top: 0.25rem;
-            padding-bottom: 0.5rem;
-            font-size: 0.85rem;
-        }
-
-        .confirm-modal .modal-footer {
-            border-top: none;
-        }
-
-    /* Modal template */
+    /* Modal de template de importação */
     .template-section-title {
-        font-size: 0.83rem;
+        font-size: var(--pw-t-label);
         font-weight: 700;
-        border-left: 3px solid #1a3a5c;
-        padding-left: 8px;
-        margin-bottom: 6px;
-        margin-top: 14px;
-    }
-
-    .template-table th, .template-table td {
-        font-size: 0.78rem !important;
-        padding: 0.22rem 0.4rem !important;
-        vertical-align: middle !important;
+        color: var(--pw-ink-3);
+        margin-bottom: var(--pw-2);
+        margin-top: var(--pw-4);
     }
 
     .template-table code {
-        font-size: 0.8rem;
-        background: #f0f0f0;
-        padding: 1px 4px;
-        border-radius: 3px;
+        font-size: var(--pw-t-xs);
+        background: var(--pw-vellum);
+        border: 1px solid var(--pw-hair);
+        padding: 1px 5px;
+        border-radius: var(--pw-r-1);
+        color: var(--pw-ink);
     }
 
-    /* Alerta erro inline */
-    .alert-sm {
-        font-size: 0.75rem;
-    }
+    .alert-sm { font-size: var(--pw-t-sm); padding: var(--pw-2) var(--pw-3); }
 
     @@media (max-width: 768px) {
-        .modal-image .modal-dialog {
-            max-width: 95%;
-            margin: 1rem auto;
-        }
-
-        .modal-image-content {
-            flex-direction: column !important;
-            gap: 1rem;
-        }
-
-        .modal-notes-wrapper {
-            max-width: 100%;
-            width: 100%;
-            margin-left: 0 !important;
-            margin-top: 0.75rem;
-        }
+        .modal-image .modal-dialog { max-width: 95%; margin: var(--pw-3) auto; }
+        .modal-image-content { flex-direction: column !important; gap: var(--pw-4); }
+        .modal-notes-wrapper { max-width: 100%; width: 100%; margin-left: 0 !important; margin-top: var(--pw-3); }
+        .table-container { max-height: none; }
     }
 </style>
 

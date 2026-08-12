@@ -74,23 +74,29 @@
                     </div>
                 }
 
-                @* ── Timeline Horizontal ── *@
+                @* ── Histórico: mesma linha do tempo do PLE, mesmos tons de estado ── *@
                 @if (sel.Historico.Any())
                 {
                     var hist = sel.Historico.OrderBy(x => x.DataAcao).ToList();
-                    <h6 class="mb-2 text-center mt-3"><i class="fas fa-stream mr-1"></i> @Lang["ple.history"]</h6>
-                    <div class="d-flex flex-nowrap overflow-auto pb-2 justify-content-center align-items-start">
-                        @for (int i = 0; i < hist.Count; i++)
-                        {
-                            var h = hist[i]; var isLast = i == hist.Count - 1;
-                            <div class="text-center flex-shrink-0" style="width:100px;">
-                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center @TlBg(h.Acao)" style="width:30px;height:30px;">
-                                    <i class="fas @TlIcon(h.Acao) text-white" style="font-size:0.7rem;"></i>
-                                </div>
-                                <div class="mt-1"><strong style="font-size:0.7rem;" class="@TlColor(h.Acao)">@TlLabel(h.Acao)</strong><br/><small class="text-muted" style="font-size:0.65rem;">@h.UsuarioNome</small><br/><small class="text-muted" style="font-size:0.6rem;">@h.DataAcao.ToString("dd/MM HH:mm")</small></div>
-                            </div>
-                            @if (!isLast) { <div class="flex-shrink-0 align-self-center" style="width:40px;height:2px;background:#adb5bd;margin-top:-30px;"></div> }
-                        }
+                    <div class="pw-timeline-block">
+                        <span class="pw-label pw-timeline-block__title">@Lang["ple.history"]</span>
+                        <ol class="pw-timeline">
+                            @foreach (var h in hist)
+                            {
+                                <li class="pw-timeline__item">
+                                    <span class="pw-timeline__dot @TlTone(h.Acao)">
+                                        <i class="fas @TlIcon(h.Acao)"></i>
+                                    </span>
+                                    <span class="pw-timeline__body">
+                                        <span class="pw-timeline__act">@TlLabel(h.Acao)</span>
+                                        <span class="pw-timeline__meta">
+                                            <span>@h.UsuarioNome</span>
+                                            <span class="pw-num">@h.DataAcao.ToString("dd/MM HH:mm")</span>
+                                        </span>
+                                    </span>
+                                </li>
+                            }
+                        </ol>
                     </div>
                 }
             </div>
@@ -498,8 +504,16 @@
     private RenderFragment BF(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"badge {c}"); b.AddContent(2, t); b.CloseElement(); };
 
     private string TlIcon(string a) => a switch { "Criado" => "fa-plus-circle", "Modificado" => "fa-edit", "Inativado" => "fa-power-off", "Ativado" => "fa-check-circle", "Excluído" => "fa-trash", _ => "fa-circle" };
-    private string TlColor(string a) => a switch { "Criado" => "text-success", "Modificado" => "text-primary", "Inativado" => "text-secondary", "Ativado" => "text-success", _ => "text-muted" };
-    private string TlBg(string a) => a switch { "Criado" => "bg-success", "Modificado" => "bg-primary", "Inativado" => "bg-secondary", "Ativado" => "bg-success", _ => "bg-secondary" };
+    // Mesmo vocabulário de tons da linha do tempo do PLE: criado é neutro,
+    // alteração é azul, ativação é verde, inativação é âmbar.
+    private string TlTone(string a) => a switch
+    {
+        "Modificado" => "pw-timeline__dot--notice",
+        "Ativado" => "pw-timeline__dot--safe",
+        "Inativado" => "pw-timeline__dot--warn",
+        "Excluído" => "pw-timeline__dot--danger",
+        _ => string.Empty,
+    };
     private string TlLabel(string a) => a switch
     {
         "Criado" => Lang["timeline.action.created"],

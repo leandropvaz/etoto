@@ -99,7 +99,7 @@
                     </div>
                 </div>
 
-                <div class="table-responsive">
+                <div class="table-responsive pw-table-cards">
                     <table class="table table-bordered table-hover table-sm mb-0 audit-table selectable-table">
                         <thead class="thead-light">
                             <tr>
@@ -133,15 +133,15 @@
                                 {
                                     <tr class="@(LinhaSelecionadaId == item.Id ? "row-selected" : "")"
                                         @onclick="() => SelecionarLinha(item.Id)">
-                                        <td>@item.ExecutadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
-                                        <td>@(item.UsuarioNome ?? Lang["audit.unknown_user"])</td>
-                                        <td class="text-muted small">@item.ChaveRegistro</td>
-                                        <td>
+                                        <td data-label="@(Lang["audit.col_when"])">@item.ExecutadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                        <td data-label="@(Lang["audit.col_user"])">@(item.UsuarioNome ?? Lang["audit.unknown_user"])</td>
+                                        <td data-label="@(Lang["audit.col_key"])" class="text-muted small">@item.ChaveRegistro</td>
+                                        <td data-label="@(Lang["audit.col_action"])">
                                             <span class="badge @BadgeAcao(item.Acao) badge-sm">
                                                 @TraduzirAcao(item.Acao)
                                             </span>
                                         </td>
-                                        <td class="text-center">
+                                        <td data-label="@(Lang["audit.col_details"])" class="text-center">
                                             @if (item.Acao != (int)EToto.Domain.Enums.AcaoAuditoria.Criar
                                                  || item.ValoresDepois != null)
                                             {
@@ -211,9 +211,9 @@
                                         var antesFmt = AuditoriaTraducao.ValorAmigavel(Selecionado.NomeTabela, campo, antes);
                                         var depoisFmt = AuditoriaTraducao.ValorAmigavel(Selecionado.NomeTabela, campo, depois);
                                         <tr class="@(antesFmt != depoisFmt ? "table-warning" : "")">
-                                            <td>@rotulo</td>
-                                            <td>@antesFmt</td>
-                                            <td>@depoisFmt</td>
+                                            <td data-label="@(Lang["audit.diff_field"])">@rotulo</td>
+                                            <td data-label="@(Lang["audit.diff_before"])">@antesFmt</td>
+                                            <td data-label="@(Lang["audit.diff_after"])">@depoisFmt</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -233,9 +233,14 @@
 </section>
 
 <style>
-    .audit-table th, .audit-table td { font-size: 0.78rem; padding: 0.25rem 0.4rem; }
-    .audit-diff td, .audit-diff th { font-size: 0.78rem; padding: 0.3rem 0.45rem; word-break: break-all; }
-    .audit-diff .text-monospace { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .audit-table thead th { white-space: nowrap; }
+
+    /* Diff antes/depois: valores brutos. Monoespaçado aqui é dado, não fantasia. */
+    .audit-diff td, .audit-diff th { word-break: break-all; }
+    .audit-diff .text-monospace {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: var(--pw-t-xs);
+    }
 </style>
 
 @code {

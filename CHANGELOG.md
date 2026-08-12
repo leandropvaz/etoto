@@ -7,6 +7,50 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ## [Unreleased]
 
+### Adicionado
+- **Painel de bloqueio** portado do `cn-lototo/stage`, já no layout novo:
+  - `/painel` (dentro do app, com seletor de planta e detalhe de requisições/líderes
+    para Comando Central e SuperGestor) e `/mural/{codigo}` (tela cheia para TV fixa,
+    **sem autenticação**, mesmo comportamento do repositório de origem).
+  - `PainelAlertaDto`, `PainelAlertasService`, `MuralLayout`, `MuralGrid`.
+  - `IPleRepository.GetPlesAtivosComDetalheAsync` e deep-link `/ple?abrir={id}`
+    (clicar num card abre o PLE que originou o bloqueio).
+  - Escala tipográfica dedicada à TV (`--pw-t-tv-*`): quem lê está a metros de distância.
+  - Cores de estado alinhadas ao `/ple` — no repositório de origem "Em andamento" era
+    azul; aqui é **perigo**.
+- **Sistema visual próprio** em `wwwroot/css/etoto.css`: tokens de superfície, texto,
+  borda, estado, tipografia, raio, elevação e alvo de toque. Cartão branco sobre fundo
+  cinza-azulado, cantos de 6 a 20px, sombras difusas, fonte Figtree.
+- `PRODUCT.md`, `DESIGN.md` e `.impeccable/design.json` documentando produto e sistema.
+
+### Alterado
+- **Layout substituído.** Sai o tema AdminLTE, entra o registro SaaS moderno
+  (régua de acabamento: Monday, Asana, ClickUp — preferência registrada em `PRODUCT.md`).
+  - Estado do PLE vira **pílula sólida**; "Em andamento" passa a ser PERIGO, não cor
+    primária — há energia isolada com gente trabalhando.
+  - Azul institucional `#006CB5` reservado ao logo; a interface usa `#1570DB`.
+  - Um único mecanismo de seleção (input nativo + `accent-color`); o desenho de caixa
+    do `icheck-bootstrap` e do `custom-control` é desligado, o que corrige checkbox e
+    radio sobrepondo o texto em Usuários, Plantas e Equipamentos.
+  - Tabelas colapsam em ficha no celular (11 de 13; duas têm cabeçalho agrupado e
+    mantêm rolagem horizontal). O trilho de navegação vira barra inferior abaixo de 768px.
+  - Histórico do PLE e da Avaliação de Risco passam a usar a mesma linha do tempo.
+- **Regras de permissão do PLE** trazidas do `cn-lototo/stage`: cancelar apenas no
+  status `Criado`, SuperGestor também pode finalizar, e excluir restrito a
+  Administrador/SuperGestor.
+
+### Corrigido
+- **Três contrastes abaixo de 4.5:1** que estavam anotados no código como aprovados:
+  `--pw-warn` (4.37), `--pw-idle` (4.41) e `--pw-ink-3` (4.41 na folha / 4.11 no fundo),
+  este último usado em rótulos de campo e cabeçalhos de tabela por todo o sistema.
+- Logo da Power Wave invisível no rodapé: o `filter: brightness(0) invert(1)` existia
+  para o rodapé escuro antigo e deixava a marca branca sobre branco. No Login o escrito
+  (`logo3.png`) nunca chegou a ser incluído.
+
+### Removido
+- `wwwroot/css/custom.css`: tokens `--seugarcom` de outro produto, ~60 linhas governando
+  uma sidebar que não existe, o bloco `.lototo-layout` sem uso e encoding corrompido.
+
 ### Alterado
 - Importador Líderes LOTOTO (opção `[8]`) ganha:
   - **Coluna F = Senha**: se preenchida, gera hash SHA-256 hex (mesmo algoritmo do

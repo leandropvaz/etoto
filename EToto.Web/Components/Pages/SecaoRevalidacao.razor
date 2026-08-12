@@ -28,7 +28,7 @@
 
             <div class="card-body p-2">
                 <small class="text-muted d-block mb-2 px-1">@Lang["campaign.subtitle"]</small>
-                <div class="table-responsive">
+                <div class="table-responsive pw-table-cards">
                     <table class="table table-bordered table-hover table-sm mb-0 campaign-table selectable-table">
                         <thead class="thead-light">
                             <tr>
@@ -56,14 +56,14 @@
                                     var pct = c.TotalItens == 0 ? 0 : (int)Math.Round(100.0 * c.ItensDecididos / c.TotalItens);
                                     <tr class="@(LinhaSelecionadaId == c.Id ? "row-selected" : "")"
                                         @onclick="() => SelecionarLinha(c.Id)">
-                                        <td class="align-middle">
+                                        <td data-label="@(Lang["campaign.name"])" class="align-middle">
                                             <div class="font-weight-bold">@c.Nome</div>
                                             <small class="text-muted">@Lang["campaign.created_by"]: @(c.CriadoPorNome ?? "—")</small>
                                         </td>
-                                        <td class="align-middle"><span class="badge @StatusBadge(c.Status)">@TraduzirStatus(c.Status)</span></td>
-                                        <td class="align-middle">@c.DataInicio.ToLocalTime().ToString("dd/MM/yyyy")</td>
-                                        <td class="align-middle">@c.DataFimPrevista.ToLocalTime().ToString("dd/MM/yyyy")</td>
-                                        <td class="align-middle">
+                                        <td data-label="@(Lang["campaign.status"])" class="align-middle"><span class="badge @StatusBadge(c.Status)">@TraduzirStatus(c.Status)</span></td>
+                                        <td data-label="@(Lang["campaign.start"])" class="align-middle">@c.DataInicio.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                        <td data-label="@(Lang["campaign.end_expected"])" class="align-middle">@c.DataFimPrevista.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                        <td data-label="@(Lang["campaign.progress"])" class="align-middle">
                                             <div class="progress" style="height: 14px;">
                                                 <div class="progress-bar bg-info" role="progressbar"
                                                      style="width: @pct%;" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
@@ -71,7 +71,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="text-center align-middle">
+                                        <td data-label="@(Lang["common.actions"])" class="text-center align-middle">
                                             <button class="btn btn-xs btn-outline-primary" @onclick="() => AbrirDetalhe(c.Id)">
                                                 <i class="fas fa-eye mr-1"></i>@Lang["audit.col_details"]
                                             </button>
@@ -90,7 +90,7 @@
             <div class="modal fade show" style="display:block;" tabindex="-1" aria-modal="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
-                        <div class="modal-header bg-primary text-white">
+                        <div class="modal-header">
                             <h5 class="modal-title mb-0"><i class="fas fa-plus mr-2"></i>@Lang["campaign.new"]</h5>
                             <button type="button" class="close text-white" @onclick="FecharModalNova">
                                 <span>&times;</span>
@@ -166,14 +166,15 @@
 </section>
 
 <style>
-    .campaign-table th, .campaign-table td { font-size: 0.78rem; padding: 0.3rem 0.4rem; }
+    .campaign-table thead th { white-space: nowrap; }
 
     .plantas-checkboxes {
-        max-height: 180px;
+        max-height: 200px;
         overflow-y: auto;
-        border: 1px solid #ddd;
-        padding: 8px 10px;
-        border-radius: 4px;
+        border: 1px solid var(--pw-line);
+        background: var(--pw-vellum-2);
+        padding: var(--pw-3);
+        border-radius: var(--pw-r-1);
     }
 </style>
 
