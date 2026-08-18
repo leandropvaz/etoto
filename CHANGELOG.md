@@ -7,6 +7,31 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ## [Unreleased]
 
+### Alterado
+- **Avaliação de risco no mesmo vocabulário visual do bloqueio.** A listagem passa a
+  usar a tabela do `/ple`: pílula sólida de estado (Ativa = seguro, Inativa = anulada),
+  tinta suave na linha inteira, legenda de cores acima e colapso em ficha no celular.
+  O nível de risco da matriz deixa os hex soltos (`#dc3545`, `#fd7e14`, `#ffc107`,
+  `#28a745`) e passa aos tokens de estado — Alto = perigo · Médio = liberação ·
+  Baixo = atenção · Insignificante = seguro. Cor sozinha não é dado: o rótulo escrito
+  continua na célula.
+- **Cabeçalho do detalhe do bloqueio reorganizado no padrão da avaliação de risco.**
+  Nasce o componente `.pw-kv`: rótulo em coluna estreita tingida, valor ao lado, dois
+  pares por linha no monitor e ficha empilhada no celular. Usado nas duas telas, com o
+  número do documento como âncora e o estado do PLE junto dos demais campos.
+- i18n: `ar.none_found` em PT/EN — o "Nenhuma avaliação encontrada." estava fixo em
+  português no código.
+
+### Corrigido
+- **Botão de fechar saindo do cartão em todos os modais.** O Bootstrap posiciona o `X`
+  com `float:right` e `margin:-1rem -1rem -1rem auto`, contando com o padding de 1rem
+  que ele mesmo aplica no cabeçalho; como o sistema visual usa outro padding, a margem
+  negativa empurrava o botão para fora. Float e margem zerados, alvo de 32px no
+  monitor e `--pw-tap` no celular, com foco visível. Vale para os 11 modais e também
+  para `.alert` e `.card-header`.
+- O "fechar" do detalhe (bloqueio e avaliação de risco) vira `.pw-detail-close` no
+  sistema visual, em vez de regra local de uma página só.
+
 ### Adicionado
 - **Painel de bloqueio** portado do `cn-lototo/stage`, já no layout novo:
   - `/painel` (dentro do app, com seletor de planta e detalhe de requisições/líderes

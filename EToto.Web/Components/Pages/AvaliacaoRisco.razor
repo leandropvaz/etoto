@@ -25,9 +25,9 @@
         <div class="row mb-3">
         <div class="col-12">
         <div class="card card-outline @(sel.Status == StatusAvaliacaoRisco.Ativa ? "card-info" : "card-secondary")">
-            <div class="card-header py-2 d-flex align-items-center">
+            <div class="card-header card-header--detail py-2 d-flex align-items-center">
                 <h3 class="card-title mb-0 mr-3"><i class="fas fa-exclamation-triangle mr-1"></i> @sel.Numero</h3>
-                <div class="d-flex flex-grow-1 justify-content-center flex-wrap" style="gap:4px;">
+                <div class="pw-actions flex-grow-1 justify-content-center">
                     @if (CanCreate)
                     {
                         @if (sel.Status == StatusAvaliacaoRisco.Ativa)
@@ -43,18 +43,39 @@
                     }
                     <button class="btn btn-xs btn-info" @onclick="() => PrintAr(sel.Id)"><i class="fas fa-print mr-1"></i> @Lang["ar.action.print"]</button>
                 </div>
-                <button class="btn btn-xs btn-secondary ml-3" @onclick="CloseDetail"><i class="fas fa-times"></i></button>
+                <button class="btn btn-xs btn-secondary pw-detail-close" @onclick="CloseDetail" title="@Lang["common.close"]">
+                    <i class="fas fa-times"></i><span class="pw-detail-close__label">@Lang["common.close"]</span>
+                </button>
             </div>
             <div class="card-body">
-                <table class="table table-sm table-bordered mb-3" style="font-size:0.8rem;">
+                @* Mesma ficha chave/valor usada no detalhe do bloqueio. *@
+                <table class="pw-kv">
                     <tbody>
-                        <tr><th class="bg-light" style="width:15%;">@Lang["ar.number"]</th><td style="width:35%;">@sel.Numero</td><th class="bg-light" style="width:15%;">@Lang["ar.status"]</th><td>@StatusBadge(sel.Status)</td></tr>
-                        <tr><th class="bg-light">@Lang["ar.department"]</th><td>@sel.Departamento</td><th class="bg-light">@Lang["ar.operation"]</th><td>@sel.Operacao</td></tr>
-                        <tr><th class="bg-light">@Lang["ar.task"]</th><td>@sel.Tarefa</td><th class="bg-light">@Lang["ar.date"]</th><td>@sel.Data.ToString("dd/MM/yyyy")</td></tr>
-                        <tr><th class="bg-light">@Lang["ar.created_by"]</th><td>@sel.CriadoPorNome <small class="text-muted">@sel.DataCriacao.ToString("dd/MM HH:mm")</small></td><th class="bg-light">@Lang["ar.observations"]</th><td>@(sel.Observacoes ?? "-")</td></tr>
+                        <tr>
+                            <th>@Lang["ar.number"]</th>
+                            <td class="pw-kv__anchor">@sel.Numero</td>
+                            <th>@Lang["ar.status"]</th>
+                            <td>@StatusBadge(sel.Status)</td>
+                        </tr>
+                        <tr>
+                            <th>@Lang["ar.department"]</th><td>@sel.Departamento</td>
+                            <th>@Lang["ar.operation"]</th><td>@sel.Operacao</td>
+                        </tr>
+                        <tr>
+                            <th>@Lang["ar.task"]</th><td>@sel.Tarefa</td>
+                            <th>@Lang["ar.date"]</th><td>@sel.Data.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                        <tr>
+                            <th>@Lang["ar.created_by"]</th>
+                            <td>@sel.CriadoPorNome <small>@sel.DataCriacao.ToString("dd/MM HH:mm")</small></td>
+                            <th>@Lang["ar.observations"]</th><td>@(sel.Observacoes ?? "-")</td>
+                        </tr>
                         @if (sel.Equipamentos.Any())
                         {
-                            <tr><th class="bg-light">@Lang["ple.equipment"]</th><td colspan="3">@foreach (var eq in sel.Equipamentos) { <span class="badge badge-info mr-1">@eq.Tag</span> }</td></tr>
+                            <tr>
+                                <th>@Lang["ple.equipment"]</th>
+                                <td colspan="3">@foreach (var eq in sel.Equipamentos) { <span class="pw-tag mr-1">@eq.Tag</span> }</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
@@ -63,11 +84,11 @@
                 {
                     <div class="table-responsive">
                     <table class="table table-bordered table-sm" style="font-size:0.75rem;">
-                        <thead class="bg-pw-blue"><tr><th>#</th><th>@Lang["ar.item.task"]</th><th>@Lang["ar.item.hazard"]</th><th>@Lang["ar.item.exposed"]</th><th>@Lang["ar.item.severity_before"]</th><th>@Lang["ar.item.probability_before"]</th><th>@Lang["ar.item.risk_before"]</th><th>@Lang["ar.item.measures"]</th><th>@Lang["ar.item.severity_after"]</th><th>@Lang["ar.item.probability_after"]</th><th>@Lang["ar.item.risk_after"]</th></tr></thead>
+                        <thead><tr><th>#</th><th>@Lang["ar.item.task"]</th><th>@Lang["ar.item.hazard"]</th><th>@Lang["ar.item.exposed"]</th><th>@Lang["ar.item.severity_before"]</th><th>@Lang["ar.item.probability_before"]</th><th>@Lang["ar.item.risk_before"]</th><th>@Lang["ar.item.measures"]</th><th>@Lang["ar.item.severity_after"]</th><th>@Lang["ar.item.probability_after"]</th><th>@Lang["ar.item.risk_after"]</th></tr></thead>
                         <tbody>
                             @foreach (var it in sel.Itens)
                             {
-                                <tr><td>@it.Ordem</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td>@it.GravidadeAntes</td><td>@it.ProbabilidadeAntes</td><td style="@RiscoStyle(it.NivelRiscoAntes)">@it.NivelRiscoAntes</td><td>@it.MedidasProtecao</td><td>@it.GravidadeDepois</td><td>@it.ProbabilidadeDepois</td><td style="@RiscoStyle(it.NivelRiscoDepois)">@it.NivelRiscoDepois</td></tr>
+                                <tr><td>@it.Ordem</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td>@it.GravidadeAntes</td><td>@it.ProbabilidadeAntes</td><td class="@(RiscoClass(it.NivelRiscoAntes))">@it.NivelRiscoAntes</td><td>@it.MedidasProtecao</td><td>@it.GravidadeDepois</td><td>@it.ProbabilidadeDepois</td><td class="@(RiscoClass(it.NivelRiscoDepois))">@it.NivelRiscoDepois</td></tr>
                             }
                         </tbody>
                     </table>
@@ -136,19 +157,31 @@
             </div>
 
             @if (loading) { <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div> }
-            else if (!filtered.Any()) { <p class="text-muted text-center py-3">Nenhuma avaliação encontrada.</p> }
+            else if (!filtered.Any()) { <div class="pw-empty"><i class="fas fa-exclamation-triangle"></i>@Lang["ar.none_found"]</div> }
             else
             {
-                <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm">
-                    <thead class="bg-pw-blue"><tr><th>@Lang["ar.number"]</th><th>@Lang["ar.department"]</th><th>@Lang["ar.operation"]</th><th>@Lang["ar.task"]</th><th>@Lang["ar.date"]</th><th>@Lang["ar.status"]</th><th>@Lang["ar.created_by"]</th><th style="width:36px;"></th></tr></thead>
+                @* A chave das cores, igual à do bloqueio: cor sozinha não é dado. *@
+                <div class="pw-legend">
+                    <span class="pw-label pw-legend__title">@Lang["ple.legend"]</span>
+                    <span class="pw-legend__item"><span class="pw-sig pw-sig--safe">@Lang["ar.status.ativa"]</span></span>
+                    <span class="pw-legend__item"><span class="pw-sig pw-sig--void">@Lang["ar.status.inativa"]</span></span>
+                </div>
+
+                <div class="table-responsive pw-table-cards">
+                <table class="table table-hover selectable-table">
+                    <thead><tr><th>@Lang["ar.number"]</th><th>@Lang["ar.department"]</th><th>@Lang["ar.operation"]</th><th>@Lang["ar.task"]</th><th>@Lang["ar.date"]</th><th>@Lang["ar.status"]</th><th>@Lang["ar.created_by"]</th><th style="width:52px;"><span class="sr-only">@Lang["common.actions"]</span></th></tr></thead>
                     <tbody>
                         @foreach (var a in filtered)
                         {
-                            <tr @onclick="() => ViewAr(a.Id)" style="cursor:pointer;" class="@(sel?.Id == a.Id ? "table-active" : "")">
-                                <td>@a.Numero</td><td>@a.Departamento</td><td>@a.Operacao</td><td>@a.Tarefa</td>
-                                <td>@a.Data.ToString("dd/MM/yyyy")</td><td>@StatusBadge(a.Status)</td><td>@a.CriadoPorNome</td>
-                                <td class="text-center"><button class="btn btn-xs btn-outline-info" @onclick:stopPropagation @onclick="() => ViewAr(a.Id)"><i class="fas fa-eye"></i></button></td>
+                            <tr @onclick="() => ViewAr(a.Id)" class="@(StatusRowClass(a.Status)) @(sel?.Id == a.Id ? "row-selected" : "")">
+                                <td data-label="@Lang["ar.number"]"><span class="pw-num">@a.Numero</span></td>
+                                <td data-label="@Lang["ar.department"]">@a.Departamento</td>
+                                <td data-label="@Lang["ar.operation"]">@a.Operacao</td>
+                                <td data-label="@Lang["ar.task"]">@a.Tarefa</td>
+                                <td data-label="@Lang["ar.date"]">@a.Data.ToString("dd/MM/yyyy")</td>
+                                <td class="pw-cell--state" data-label="@Lang["ar.status"]">@StatusBadge(a.Status)</td>
+                                <td data-label="@Lang["ar.created_by"]">@a.CriadoPorNome</td>
+                                <td class="text-center pw-rowaction"><button class="btn btn-xs pw-btn-row" @onclick:stopPropagation @onclick="() => ViewAr(a.Id)" title="@Lang["common.view"]"><i class="fas fa-eye"></i></button></td>
                             </tr>
                         }
                     </tbody>
@@ -260,7 +293,7 @@
                                     <div class="row">
                                         <div class="col-4"><select class="form-control form-control-sm" @bind="item.GravidadeAntes"><option value="">Grav.</option>@foreach (var s in sev) { <option value="@s">@s</option> }</select></div>
                                         <div class="col-4"><select class="form-control form-control-sm" @bind="item.ProbabilidadeAntes"><option value="">Prob.</option>@foreach (var p in prb) { <option value="@p">@p</option> }</select></div>
-                                        <div class="col-4"><input type="text" class="form-control form-control-sm" readonly value="@CalcRisco(item.GravidadeAntes, item.ProbabilidadeAntes)" style="@RiscoStyle(CalcRisco(item.GravidadeAntes, item.ProbabilidadeAntes))" /></div>
+                                        <div class="col-4"><input type="text" class="form-control form-control-sm @(RiscoClass(CalcRisco(item.GravidadeAntes, item.ProbabilidadeAntes)))" readonly value="@CalcRisco(item.GravidadeAntes, item.ProbabilidadeAntes)" /></div>
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-6 p-2" style="background:#f0fff4;border-radius:4px;">
@@ -268,7 +301,7 @@
                                     <div class="row">
                                         <div class="col-4"><select class="form-control form-control-sm" @bind="item.GravidadeDepois"><option value="">Grav.</option>@foreach (var s in sev) { <option value="@s">@s</option> }</select></div>
                                         <div class="col-4"><select class="form-control form-control-sm" @bind="item.ProbabilidadeDepois"><option value="">Prob.</option>@foreach (var p in prb) { <option value="@p">@p</option> }</select></div>
-                                        <div class="col-4"><input type="text" class="form-control form-control-sm" readonly value="@CalcRisco(item.GravidadeDepois, item.ProbabilidadeDepois)" style="@RiscoStyle(CalcRisco(item.GravidadeDepois, item.ProbabilidadeDepois))" /></div>
+                                        <div class="col-4"><input type="text" class="form-control form-control-sm @(RiscoClass(CalcRisco(item.GravidadeDepois, item.ProbabilidadeDepois)))" readonly value="@CalcRisco(item.GravidadeDepois, item.ProbabilidadeDepois)" /></div>
                                     </div>
                                 </div>
                             </div>
@@ -289,10 +322,10 @@
                 {
                     <div class="table-responsive">
                     <table class="table table-bordered table-sm" style="font-size:0.75rem;">
-                        <thead class="bg-pw-blue"><tr><th>#</th><th>Tarefa</th><th>Perigo</th><th>Exp.</th><th>Risco Antes</th><th>Medidas</th><th>Risco Após</th></tr></thead>
+                        <thead><tr><th>#</th><th>Tarefa</th><th>Perigo</th><th>Exp.</th><th>Risco Antes</th><th>Medidas</th><th>Risco Após</th></tr></thead>
                         <tbody>
                             @for (int i = 0; i < formItens.Count; i++) { var it = formItens[i];
-                                <tr><td>@(i+1)</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td style="@RiscoStyle(CalcRisco(it.GravidadeAntes, it.ProbabilidadeAntes))">@CalcRisco(it.GravidadeAntes, it.ProbabilidadeAntes)</td><td>@it.MedidasProtecao</td><td style="@RiscoStyle(CalcRisco(it.GravidadeDepois, it.ProbabilidadeDepois))">@CalcRisco(it.GravidadeDepois, it.ProbabilidadeDepois)</td></tr>
+                                <tr><td>@(i+1)</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td class="@(RiscoClass(CalcRisco(it.GravidadeAntes, it.ProbabilidadeAntes)))">@CalcRisco(it.GravidadeAntes, it.ProbabilidadeAntes)</td><td>@it.MedidasProtecao</td><td class="@(RiscoClass(CalcRisco(it.GravidadeDepois, it.ProbabilidadeDepois)))">@CalcRisco(it.GravidadeDepois, it.ProbabilidadeDepois)</td></tr>
                             }
                         </tbody>
                     </table>
@@ -500,8 +533,18 @@
 
     private async Task PrintAr(Guid id) { await Js.InvokeVoidAsync("open", $"/api/avaliacao-risco/pdf/{id}", "_blank"); }
 
-    private RenderFragment StatusBadge(StatusAvaliacaoRisco s) => s switch { StatusAvaliacaoRisco.Ativa => BF("badge-info", Lang["ar.status.ativa"]), StatusAvaliacaoRisco.Inativa => BF("badge-secondary", Lang["ar.status.inativa"]), _ => BF("badge-light", s.ToString()) };
-    private RenderFragment BF(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"badge {c}"); b.AddContent(2, t); b.CloseElement(); };
+    // Estado da avaliação no mesmo vocabulário do bloqueio: pílula sólida.
+    private RenderFragment StatusBadge(StatusAvaliacaoRisco s) => s switch
+    {
+        StatusAvaliacaoRisco.Ativa => Sig("pw-sig--safe", Lang["ar.status.ativa"]),
+        StatusAvaliacaoRisco.Inativa => Sig("pw-sig--void", Lang["ar.status.inativa"]),
+        _ => Sig("pw-sig--idle", s.ToString()),
+    };
+    private RenderFragment Sig(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"pw-sig {c}"); b.AddContent(2, t); b.CloseElement(); };
+
+    // A linha inteira reporta o estado, como na tabela do bloqueio.
+    private string StatusRowClass(StatusAvaliacaoRisco s) =>
+        s == StatusAvaliacaoRisco.Inativa ? "table-void" : string.Empty;
 
     private string TlIcon(string a) => a switch { "Criado" => "fa-plus-circle", "Modificado" => "fa-edit", "Inativado" => "fa-power-off", "Ativado" => "fa-check-circle", "Excluído" => "fa-trash", _ => "fa-circle" };
     // Mesmo vocabulário de tons da linha do tempo do PLE: criado é neutro,
@@ -528,7 +571,17 @@
     };
 
     private string CalcRisco(string g, string p) { if (string.IsNullOrEmpty(g) || string.IsNullOrEmpty(p)) return "-"; var gi = Array.IndexOf(sev, g); if (gi < 0 && (g == "Sério" || g == "Serious")) gi = 1; var pi = Array.IndexOf(prb, p); if (gi < 0 || pi < 0) return "-"; string[,] m = { {"Alto","Alto","Médio","Baixo"}, {"Alto","Alto","Médio","Baixo"}, {"Alto","Médio","Baixo","Insignificante"}, {"Médio","Baixo","Insignificante","Insignificante"} }; return m[gi, pi] switch { "Alto" => Lang["ple.risk.high"], "Médio" => Lang["ple.risk.medium"], "Baixo" => Lang["ple.risk.low"], "Insignificante" => Lang["ple.risk.insignificant"], var x => x }; }
-    private string RiscoStyle(string r) { if (r == Lang["ple.risk.high"]) return "background-color:#dc3545;color:white;font-weight:bold;text-align:center;"; if (r == Lang["ple.risk.medium"]) return "background-color:#fd7e14;color:white;font-weight:bold;text-align:center;"; if (r == Lang["ple.risk.low"]) return "background-color:#ffc107;color:#333;font-weight:bold;text-align:center;"; if (r == Lang["ple.risk.insignificant"]) return "background-color:#28a745;color:white;font-weight:bold;text-align:center;"; return ""; }
+    // Nível de risco nas cores de estado do sistema visual — os hex soltos que
+    // estavam aqui não passavam no contraste e não conversavam com o /ple.
+    // Alto = perigo · Médio = liberação · Baixo = atenção · Insignificante = seguro.
+    private string RiscoClass(string r)
+    {
+        if (r == Lang["ple.risk.high"]) return "pw-risk pw-risk--alto";
+        if (r == Lang["ple.risk.medium"]) return "pw-risk pw-risk--medio";
+        if (r == Lang["ple.risk.low"]) return "pw-risk pw-risk--baixo";
+        if (r == Lang["ple.risk.insignificant"]) return "pw-risk pw-risk--insignificante";
+        return "";
+    }
 
     private async Task Toast(string title, string message, string type) { await Js.InvokeVoidAsync("adminlteToasts.show", type, title, message); }
 

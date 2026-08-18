@@ -35,7 +35,7 @@
             </div>
 
             @* ── Header com a toolbar de etapa ── *@
-            <div class="card-header">
+            <div class="card-header card-header--detail">
                 <div class="pw-actions pw-actions--stack ple-toolbar">
                     @{ var st = sel.Status; }
                     @if (!SomenteConsulta && TemPermissaoNoSel() && st == StatusPle.Criado)
@@ -66,44 +66,46 @@
                     }
                 </div>
 
-                <button class="btn btn-xs btn-secondary ple-close" @onclick="CloseDetail" title="@Lang["common.close"]">
-                    <i class="fas fa-times"></i><span class="ple-close__label">@Lang["common.close"]</span>
+                <button class="btn btn-xs btn-secondary pw-detail-close" @onclick="CloseDetail" title="@Lang["common.close"]">
+                    <i class="fas fa-times"></i><span class="pw-detail-close__label">@Lang["common.close"]</span>
                 </button>
             </div>
 
             <div class="card-body">
-                @* ── Identificação do PLE ── *@
-                <div class="pw-tblock">
-                    <div class="pw-tblock__field pw-tblock__field--anchor">
-                        <span class="pw-tblock__key">@Lang["ple.number"]</span>
-                        <span class="pw-tblock__val pw-num">@sel.Numero</span>
-                    </div>
-                    <div class="pw-tblock__field">
-                        <span class="pw-tblock__key">@Lang["ple.start_date"]</span>
-                        <span class="pw-tblock__val">@sel.DataInicio.ToString("dd/MM/yyyy HH:mm")</span>
-                    </div>
-                    <div class="pw-tblock__field">
-                        <span class="pw-tblock__key">@Lang["ple.end_date"]</span>
-                        <span class="pw-tblock__val">@(sel.DataFim?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
-                    </div>
-                    <div class="pw-tblock__field">
-                        <span class="pw-tblock__key">@Lang["ple.created_by"]</span>
-                        <span class="pw-tblock__val">
-                            @sel.CriadoPorNome
-                            <small class="text-muted d-block">@sel.DataCriacao.ToString("dd/MM HH:mm")</small>
-                        </span>
-                    </div>
-                    <div class="pw-tblock__field">
-                        <span class="pw-tblock__key">@Lang["ple.finalized_by"]</span>
-                        <span class="pw-tblock__val">
-                            @(sel.FinalizadoPorNome ?? "—")
-                            @if (sel.DataFinalizacao.HasValue)
-                            {
-                                <small class="text-muted d-block">@sel.DataFinalizacao?.ToString("dd/MM HH:mm")</small>
-                            }
-                        </span>
-                    </div>
-                </div>
+                @* ── Identificação do bloqueio ──────────────────────────────────
+                   Mesma ficha chave/valor da avaliação de risco: rótulo à
+                   esquerda, valor ao lado, dois pares por linha. ── *@
+                <table class="pw-kv">
+                    <tbody>
+                        <tr>
+                            <th>@Lang["ple.number"]</th>
+                            <td class="pw-kv__anchor">@sel.Numero</td>
+                            <th>@Lang["ple.status"]</th>
+                            <td>@StatusBadge(sel.Status)</td>
+                        </tr>
+                        <tr>
+                            <th>@Lang["ple.start_date"]</th>
+                            <td>@sel.DataInicio.ToString("dd/MM/yyyy HH:mm")</td>
+                            <th>@Lang["ple.end_date"]</th>
+                            <td>@(sel.DataFim?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <th>@Lang["ple.created_by"]</th>
+                            <td>
+                                @sel.CriadoPorNome
+                                <small>@sel.DataCriacao.ToString("dd/MM HH:mm")</small>
+                            </td>
+                            <th>@Lang["ple.finalized_by"]</th>
+                            <td>
+                                @(sel.FinalizadoPorNome ?? "—")
+                                @if (sel.DataFinalizacao.HasValue)
+                                {
+                                    <small>@sel.DataFinalizacao?.ToString("dd/MM HH:mm")</small>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 @* ── Pontos de isolamento: cada equipamento é um chip numerado ── *@
                 <div class="ple-points">
@@ -243,7 +245,7 @@
                                 <td data-label="@Lang["ple.start_date"]">@p.DataInicio.ToString("dd/MM/yyyy HH:mm")</td>
                                 <td class="pw-cell--state" data-label="@Lang["ple.status"]">@StatusBadge(p.Status)</td>
                                 <td data-label="@Lang["ple.created_by"]">@p.CriadoPorNome</td>
-                                <td class="text-center ple-rowaction"><button class="btn btn-xs pw-btn-row" @onclick:stopPropagation @onclick="() => ViewPle(p.Id)" title="@Lang["common.view"]"><i class="fas fa-eye"></i></button></td>
+                                <td class="text-center pw-rowaction"><button class="btn btn-xs pw-btn-row" @onclick:stopPropagation @onclick="() => ViewPle(p.Id)" title="@Lang["common.view"]"><i class="fas fa-eye"></i></button></td>
                             </tr>
                         }
                     </tbody>
@@ -259,9 +261,9 @@
 
 <style>
     /* ── Barra de ações do detalhe ───────────────────────────────────────── */
+    /* O "fechar" e o empilhamento no celular vivem no sistema visual
+       (.pw-detail-close / .card-header--detail), compartilhados com /avaliacao-risco. */
     .ple-toolbar { flex: 1 1 auto; }
-    .ple-close { margin-left: auto; flex: 0 0 auto; }
-    .ple-close__label { display: none; }
 
     /* ── Pontos de isolamento e usuários autorizados ─────────────────────── */
     .ple-points { margin-bottom: var(--pw-5); }
@@ -288,18 +290,7 @@
     .ple-point .pw-tag { background: transparent; padding: 0; color: var(--pw-ink); }
 
     @@media (max-width: 767.98px) {
-        /* No polegar a ação é alvo cheio; o "fechar" entra na pilha, por último. */
-        .card-header { flex-direction: column; align-items: stretch; }
         .ple-toolbar { width: 100%; }
-        .ple-close {
-            order: 9;
-            width: 100%;
-            margin: 0;
-            min-height: var(--pw-tap);
-        }
-        .ple-close__label { display: inline; }
-
-        .pw-table-cards .ple-rowaction { display: none; }
     }
 </style>
 

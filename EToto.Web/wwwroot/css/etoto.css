@@ -174,7 +174,7 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
 
 /* Rótulo: cinza, peso médio, caixa normal. */
 .pw-label,
-.pw-tblock__key,
+.pw-kv th,
 .table thead th,
 .card-header .card-title {
     font-family: var(--pw-font);
@@ -391,35 +391,65 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
 .card .card { border: 1px solid var(--pw-line); box-shadow: none; border-radius: var(--pw-r-2); margin-bottom: var(--pw-3); }
 
 /* =============================================================================
-   BLOCO DE INFORMAÇÃO (detalhe do PLE)
+   FICHA CHAVE/VALOR — cabeçalho de detalhe do bloqueio e da avaliação de risco
+   ---------------------------------------------------------------------------
+   Um componente só para os dois. Rótulo em coluna estreita tingida, valor ao
+   lado: dois pares por linha no monitor, ficha empilhada no celular. Ler um
+   registro é varrer rótulos, não decorar posições.
    ============================================================================= */
 
-.pw-tblock {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--pw-4);
-    padding: var(--pw-4) var(--pw-5);
-    border: 1px solid var(--pw-hair);
-    border-radius: var(--pw-r-3);
-    background: var(--pw-vellum-2);
+.pw-kv {
+    width: 100%;
     margin-bottom: var(--pw-5);
+    border: 1px solid var(--pw-line);
+    border-radius: var(--pw-r-3);
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    background: var(--pw-sheet);
+    font-size: var(--pw-t-base);
 }
-@media (min-width: 576px)  { .pw-tblock { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-@media (min-width: 992px)  { .pw-tblock { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+.pw-kv th, .pw-kv td {
+    padding: var(--pw-3) var(--pw-4);
+    border-top: 1px solid var(--pw-hair);
+    text-align: left;
+    vertical-align: middle;
+}
+.pw-kv tr:first-child > th, .pw-kv tr:first-child > td { border-top: 0; }
+.pw-kv th {
+    width: 15%;
+    white-space: nowrap;
+    background: var(--pw-vellum);
+    border-right: 1px solid var(--pw-hair);
+    font-weight: 600;
+}
+.pw-kv td {
+    font-weight: 600;
+    color: var(--pw-ink);
+    word-break: break-word;
+}
+.pw-kv td small { display: block; font-weight: 400; color: var(--pw-ink-3); }
 
-.pw-tblock__field { min-width: 0; border: 0; padding: 0; }
-.pw-tblock__key { display: block; margin-bottom: 2px; }
-.pw-tblock__val { font-size: var(--pw-t-base); font-weight: 600; color: var(--pw-ink); word-break: break-word; }
-
-.pw-tblock__field--anchor { grid-column: 1 / -1; }
-.pw-tblock__field--anchor .pw-tblock__val {
-    font-size: var(--pw-t-2xl);
+/* O número do documento é a âncora: entra grande, como no registro impresso. */
+.pw-kv td.pw-kv__anchor {
+    font-size: var(--pw-t-xl);
     font-weight: 800;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
-    line-height: 1.1;
+    line-height: 1.2;
 }
-@media (min-width: 992px) { .pw-tblock__field--anchor { grid-column: span 2; } }
+
+@media (max-width: 767.98px) {
+    .pw-kv, .pw-kv tbody, .pw-kv tr, .pw-kv th, .pw-kv td { display: block; width: 100%; }
+    .pw-kv th {
+        background: transparent;
+        border-right: 0;
+        border-top: 0;
+        padding-bottom: 0;
+    }
+    .pw-kv td { border-top: 0; padding-top: 2px; }
+    .pw-kv tr + tr > th { border-top: 1px solid var(--pw-hair); padding-top: var(--pw-3); }
+}
 
 /* =============================================================================
    ESTADO — pílula sólida
@@ -666,6 +696,26 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
 .table .table-danger  { background: var(--pw-danger-bg) !important; }
 .table .table-warning { background: var(--pw-caution-bg) !important; }
 .table .table-success { background: var(--pw-safe-bg) !important; }
+/* Anulado: cinza, e o texto recua. O registro existe, mas não vale mais. */
+.table .table-void    { background: var(--pw-idle-bg) !important; }
+.table .table-void td { color: var(--pw-ink-2); }
+
+/* Nível de risco (avaliação de risco): a mesma família de cor do estado do
+   bloqueio, não uma paleta paralela. Alto = perigo · Médio = liberação ·
+   Baixo = atenção · Insignificante = seguro. A célula inteira tinge, porque é
+   a coluna que o olho tem que achar primeiro numa matriz de 11 colunas. */
+.pw-risk {
+    text-align: center;
+    font-weight: 700;
+    white-space: nowrap;
+    color: #fff !important;
+}
+.pw-risk--alto           { background: var(--pw-danger) !important; }
+.pw-risk--medio          { background: var(--pw-warn) !important; }
+.pw-risk--baixo          { background: var(--pw-caution) !important; }
+.pw-risk--insignificante { background: var(--pw-safe) !important; }
+/* No wizard o nível aparece num campo somente-leitura: mesma tinta, sem moldura. */
+input.form-control.pw-risk { border-color: transparent; }
 
 .selectable-table tbody tr { cursor: pointer; }
 
@@ -1013,7 +1063,15 @@ label > input[type=radio] { margin-right: var(--pw-2); }
     background: var(--pw-sheet);
     overflow: hidden;
 }
-.modal-header { background: transparent; border-bottom: 1px solid var(--pw-hair); padding: var(--pw-4) var(--pw-5); }
+.modal-header {
+    background: transparent;
+    border-bottom: 1px solid var(--pw-hair);
+    padding: var(--pw-4) var(--pw-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pw-3);
+}
 /* Alguns modais ainda pedem .bg-primary/.bg-dark no cabeçalho, herança do tema
    antigo. Cabeçalho de modal aqui é branco: a intenção vive no botão do rodapé. */
 .modal-header.bg-primary, .modal-header.bg-info, .modal-header.bg-secondary,
@@ -1026,14 +1084,70 @@ label > input[type=radio] { margin-right: var(--pw-2); }
 .modal-header.bg-danger .modal-title, .modal-header .modal-title.text-white,
 .modal-header .text-white { color: var(--pw-ink) !important; }
 .modal-header .modal-title i { color: var(--pw-ink-3); }
-.modal-header .close {
+/* O Bootstrap posiciona o X com `float:right` e `margin:-1rem -1rem -1rem auto`,
+   contando com o padding de 1rem que ele mesmo põe no cabeçalho. Este sistema
+   usa outro padding, então aquela margem negativa empurrava o botão para fora
+   do cartão. Zerar float e margem é o conserto; o resto é alvo de toque. */
+.modal-header .close,
+.card-header .close,
+.alert .close {
+    float: none;
+    margin: 0 0 0 auto;
+    padding: 0;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: var(--pw-r-2);
+    background: transparent;
     color: var(--pw-ink-3) !important;
     opacity: 1;
     text-shadow: none;
     font-weight: 400;
-    padding: 0 var(--pw-2);
+    font-size: 1.375rem;
+    line-height: 1;
 }
-.modal-header .close:hover { color: var(--pw-ink) !important; }
+.modal-header .close > span,
+.card-header .close > span,
+.alert .close > span { display: block; line-height: 1; margin-top: -2px; }
+
+.modal-header .close:hover,
+.card-header .close:hover,
+.alert .close:hover { color: var(--pw-ink) !important; background: var(--pw-vellum); }
+
+.modal-header .close:focus-visible,
+.card-header .close:focus-visible,
+.alert .close:focus-visible { outline: 2px solid var(--pw-notice); outline-offset: 2px; }
+
+@media (max-width: 767.98px) {
+    /* No polegar o alvo cresce: 32px é mira de mouse, não de dedo. */
+    .modal-header .close, .card-header .close, .alert .close {
+        width: var(--pw-tap);
+        height: var(--pw-tap);
+    }
+}
+
+/* ── Fechar do detalhe (cartão, não modal) ──────────────────────────────
+   Encosta na direita da barra de ações e nunca sai do cabeçalho. No celular
+   entra na pilha, por último, com alvo cheio e rótulo escrito. Usado no
+   detalhe do bloqueio e no da avaliação de risco. */
+.pw-detail-close { margin-left: auto; flex: 0 0 auto; }
+.pw-detail-close__label { display: none; }
+
+@media (max-width: 767.98px) {
+    .card-header--detail { flex-direction: column; align-items: stretch; }
+    .card-header--detail .pw-actions { width: 100%; }
+    .card-header--detail .pw-detail-close {
+        order: 9;
+        width: 100%;
+        margin: 0;
+        min-height: var(--pw-tap);
+    }
+    .card-header--detail .pw-detail-close__label { display: inline; }
+}
 .modal-title { font-size: var(--pw-t-lg); font-weight: 700; }
 .modal-body { padding: var(--pw-5); }
 .modal-footer { background: var(--pw-vellum-2); border-top: 1px solid var(--pw-hair); padding: var(--pw-4) var(--pw-5); gap: var(--pw-2); }
@@ -1148,6 +1262,8 @@ label > input[type=radio] { margin-right: var(--pw-2); }
     }
     .pw-table-cards tbody td:empty { display: none; }
     .pw-table-cards tbody td.pw-cell--state { order: -1; border-top: 0; }
+    /* Na ficha, a linha inteira já é o alvo — o botão de lupa vira ruído. */
+    .pw-table-cards .pw-rowaction { display: none; }
     .pw-table-cards tbody tr.row-selected,
     .pw-table-cards tbody tr.table-active { box-shadow: 0 0 0 2px var(--pw-notice); }
 }
