@@ -8,6 +8,23 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 ## [Unreleased]
 
 ### Alterado
+- **Topo deixa de ser um bloco branco só.** Barra de marca, trilho de navegação e
+  cartões usavam o mesmo branco e o topo lia como continuação da página. Agora são
+  três planos: barra de marca branca flutuando sobre sombra, com filete de marca de
+  3px na borda absoluta (azul de interface `#1570DB` — o institucional segue reservado
+  ao logo) e divisória fina depois do logo; trilho de navegação recuado no cinza-azulado,
+  com as pílulas levantando em branco no hover; conteúdo depois. No celular o trilho
+  volta a ser folha branca ao virar barra inferior.
+
+### Corrigido
+- **Tinta de estado da linha saía berrante.** O Bootstrap pinta `.table-success > td`
+  com verde cheio, e a regra do sistema visual mirava só o `<tr>` — a célula ganhava a
+  cascata. Com `td`/`th` no seletor, a linha volta à tinta suave prevista no DESIGN.md.
+  Vale para `/ple` e `/avaliacao-risco`.
+- Listagem de avaliações passa a tingir a linha inteira nos dois estados (Ativa em verde
+  lavado, Inativa em cinza anulado), como a tabela do bloqueio.
+
+### Alterado
 - **Avaliação de risco no mesmo vocabulário visual do bloqueio.** A listagem passa a
   usar a tabela do `/ple`: pílula sólida de estado (Ativa = seguro, Inativa = anulada),
   tinta suave na linha inteira, legenda de cores acima e colapso em ficha no celular.

@@ -542,9 +542,14 @@
     };
     private RenderFragment Sig(string c, string t) => b => { b.OpenElement(0, "span"); b.AddAttribute(1, "class", $"pw-sig {c}"); b.AddContent(2, t); b.CloseElement(); };
 
-    // A linha inteira reporta o estado, como na tabela do bloqueio.
-    private string StatusRowClass(StatusAvaliacaoRisco s) =>
-        s == StatusAvaliacaoRisco.Inativa ? "table-void" : string.Empty;
+    // A linha inteira reporta o estado, como na tabela do bloqueio: aqui os
+    // dois estados tingem, porque só existem dois e um deles precisa recuar.
+    private string StatusRowClass(StatusAvaliacaoRisco s) => s switch
+    {
+        StatusAvaliacaoRisco.Ativa => "table-success",
+        StatusAvaliacaoRisco.Inativa => "table-void",
+        _ => string.Empty,
+    };
 
     private string TlIcon(string a) => a switch { "Criado" => "fa-plus-circle", "Modificado" => "fa-edit", "Inativado" => "fa-power-off", "Ativado" => "fa-check-circle", "Excluído" => "fa-trash", _ => "fa-circle" };
     // Mesmo vocabulário de tons da linha do tempo do PLE: criado é neutro,

@@ -349,10 +349,12 @@ column carry `.pw-num` (tabular figures, weight 600) so digits line up between r
 
 ## Layout
 
-The shell is three fixed pieces on a blue-grey ground: a sticky white top bar (60px) with
-the brand at the left and context pastilles plus account actions at the right; a sticky
-white navigation rail directly beneath it; and the content in a fluid container that caps
-at 1680px above 1400px. The footer carries the Power Wave mark on the bare ground, not on
+The shell is three distinct planes, not one white slab: a sticky white top bar (60px)
+that floats on a soft shadow, carrying a 3px signal-blue rule at the very top edge, the
+brand at the left behind a hairline divider, and context pastilles plus account actions at
+the right; a sticky navigation rail directly beneath it that sits on the blue-grey ground,
+so its pills read as lifting off it; and the content in a fluid container that caps at
+1680px above 1400px. The footer carries the Power Wave mark on the bare ground, not on
 a card. There is no sidebar — AdminLTE's left margins are neutralised.
 
 Spacing runs on a 4px rhythm (4 / 8 / 12 / 16 / 24 / 32 / 48 / 64). Cards use 24px body

@@ -114,7 +114,7 @@
     --pw-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 
     --pw-top-h: 60px;
-    --pw-rail-h: 52px;
+    --pw-rail-h: 56px;
     --pw-bottom-h: 0px;
 }
 
@@ -192,23 +192,49 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
    SHELL — barra branca, abas em pílula
    ============================================================================= */
 
+/* Três planos, não um bloco branco só: a barra de marca flutua (branca, com
+   sombra e filete de marca), o trilho fica no cinza-azulado do fundo e o
+   conteúdo vem depois. Sem essa separação o topo lê como continuação da
+   página — tudo colado. */
 .pw-top {
     display: flex;
     align-items: center;
     gap: var(--pw-4);
     min-height: var(--pw-top-h);
-    padding: 0 var(--pw-5);
+    padding: 3px var(--pw-5) 0;
     padding-left: max(var(--pw-5), env(safe-area-inset-left));
     padding-right: max(var(--pw-5), env(safe-area-inset-right));
     background: var(--pw-sheet);
-    border-bottom: 1px solid var(--pw-hair);
+    border-bottom: 1px solid var(--pw-line);
+    box-shadow: var(--pw-sh-1);
     position: sticky;
     top: 0;
     z-index: 1030;
 }
 
+/* Filete de marca de 3px na borda absoluta da aplicação: a assinatura que
+   impede o topo de se confundir com um cartão. Azul de interface, não o azul
+   institucional — esse fica reservado ao logo. */
+.pw-top::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--pw-notice);
+}
+
 .pw-top__brand { display: flex; align-items: center; flex: 0 0 auto; }
 .pw-top__brand img { height: 30px; width: auto; display: block; }
+/* Separador entre a marca e os dados de contexto: o logo não é uma pastilha. */
+.pw-top__brand::after {
+    content: "";
+    width: 1px;
+    height: 24px;
+    margin-left: var(--pw-4);
+    background: var(--pw-line);
+}
 
 .pw-top__meta {
     display: flex;
@@ -265,9 +291,9 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
     display: flex;
     align-items: center;
     gap: var(--pw-1);
-    background: var(--pw-sheet);
-    border-bottom: 1px solid var(--pw-hair);
-    padding: 0 var(--pw-5) var(--pw-2);
+    background: var(--pw-vellum);
+    border-bottom: 1px solid var(--pw-line);
+    padding: var(--pw-2) var(--pw-5);
     position: sticky;
     top: var(--pw-top-h);
     z-index: 1020;
@@ -296,7 +322,7 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
     transition: background-color .15s var(--pw-ease), color .15s var(--pw-ease);
 }
 .pw-rail__item i { font-size: 1rem; opacity: .85; }
-.pw-rail__item:hover { color: var(--pw-ink); background: var(--pw-vellum); text-decoration: none; }
+.pw-rail__item:hover { color: var(--pw-ink); background: var(--pw-sheet); text-decoration: none; }
 
 .pw-rail__item.is-active {
     color: var(--pw-notice-ink);
@@ -693,12 +719,17 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
 /* Estado na linha: tinta suavíssima. A pílula carrega o peso. */
 .table .table-active, .table tbody tr.row-selected { background: var(--pw-notice-bg) !important; }
 .table tbody tr.row-selected td { font-weight: 600; }
-.table .table-danger  { background: var(--pw-danger-bg) !important; }
-.table .table-warning { background: var(--pw-caution-bg) !important; }
-.table .table-success { background: var(--pw-safe-bg) !important; }
+/* O Bootstrap pinta `.table-success > td` com verde cheio, e a regra do <tr>
+   sozinha perdia para ele: a linha saía berrante em vez de tingida. Por isso
+   td e th entram no seletor. */
+.table .table-danger,  .table .table-danger > td,  .table .table-danger > th  { background: var(--pw-danger-bg) !important; }
+.table .table-warning, .table .table-warning > td, .table .table-warning > th { background: var(--pw-caution-bg) !important; }
+.table .table-success, .table .table-success > td, .table .table-success > th { background: var(--pw-safe-bg) !important; }
 /* Anulado: cinza, e o texto recua. O registro existe, mas não vale mais. */
-.table .table-void    { background: var(--pw-idle-bg) !important; }
+.table .table-void,    .table .table-void > td,    .table .table-void > th    { background: var(--pw-idle-bg) !important; }
 .table .table-void td { color: var(--pw-ink-2); }
+/* A célula de nível de risco é sólida por cima de qualquer tinta de linha. */
+.table td.pw-risk { color: #fff !important; }
 
 /* Nível de risco (avaliação de risco): a mesma família de cor do estado do
    bloqueio, não uma paleta paralela. Alto = perigo · Médio = liberação ·
@@ -1199,7 +1230,8 @@ label > input[type=radio] { margin-right: var(--pw-2); }
     /* O trilho desce para o polegar. */
     .pw-rail {
         position: fixed; top: auto; bottom: 0; left: 0; right: 0;
-        border-top: 1px solid var(--pw-hair); border-bottom: 0;
+        background: var(--pw-sheet);
+        border-top: 1px solid var(--pw-line); border-bottom: 0;
         box-shadow: 0 -2px 12px rgba(var(--pw-shadow-rgb),.06);
         padding: var(--pw-1) var(--pw-1);
         padding-bottom: calc(var(--pw-1) + env(safe-area-inset-bottom));
