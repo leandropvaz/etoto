@@ -83,8 +83,9 @@ Restrições técnicas:
   (WebAssembly, net9.0) existe mas hoje carrega pouco.
 - EF Core 10 + SQL Server (`LototoContext`), autenticação JWT, hospedagem Azure App Service.
 - Clean Architecture: Domain ← Application ← Infrastructure/Web. Sem referências invertidas.
-- Sem `.resx`: a tradução é o `EToto.Web/Services/LanguageService.cs`, com os dicionários `_pt`
-  e `_en` e uso `Lang["chave"]` nas telas.
+- Sem `.resx`: a tradução é o `EToto.Web/Services/LanguageService.cs`, com os dicionários `_pt`,
+  `_en` e `_es` e uso `Lang["chave"]` nas telas. Os três têm as mesmas 663 chaves; chave
+  ausente cai no português, não na chave crua.
 - A base visual atual é AdminLTE 3 / Bootstrap 4 com jQuery. **Não é uma restrição pinada** — o
   usuário deliberadamente não a marcou como intocável quando perguntado. Tratar como incumbente
   a ser avaliada, não como fundação obrigatória.
@@ -104,8 +105,12 @@ Fatos de produto ainda em aberto:
   fundo escuro, usada na navbar), `logo.png`, `logo2.png`, `logo3.png` (Power Wave).
 - Azul institucional em uso hoje: `#006CB5` (`.bg-pw-blue`) e `#1F86D1` (`.bg-pw-blue-light`,
   navbar e rodapé).
-- **Bilíngue PT/EN é obrigatório.** Todo texto visível ao usuário passa por `LanguageService`,
-  nas duas línguas. Nada hard-coded na tela. *(Confirmado pelo usuário como intocável.)*
+- **Trilíngue PT/EN/ES é obrigatório.** Todo texto visível ao usuário passa por
+  `LanguageService`, nas três línguas. Nada hard-coded na tela. Uma chave nova só está
+  pronta quando existe nos três dicionários. *(Confirmado pelo usuário como intocável.)*
+  Os PDFs e o Excel (PLE, avaliação de risco, relatório de usuários) permanecem em
+  português nas três línguas — decisão explícita do usuário, alinhada ao fato de o PLE
+  impresso circular no campo em português.
 - **Guardas por perfil e multi-planta são verdade de produto.** Quem vê o quê não pode ser
   afrouxado por conveniência visual. *(Confirmado pelo usuário como intocável.)*
 - **Direção visual fixada pelo usuário: SaaS moderno, "clean", cantos arredondados.**
@@ -153,5 +158,6 @@ Fatos de produto ainda em aberto:
 
 - Uso em campo pressupõe condições industriais: possivelmente de luva, sob luz variável, em
   dispositivo móvel. Alvos de toque e contraste precisam sobreviver a isso.
-- Bilíngue PT/EN (ver Brand Commitments) — o produto tem usuários que não leem português.
+- Trilíngue PT/EN/ES (ver Brand Commitments) — o produto tem usuários que não leem
+  português.
 - Nenhum padrão formal de acessibilidade (WCAG nível X) foi estabelecido pelo usuário até aqui.

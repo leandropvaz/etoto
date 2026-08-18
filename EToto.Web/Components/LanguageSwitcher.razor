@@ -4,24 +4,31 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-<div class="lang-switcher d-flex align-items-center" style="gap: 4px;">
-    <button class="lang-flag-btn @(Lang.CurrentLanguage == "pt-BR" ? "lang-flag-active" : "")"
-            title="Português (Brasil)"
-            @onclick='() => SetLanguageAsync("pt-BR")'>
-        <span class="fi fi-br flag-icon"></span>
-    </button>
-    <button class="lang-flag-btn @(Lang.CurrentLanguage == "en-US" ? "lang-flag-active" : "")"
-            title="English (US)"
-            @onclick='() => SetLanguageAsync("en-US")'>
-        <span class="fi fi-us flag-icon"></span>
-    </button>
+<div class="lang-switcher">
+    @foreach (var idioma in LanguageService.SupportedLanguages)
+    {
+        var codigo = idioma;
+        var ativo = Lang.CurrentLanguage == codigo;
+        <button type="button"
+                class="lang-flag-btn @(ativo ? "lang-flag-active" : "")"
+                title="@Titulo(codigo)"
+                aria-label="@Titulo(codigo)"
+                aria-pressed="@(ativo ? "true" : "false")"
+                @onclick="() => SetLanguageAsync(codigo)">
+            <span class="fi fi-@Bandeira(codigo) flag-icon"></span>
+        </button>
+    }
 </div>
 
 <style>
+    /* As bordas eram quase brancas — herança da navbar escura do tema antigo.
+       Na barra branca de hoje sumiam, e o idioma ativo virava adivinhação. */
+    .lang-switcher { display: flex; align-items: center; gap: 2px; }
+
     .lang-flag-btn {
         background: transparent;
         border: 1px solid transparent;
-        border-radius: 2px;
+        border-radius: var(--pw-r-1, 6px);
         width: 34px;
         height: 30px;
         padding: 0;
@@ -29,32 +36,57 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: border-color 0.12s ease, opacity 0.12s ease;
-        opacity: 0.6;
+        transition: border-color .12s ease, background-color .12s ease, opacity .12s ease;
+        opacity: .55;
         line-height: 1;
         overflow: hidden;
     }
 
     .lang-flag-btn:hover {
         opacity: 1;
-        border-color: rgba(243, 245, 242, 0.55);
+        background: var(--pw-vellum, #F0F3F8);
     }
 
+    .lang-flag-btn:focus-visible {
+        outline: 2px solid var(--pw-notice, #1570DB);
+        outline-offset: 2px;
+    }
+
+    /* O ativo não é só "mais opaco": ganha a cor de ação e um anel. */
     .lang-flag-btn.lang-flag-active {
         opacity: 1;
-        border-color: rgba(243, 245, 242, 0.9);
+        border-color: var(--pw-notice, #1570DB);
+        box-shadow: 0 0 0 1px var(--pw-notice, #1570DB) inset;
     }
 
     .flag-icon {
-        width: 22px;
-        height: 16px;
+        width: 21px;
+        height: 15px;
         display: block;
-        border-radius: 1px;
+        border-radius: 2px;
         background-size: cover;
     }
 </style>
 
 @code {
+    // Bandeira (flag-icons) e nome por idioma. Quais idiomas aparecem é decidido
+    // em LanguageService.SupportedLanguages — aqui só se diz como cada um se mostra.
+    private static string Bandeira(string idioma) => idioma switch
+    {
+        "pt-BR" => "br",
+        "en-US" => "us",
+        "es-ES" => "es",
+        _ => "un",
+    };
+
+    private static string Titulo(string idioma) => idioma switch
+    {
+        "pt-BR" => "Português (Brasil)",
+        "en-US" => "English (US)",
+        "es-ES" => "Español (España)",
+        _ => idioma,
+    };
+
     protected override void OnInitialized()
     {
         Lang.OnLanguageChanged += StateHasChanged;
@@ -66,7 +98,11 @@
         try
         {
             var saved = await JS.InvokeAsync<string?>("localStorage.getItem", "lototo_lang");
-            if (!string.IsNullOrEmpty(saved) && saved != Lang.CurrentLanguage)
+            // Só aceita idioma que ainda existe: um valor antigo no navegador não
+            // pode deixar a interface presa numa língua que o sistema não tem mais.
+            if (!string.IsNullOrEmpty(saved)
+                && saved != Lang.CurrentLanguage
+                && LanguageService.SupportedLanguages.Contains(saved))
             {
                 Lang.SetLanguage(saved);
             }

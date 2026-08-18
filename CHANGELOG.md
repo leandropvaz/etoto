@@ -7,6 +7,27 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ## [Unreleased]
 
+### Adicionado
+- **Espanhol (es-ES) como terceiro idioma.** As 663 chaves de interface ganham o
+  dicionário `_es` no `LanguageService`, com paridade total: mesmo conjunto e mesma
+  ordem do `_pt`. O seletor do topo passa a mostrar três bandeiras (BR / US / ES) e a
+  lista de idiomas vem de `LanguageService.SupportedLanguages` — fonte única, a
+  marcação não repete a lista.
+- Chave sem tradução no idioma escolhido passa a cair no **português**, não na chave
+  crua: uma tela meio traduzida é ruim, mas `ple.action.start` na cara do operador é pior.
+- Idioma salvo no navegador só é aceito se ainda existir na lista — um valor antigo em
+  `localStorage` não pode prender a interface numa língua que o sistema não tem mais.
+
+### Corrigido
+- Seletor de idioma legível na barra branca. As bordas eram `rgba(243,245,242,…)`,
+  herança da navbar escura do tema anterior, e sumiam no topo claro: qual idioma estava
+  ativo virava adivinhação. Agora o ativo leva a cor de ação e um anel, e há foco visível.
+
+### Nota
+- Os PDFs e o Excel (PLE, avaliação de risco, relatório de usuários) seguem em português
+  nas três línguas, como já acontecia com o inglês. Decisão explícita: o PLE impresso
+  circula no campo em português.
+
 ### Alterado
 - **Rodapé vira o par do topo.** Estava transparente sobre o fundo, com filete quase
   invisível, e sumia. Agora é a mesma faixa recuada do trilho de navegação, com a marca
