@@ -88,7 +88,7 @@
                         <tbody>
                             @foreach (var it in sel.Itens)
                             {
-                                <tr><td>@it.Ordem</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td>@it.GravidadeAntes</td><td>@it.ProbabilidadeAntes</td><td class="@(RiscoClass(it.NivelRiscoAntes))">@it.NivelRiscoAntes</td><td>@it.MedidasProtecao</td><td>@it.GravidadeDepois</td><td>@it.ProbabilidadeDepois</td><td class="@(RiscoClass(it.NivelRiscoDepois))">@it.NivelRiscoDepois</td></tr>
+                                <tr><td>@it.Ordem</td><td>@it.Tarefa</td><td>@it.Perigo</td><td>@it.NumeroExpostos</td><td>@TextoGravidade(it.GravidadeAntes)</td><td>@TextoProbabilidade(it.ProbabilidadeAntes)</td><td class="@(RiscoClass(it.NivelRiscoAntes))">@TextoNivel(it.NivelRiscoAntes)</td><td>@it.MedidasProtecao</td><td>@TextoGravidade(it.GravidadeDepois)</td><td>@TextoProbabilidade(it.ProbabilidadeDepois)</td><td class="@(RiscoClass(it.NivelRiscoDepois))">@TextoNivel(it.NivelRiscoDepois)</td></tr>
                             }
                         </tbody>
                     </table>
@@ -408,7 +408,7 @@
 
     protected override void OnInitialized() { Lang.OnLanguageChanged += OnLang; UpdateOpt(); }
     public void Dispose() { Lang.OnLanguageChanged -= OnLang; }
-    private void OnLang() { UpdateOpt(); StateHasChanged(); }
+    private void OnLang() { UpdateOpt(); NormalizarItens(); StateHasChanged(); }
     private void UpdateOpt() { sev = [Lang["ple.severity.catastrophic"], Lang["ple.severity.serious"], Lang["ple.severity.moderate"], Lang["ple.severity.minor"]]; prb = [Lang["ple.probability.very_likely"], Lang["ple.probability.likely"], Lang["ple.probability.unlikely"], Lang["ple.probability.remote"]]; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -475,6 +475,7 @@
     {
         editingAr = ar; form = new ArForm { Departamento = ar.Departamento, Operacao = ar.Operacao, Tarefa = ar.Tarefa, Data = ar.Data, Observacoes = ar.Observacoes, EquipamentoIds = ar.Equipamentos.Select(e => e.EquipamentoId).ToList() };
         formItens = ar.Itens.Select(i => new ItemForm { Tarefa = i.Tarefa, Perigo = i.Perigo, NumeroExpostos = i.NumeroExpostos, GravidadeAntes = i.GravidadeAntes, ProbabilidadeAntes = i.ProbabilidadeAntes, NivelRiscoAntes = i.NivelRiscoAntes, MedidasProtecao = i.MedidasProtecao, GravidadeDepois = i.GravidadeDepois, ProbabilidadeDepois = i.ProbabilidadeDepois, NivelRiscoDepois = i.NivelRiscoDepois }).ToList();
+        NormalizarItens();
         // Carrega planta e equipamentos
         if (plantas.Count == 1) wizPlantaId = plantas[0].Id;
         else if (ar.Equipamentos.Any()) wizPlantaId = 0; // usuário precisa selecionar
@@ -575,18 +576,120 @@
         _ => a
     };
 
-    private string CalcRisco(string g, string p) { if (string.IsNullOrEmpty(g) || string.IsNullOrEmpty(p)) return "-"; var gi = Array.IndexOf(sev, g); if (gi < 0 && (g == "Sério" || g == "Serious")) gi = 1; var pi = Array.IndexOf(prb, p); if (gi < 0 || pi < 0) return "-"; string[,] m = { {"Alto","Alto","Médio","Baixo"}, {"Alto","Alto","Médio","Baixo"}, {"Alto","Médio","Baixo","Insignificante"}, {"Médio","Baixo","Insignificante","Insignificante"} }; return m[gi, pi] switch { "Alto" => Lang["ple.risk.high"], "Médio" => Lang["ple.risk.medium"], "Baixo" => Lang["ple.risk.low"], "Insignificante" => Lang["ple.risk.insignificant"], var x => x }; }
-    // Nível de risco nas cores de estado do sistema visual — os hex soltos que
-    // estavam aqui não passavam no contraste e não conversavam com o /ple.
-    // Alto = perigo · Médio = liberação · Baixo = atenção · Insignificante = seguro.
-    private string RiscoClass(string r)
+    // ── Vocabulário de risco, independente de idioma ──────────────────────
+    // Gravidade, probabilidade e nível são gravados no banco COMO TEXTO, na
+    // língua em que o registro foi criado. Comparar esse texto com Lang[...]
+    // fazia a cor — e o próprio valor — sumirem ao trocar de idioma, e some do
+    // mesmo jeito num registro antigo aberto por quem usa outra língua.
+    // Aqui o texto é reconhecido nas três línguas e reduzido a um índice; a
+    // tela sempre exibe o idioma atual. Enquanto o banco guardar texto
+    // traduzido, este reconhecimento é o que segura a coerência.
+    private static readonly string[][] GravidadeTermos =
     {
-        if (r == Lang["ple.risk.high"]) return "pw-risk pw-risk--alto";
-        if (r == Lang["ple.risk.medium"]) return "pw-risk pw-risk--medio";
-        if (r == Lang["ple.risk.low"]) return "pw-risk pw-risk--baixo";
-        if (r == Lang["ple.risk.insignificant"]) return "pw-risk pw-risk--insignificante";
-        return "";
+        new[] { "catastrófico", "catastrofico", "catastrophic" },
+        new[] { "grave", "sério", "serio", "serious" },
+        new[] { "moderado", "moderate" },
+        new[] { "menor", "minor" },
+    };
+
+    private static readonly string[][] ProbabilidadeTermos =
+    {
+        new[] { "muito provável", "muito provavel", "very likely", "muy probable" },
+        new[] { "provável", "provavel", "likely", "probable" },
+        new[] { "improvável", "improvavel", "unlikely", "improbable" },
+        new[] { "remoto", "remote" },
+    };
+
+    private static readonly string[][] NivelTermos =
+    {
+        new[] { "alto", "high" },
+        new[] { "médio", "medio", "medium" },
+        new[] { "baixo", "bajo", "low" },
+        new[] { "insignificante", "insignificant" },
+    };
+
+    private static int Indice(string[][] termos, string? valor)
+    {
+        var v = (valor ?? "").Trim().ToLowerInvariant();
+        if (v.Length == 0) return -1;
+        for (var i = 0; i < termos.Length; i++)
+            if (Array.IndexOf(termos[i], v) >= 0) return i;
+        return -1;
     }
+
+    private string NomeGravidade(int i) => i switch
+    {
+        0 => Lang["ple.severity.catastrophic"],
+        1 => Lang["ple.severity.serious"],
+        2 => Lang["ple.severity.moderate"],
+        3 => Lang["ple.severity.minor"],
+        _ => "",
+    };
+
+    private string NomeProbabilidade(int i) => i switch
+    {
+        0 => Lang["ple.probability.very_likely"],
+        1 => Lang["ple.probability.likely"],
+        2 => Lang["ple.probability.unlikely"],
+        3 => Lang["ple.probability.remote"],
+        _ => "",
+    };
+
+    private string NomeNivel(int i) => i switch
+    {
+        0 => Lang["ple.risk.high"],
+        1 => Lang["ple.risk.medium"],
+        2 => Lang["ple.risk.low"],
+        3 => Lang["ple.risk.insignificant"],
+        _ => "",
+    };
+
+    // Texto não reconhecido volta como veio: melhor mostrar o valor gravado do
+    // que apagar dado da tela.
+    private string TextoGravidade(string? v) { var i = Indice(GravidadeTermos, v); return i < 0 ? (v ?? "") : NomeGravidade(i); }
+    private string TextoProbabilidade(string? v) { var i = Indice(ProbabilidadeTermos, v); return i < 0 ? (v ?? "") : NomeProbabilidade(i); }
+    private string TextoNivel(string? v) { var i = Indice(NivelTermos, v); return i < 0 ? (v ?? "") : NomeNivel(i); }
+
+    // Os <select> listam os termos no idioma atual; um valor gravado noutra
+    // língua não casaria com nenhuma opção e o campo apareceria vazio.
+    private void NormalizarItens()
+    {
+        foreach (var it in formItens)
+        {
+            it.GravidadeAntes = TextoGravidade(it.GravidadeAntes);
+            it.ProbabilidadeAntes = TextoProbabilidade(it.ProbabilidadeAntes);
+            it.GravidadeDepois = TextoGravidade(it.GravidadeDepois);
+            it.ProbabilidadeDepois = TextoProbabilidade(it.ProbabilidadeDepois);
+        }
+    }
+
+    // Matriz gravidade × probabilidade em índices, não em texto — a tabela de
+    // risco é a mesma em qualquer idioma.
+    private string CalcRisco(string g, string p)
+    {
+        var gi = Indice(GravidadeTermos, g);
+        var pi = Indice(ProbabilidadeTermos, p);
+        if (gi < 0 || pi < 0) return "-";
+        int[,] m =
+        {
+            { 0, 0, 1, 2 },
+            { 0, 0, 1, 2 },
+            { 0, 1, 2, 3 },
+            { 1, 2, 3, 3 },
+        };
+        return NomeNivel(m[gi, pi]);
+    }
+
+    // Nível de risco nas cores de estado do sistema visual.
+    // Alto = perigo · Médio = liberação · Baixo = atenção · Insignificante = seguro.
+    private static string RiscoClass(string? r) => Indice(NivelTermos, r) switch
+    {
+        0 => "pw-risk pw-risk--alto",
+        1 => "pw-risk pw-risk--medio",
+        2 => "pw-risk pw-risk--baixo",
+        3 => "pw-risk pw-risk--insignificante",
+        _ => "",
+    };
 
     private async Task Toast(string title, string message, string type) { await Js.InvokeVoidAsync("adminlteToasts.show", type, title, message); }
 

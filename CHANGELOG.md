@@ -7,6 +7,25 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ## [Unreleased]
 
+### Corrigido
+- **Avaliação de risco perdia as cores (e os valores) ao trocar de idioma.**
+  Gravidade, probabilidade e nível de risco são gravados no banco **como texto**, na
+  língua em que o registro foi criado. O código comparava esse texto com `Lang[...]`
+  do idioma atual: bastava mudar de língua — ou abrir um registro antigo em outra —
+  para a célula de risco ficar sem cor, a matriz do wizard mostrar `-` e os `<select>`
+  de gravidade/probabilidade aparecerem vazios por não casarem com nenhuma opção.
+  O bug já existia com o inglês; o espanhol só o tornou fácil de ver.
+  - Os termos passam a ser reconhecidos nas três línguas (mais o legado "Sério") e
+    reduzidos a um índice. A matriz gravidade × probabilidade virou índices, não texto.
+  - A tela exibe sempre no idioma atual, independentemente de como o registro foi
+    gravado. Texto não reconhecido volta como veio — melhor mostrar o valor gravado
+    do que apagar dado.
+  - Ao trocar de idioma ou abrir um registro no wizard, os valores do formulário são
+    realinhados ao idioma da tela, para os `<select>` continuarem casando.
+- Varredura nas demais telas: nenhuma outra decide cor ou classe comparando texto
+  traduzido. A importação de equipamentos, por exemplo, já guardava status canônico em
+  português e traduzia só na exibição — que é o padrão correto.
+
 ### Adicionado
 - **Espanhol (es-ES) como terceiro idioma.** As 663 chaves de interface ganham o
   dicionário `_es` no `LanguageService`, com paridade total: mesmo conjunto e mesma
