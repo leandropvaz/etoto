@@ -339,20 +339,32 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
     padding-bottom: calc(var(--pw-7) + var(--pw-bottom-h) + env(safe-area-inset-bottom));
 }
 
-/* O rodapé fecha a área de conteúdo em vez de flutuar solto: filete fino no
-   topo, marca em escala discreta e alinhada à mesma largura do conteúdo.
-   É chrome permanente — precisa ler como moldura, não como elemento. */
+/* O rodapé é o par do topo: mesma faixa recuada do trilho, e o mesmo filete
+   de marca — lá abrindo a aplicação, aqui fechando. É chrome permanente,
+   precisa ler como moldura, não como elemento solto no fundo. */
 .pw-foot {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: var(--pw-3);
-    margin: var(--pw-6) auto 0;
-    padding: var(--pw-4) var(--pw-5);
-    padding-bottom: calc(var(--pw-4) + var(--pw-bottom-h) + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--pw-hair);
-    background: transparent;
+    margin: var(--pw-6) 0 0;
+    padding: var(--pw-5);
+    padding-bottom: calc(var(--pw-5) + var(--pw-bottom-h) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--pw-line);
+    background: var(--pw-vellum);
+    position: relative;
     margin-left: 0 !important;
+}
+
+/* Fecha a moldura com o mesmo filete de 3px que abre no topo. */
+.pw-foot::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--pw-notice);
 }
 .pw-foot a {
     display: inline-flex;
@@ -362,7 +374,7 @@ a:hover { color: var(--pw-notice-ink); text-decoration: underline; text-underlin
     border-radius: var(--pw-r-1);
     transition: background-color .15s var(--pw-ease);
 }
-.pw-foot a:hover { background: var(--pw-vellum); }
+.pw-foot a:hover { background: var(--pw-sheet); }
 .pw-foot img { height: 18px; width: auto; display: block; }
 
 @media (max-width: 767.98px) {
@@ -1253,6 +1265,8 @@ label > input[type=radio] { margin-right: var(--pw-2); }
     .pw-rail__lock { display: none; }
 
     .pw-main { padding-top: var(--pw-4); }
+    /* A barra inferior fixa cobre a borda de baixo — o filete não teria onde aparecer. */
+    .pw-foot::after { display: none; }
     .pw-sigband--sheet { top: var(--pw-top-h); }
     .pw-sigband { padding: var(--pw-3) var(--pw-4); }
     .pw-sigband__id { width: 100%; }

@@ -353,9 +353,11 @@ The shell is three distinct planes, not one white slab: a sticky white top bar (
 that floats on a soft shadow, carrying a 3px signal-blue rule at the very top edge, the
 brand at the left behind a hairline divider, and context pastilles plus account actions at
 the right; a sticky navigation rail directly beneath it that sits on the blue-grey ground,
-so its pills read as lifting off it; and the content in a fluid container that caps at
-1680px above 1400px. The footer carries the Power Wave mark on the bare ground, not on
-a card. There is no sidebar — AdminLTE's left margins are neutralised.
+so its pills read as lifting off it — they turn white on hover; and the content in a
+fluid container that caps at 1680px above 1400px. The footer answers the top bar: the
+same recessed band as the rail, carrying the Power Wave mark, and the same 3px rule —
+opening the app above, closing it below. The rule is hidden under 768px, where the fixed
+tab bar covers that edge. There is no sidebar — AdminLTE's left margins are neutralised.
 
 Spacing runs on a 4px rhythm (4 / 8 / 12 / 16 / 24 / 32 / 48 / 64). Cards use 24px body
 padding and 16px/24px headers, dropping to 16px and 12px/16px below 992px. Content sits

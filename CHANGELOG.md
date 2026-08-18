@@ -8,6 +8,13 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 ## [Unreleased]
 
 ### Alterado
+- **Rodapé vira o par do topo.** Estava transparente sobre o fundo, com filete quase
+  invisível, e sumia. Agora é a mesma faixa recuada do trilho de navegação, com a marca
+  Power Wave dentro e o mesmo filete de marca de 3px — o do topo abre a aplicação, o do
+  rodapé fecha. Abaixo de 768px o filete some, porque a barra inferior fixa cobre essa
+  borda. O alvo do link levanta em branco, como as pílulas do trilho.
+
+### Alterado
 - **Topo deixa de ser um bloco branco só.** Barra de marca, trilho de navegação e
   cartões usavam o mesmo branco e o topo lia como continuação da página. Agora são
   três planos: barra de marca branca flutuando sobre sombra, com filete de marca de
