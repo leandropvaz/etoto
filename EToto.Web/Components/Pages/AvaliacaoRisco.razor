@@ -581,22 +581,23 @@
     // língua em que o registro foi criado. Comparar esse texto com Lang[...]
     // fazia a cor — e o próprio valor — sumirem ao trocar de idioma, e some do
     // mesmo jeito num registro antigo aberto por quem usa outra língua.
-    // Aqui o texto é reconhecido nas três línguas e reduzido a um índice; a
+    // Aqui o texto é reconhecido nas quatro línguas e reduzido a um índice; a
     // tela sempre exibe o idioma atual. Enquanto o banco guardar texto
-    // traduzido, este reconhecimento é o que segura a coerência.
+    // traduzido, este reconhecimento é o que segura a coerência. Idioma novo
+    // exige termo novo nestas listas — senão a cor some de novo.
     private static readonly string[][] GravidadeTermos =
     {
         new[] { "catastrófico", "catastrofico", "catastrophic" },
         new[] { "grave", "sério", "serio", "serious" },
-        new[] { "moderado", "moderate" },
-        new[] { "menor", "minor" },
+        new[] { "moderado", "moderate", "moderato" },
+        new[] { "menor", "minor", "lieve" },
     };
 
     private static readonly string[][] ProbabilidadeTermos =
     {
-        new[] { "muito provável", "muito provavel", "very likely", "muy probable" },
-        new[] { "provável", "provavel", "likely", "probable" },
-        new[] { "improvável", "improvavel", "unlikely", "improbable" },
+        new[] { "muito provável", "muito provavel", "very likely", "muy probable", "molto probabile" },
+        new[] { "provável", "provavel", "likely", "probable", "probabile" },
+        new[] { "improvável", "improvavel", "unlikely", "improbable", "improbabile" },
         new[] { "remoto", "remote" },
     };
 
@@ -604,8 +605,8 @@
     {
         new[] { "alto", "high" },
         new[] { "médio", "medio", "medium" },
-        new[] { "baixo", "bajo", "low" },
-        new[] { "insignificante", "insignificant" },
+        new[] { "baixo", "bajo", "low", "basso" },
+        new[] { "insignificante", "insignificant", "trascurabile" },
     };
 
     private static int Indice(string[][] termos, string? valor)

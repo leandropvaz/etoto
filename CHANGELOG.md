@@ -7,6 +7,25 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ## [Unreleased]
 
+### Adicionado
+- **Italiano (it-IT) como quarto idioma.** Mesmas 663 chaves, paridade verificada
+  contra o `_pt`: mesmo conjunto, mesma ordem, sem duplicadas. Terminologia industrial
+  italiana — *blocco/sblocco*, *sezionamento*, *energia zero*, *stabilimento*,
+  *attrezzatura*, *Responsabile del Blocco*, *Comando Centrale*.
+- Os termos italianos de gravidade, probabilidade e nível de risco entram no
+  reconhecimento por idioma da avaliação de risco (*moderato*, *lieve*,
+  *molto probabile*, *probabile*, *improbabile*, *basso*, *trascurabile*). Sem isso,
+  o mesmo defeito de cor que acabou de ser corrigido voltaria no italiano.
+
+### Alterado
+- **Seletor de idioma vira menu suspenso.** Com quatro idiomas, a fileira de bandeiras
+  virava ruído permanente na barra: quatro alvos fixos para uma decisão que se toma uma
+  vez. Agora o botão mostra a bandeira e a sigla do idioma atual, e a lista abre com o
+  nome de cada língua escrito **na própria língua** — quem procura "Italiano" não está
+  lendo a interface em português. Fecha ao escolher ou ao clicar fora, via camada
+  transparente: sem JS e sem depender do dropdown do Bootstrap. No celular fica só a
+  bandeira.
+
 ### Corrigido
 - **Avaliação de risco perdia as cores (e os valores) ao trocar de idioma.**
   Gravidade, probabilidade e nível de risco são gravados no banco **como texto**, na

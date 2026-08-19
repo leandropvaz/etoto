@@ -4,78 +4,173 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-<div class="lang-switcher">
-    @foreach (var idioma in LanguageService.SupportedLanguages)
+@* Com quatro idiomas a fileira de bandeiras virava ruído na barra: quatro
+   alvos permanentes para uma decisão que se toma uma vez. Vira menu — o
+   idioma atual à mostra, os outros a um clique. *@
+<div class="lang-menu @(aberto ? "is-open" : "")">
+    <button type="button"
+            class="lang-menu__btn"
+            title="@Titulo(Lang.CurrentLanguage)"
+            aria-haspopup="listbox"
+            aria-expanded="@(aberto ? "true" : "false")"
+            @onclick="Alternar">
+        <span class="fi fi-@Bandeira(Lang.CurrentLanguage) lang-menu__flag"></span>
+        <span class="lang-menu__code">@Codigo(Lang.CurrentLanguage)</span>
+        <i class="fas fa-chevron-down lang-menu__caret"></i>
+    </button>
+
+    @if (aberto)
     {
-        var codigo = idioma;
-        var ativo = Lang.CurrentLanguage == codigo;
-        <button type="button"
-                class="lang-flag-btn @(ativo ? "lang-flag-active" : "")"
-                title="@Titulo(codigo)"
-                aria-label="@Titulo(codigo)"
-                aria-pressed="@(ativo ? "true" : "false")"
-                @onclick="() => SetLanguageAsync(codigo)">
-            <span class="fi fi-@Bandeira(codigo) flag-icon"></span>
-        </button>
+        @* Uma camada transparente por baixo do menu fecha no clique fora sem
+           depender de JS nem do dropdown do Bootstrap. *@
+        <div class="lang-menu__backdrop" @onclick="Fechar"></div>
+
+        <ul class="lang-menu__list" role="listbox" aria-label="@Titulo(Lang.CurrentLanguage)">
+            @foreach (var idioma in LanguageService.SupportedLanguages)
+            {
+                var codigo = idioma;
+                var ativo = Lang.CurrentLanguage == codigo;
+                <li>
+                    <button type="button"
+                            class="lang-menu__item @(ativo ? "is-active" : "")"
+                            role="option"
+                            aria-selected="@(ativo ? "true" : "false")"
+                            @onclick="() => Selecionar(codigo)">
+                        <span class="fi fi-@Bandeira(codigo) lang-menu__flag"></span>
+                        <span class="lang-menu__name">@Titulo(codigo)</span>
+                        @if (ativo)
+                        {
+                            <i class="fas fa-check lang-menu__check"></i>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
     }
 </div>
 
 <style>
-    /* As bordas eram quase brancas — herança da navbar escura do tema antigo.
-       Na barra branca de hoje sumiam, e o idioma ativo virava adivinhação. */
-    .lang-switcher { display: flex; align-items: center; gap: 2px; }
+    /* O menu vive na barra branca do topo: contorno fino, e a cor de ação só
+       aparece no idioma escolhido. */
+    .lang-menu { position: relative; display: inline-flex; }
 
-    .lang-flag-btn {
-        background: transparent;
-        border: 1px solid transparent;
-        border-radius: var(--pw-r-1, 6px);
-        width: 34px;
-        height: 30px;
-        padding: 0;
-        cursor: pointer;
-        display: flex;
+    .lang-menu__btn {
+        display: inline-flex;
         align-items: center;
-        justify-content: center;
-        transition: border-color .12s ease, background-color .12s ease, opacity .12s ease;
-        opacity: .55;
-        line-height: 1;
-        overflow: hidden;
+        gap: 8px;
+        min-height: 36px;
+        padding: 0 10px;
+        border: 1px solid var(--pw-line, #DFE4EE);
+        border-radius: var(--pw-r-2, 10px);
+        background: var(--pw-sheet, #fff);
+        color: var(--pw-ink-2, #4E5875);
+        font-family: var(--pw-font, inherit);
+        font-size: var(--pw-t-sm, .8125rem);
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color .15s ease, border-color .15s ease, color .15s ease;
     }
-
-    .lang-flag-btn:hover {
-        opacity: 1;
+    .lang-menu__btn:hover {
         background: var(--pw-vellum, #F0F3F8);
+        border-color: var(--pw-heavy, #C6CDDC);
+        color: var(--pw-ink, #1C2333);
     }
-
-    .lang-flag-btn:focus-visible {
+    .lang-menu__btn:focus-visible {
         outline: 2px solid var(--pw-notice, #1570DB);
         outline-offset: 2px;
     }
-
-    /* O ativo não é só "mais opaco": ganha a cor de ação e um anel. */
-    .lang-flag-btn.lang-flag-active {
-        opacity: 1;
-        border-color: var(--pw-notice, #1570DB);
-        box-shadow: 0 0 0 1px var(--pw-notice, #1570DB) inset;
+    .lang-menu.is-open .lang-menu__btn {
+        background: var(--pw-vellum, #F0F3F8);
+        border-color: var(--pw-heavy, #C6CDDC);
     }
 
-    .flag-icon {
-        width: 21px;
+    .lang-menu__flag {
+        width: 20px;
         height: 15px;
         display: block;
         border-radius: 2px;
         background-size: cover;
+        flex: 0 0 auto;
+    }
+    .lang-menu__code { letter-spacing: .02em; }
+    .lang-menu__caret {
+        font-size: 10px;
+        color: var(--pw-ink-4, #A3ABBF);
+        transition: transform .15s ease;
+    }
+    .lang-menu.is-open .lang-menu__caret { transform: rotate(180deg); }
+
+    .lang-menu__backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1040;
+        background: transparent;
+    }
+
+    .lang-menu__list {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 1041;
+        min-width: 212px;
+        margin: 0;
+        padding: 6px;
+        list-style: none;
+        background: var(--pw-sheet, #fff);
+        border: 1px solid var(--pw-line, #DFE4EE);
+        border-radius: var(--pw-r-3, 14px);
+        box-shadow: var(--pw-sh-3, 0 8px 20px rgba(28,35,51,.09));
+    }
+
+    .lang-menu__item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        min-height: var(--pw-tap, 40px);
+        padding: 0 10px;
+        border: 0;
+        border-radius: var(--pw-r-2, 10px);
+        background: transparent;
+        color: var(--pw-ink, #1C2333);
+        font-family: var(--pw-font, inherit);
+        font-size: var(--pw-t-base, .875rem);
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+    }
+    .lang-menu__item:hover { background: var(--pw-vellum, #F0F3F8); }
+    .lang-menu__item:focus-visible {
+        outline: 2px solid var(--pw-notice, #1570DB);
+        outline-offset: -2px;
+    }
+    .lang-menu__item.is-active {
+        color: var(--pw-notice-ink, #0F55A8);
+        background: var(--pw-notice-bg, #EAF2FE);
+    }
+    .lang-menu__name { flex: 1 1 auto; }
+    .lang-menu__check { font-size: 12px; color: var(--pw-notice, #1570DB); }
+
+    @@media (max-width: 767.98px) {
+        /* Na barra estreita fica só a bandeira: o código repete o que ela diz. */
+        .lang-menu__code { display: none; }
+        .lang-menu__btn { padding: 0 8px; }
     }
 </style>
 
 @code {
-    // Bandeira (flag-icons) e nome por idioma. Quais idiomas aparecem é decidido
-    // em LanguageService.SupportedLanguages — aqui só se diz como cada um se mostra.
+    private bool aberto;
+
+    // Bandeira (flag-icons), nome e sigla por idioma. Quais idiomas aparecem é
+    // decidido em LanguageService.SupportedLanguages — aqui só se diz como cada
+    // um se mostra. O nome vai sempre na própria língua: quem procura "Italiano"
+    // não está lendo a interface em português.
     private static string Bandeira(string idioma) => idioma switch
     {
         "pt-BR" => "br",
         "en-US" => "us",
         "es-ES" => "es",
+        "it-IT" => "it",
         _ => "un",
     };
 
@@ -84,8 +179,27 @@
         "pt-BR" => "Português (Brasil)",
         "en-US" => "English (US)",
         "es-ES" => "Español (España)",
+        "it-IT" => "Italiano (Italia)",
         _ => idioma,
     };
+
+    private static string Codigo(string idioma) => idioma switch
+    {
+        "pt-BR" => "PT",
+        "en-US" => "EN",
+        "es-ES" => "ES",
+        "it-IT" => "IT",
+        _ => idioma,
+    };
+
+    private void Alternar() => aberto = !aberto;
+    private void Fechar() => aberto = false;
+
+    private async Task Selecionar(string idioma)
+    {
+        aberto = false;
+        await SetLanguageAsync(idioma);
+    }
 
     protected override void OnInitialized()
     {
