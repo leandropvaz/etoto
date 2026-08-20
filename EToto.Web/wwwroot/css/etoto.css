@@ -1050,6 +1050,98 @@ label > input[type=radio] { margin-right: var(--pw-2); }
 .badge-danger, .bg-danger { background: var(--pw-danger-bg) !important; color: var(--pw-danger-ink) !important; }
 .badge-secondary, .badge-light { background: var(--pw-vellum) !important; color: var(--pw-ink-2) !important; }
 .badge-dark { background: var(--pw-ink) !important; color: #fff !important; }
+/* Várias telas ainda pedem `badge bg-secondary text-white`, do tema antigo:
+   cinza chapado com texto branco no meio de pílulas lavadas. O `.text-white`
+   entra no seletor porque senão ele ganha a cascata e o texto some no claro. */
+.badge.bg-secondary, .badge.bg-secondary.text-white,
+.badge.bg-light, .badge.bg-light.text-white {
+    background: var(--pw-idle-bg) !important;
+    color: var(--pw-idle) !important;
+}
+
+/* =============================================================================
+   AVISOS FLUTUANTES (TOASTS)
+   -----------------------------------------------------------------------------
+   O AdminLTE pinta o toast inteiro de cor cheia e conta com texto branco por
+   cima — e faz isso em `.toast.bg-info`, que tem especificidade maior que o
+   `.bg-info` deste arquivo. Resultado: o fundo continuava ciano enquanto o
+   texto virava tinta escura. Azul-escuro sobre ciano é ilegível, e é o que o
+   operador via ao errar um campo.
+
+   Aqui o toast vira folha branca com uma faixa de estado à esquerda: a cor diz
+   o que é, o texto continua legível. Os seletores repetem `.toast.bg-*` de
+   propósito, para empatar em especificidade com o AdminLTE e ganhar na ordem.
+   ============================================================================= */
+
+.toasts-top-right, .toasts-top-left,
+.toasts-bottom-right, .toasts-bottom-left { z-index: 1090; }
+
+.toast,
+.toast.bg-info, .toast.bg-success, .toast.bg-danger,
+.toast.bg-warning, .toast.bg-primary, .toast.bg-secondary {
+    max-width: 380px;
+    /* O Bootstrap dá ao toast `flex-basis: 350px`. Num contêiner em coluna isso
+       vira ALTURA, e o aviso estica até virar um painel. */
+    flex-basis: auto;
+    background: var(--pw-sheet) !important;
+    color: var(--pw-ink) !important;
+    border: 1px solid var(--pw-line);
+    border-left: 4px solid var(--pw-idle);
+    border-radius: var(--pw-r-3);
+    box-shadow: var(--pw-sh-3);
+    opacity: 1;
+    overflow: hidden;
+    backdrop-filter: none;
+}
+
+.toast .toast-header,
+.toast.bg-info .toast-header, .toast.bg-success .toast-header,
+.toast.bg-danger .toast-header, .toast.bg-warning .toast-header,
+.toast.bg-primary .toast-header, .toast.bg-secondary .toast-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: var(--pw-3) var(--pw-4) 0;
+    border-bottom: 0;
+    background: transparent !important;
+    color: var(--pw-ink) !important;
+    font-family: var(--pw-font);
+    font-size: var(--pw-t-md);
+    font-weight: 700;
+}
+.toast .toast-header strong { font-weight: 700; margin-right: auto; }
+.toast .toast-header > i { flex: 0 0 auto; font-size: 1rem; }
+
+.toast .toast-body,
+.toast.bg-info .toast-body, .toast.bg-success .toast-body,
+.toast.bg-danger .toast-body, .toast.bg-warning .toast-body {
+    padding: 4px var(--pw-4) var(--pw-3);
+    background: transparent !important;
+    color: var(--pw-ink-2) !important;
+    font-size: var(--pw-t-base);
+    line-height: 1.45;
+}
+
+/* A cor vive na faixa e no ícone, nunca no fundo do texto. */
+.toast.bg-info    { border-left-color: var(--pw-notice); }
+.toast.bg-primary { border-left-color: var(--pw-notice); }
+.toast.bg-success { border-left-color: var(--pw-safe); }
+.toast.bg-danger  { border-left-color: var(--pw-danger); }
+.toast.bg-warning { border-left-color: var(--pw-warn); }
+.toast.bg-info    .toast-header > i, .toast.bg-primary .toast-header > i { color: var(--pw-notice); }
+.toast.bg-success .toast-header > i { color: var(--pw-safe); }
+.toast.bg-danger  .toast-header > i { color: var(--pw-danger); }
+.toast.bg-warning .toast-header > i { color: var(--pw-warn); }
+
+/* O AdminLTE dá ao X do toast colorido `color:#fff` e sombra preta. */
+.toast .close,
+.toast.bg-info .close, .toast.bg-success .close,
+.toast.bg-danger .close, .toast.bg-warning .close,
+.toast.bg-primary .close, .toast.bg-secondary .close {
+    color: var(--pw-ink-3) !important;
+    text-shadow: none !important;
+    opacity: 1;
+}
 
 /* =============================================================================
    AVISOS
@@ -1133,7 +1225,8 @@ label > input[type=radio] { margin-right: var(--pw-2); }
    do cartão. Zerar float e margem é o conserto; o resto é alvo de toque. */
 .modal-header .close,
 .card-header .close,
-.alert .close {
+.alert .close,
+.toast-header .close {
     float: none;
     margin: 0 0 0 auto;
     padding: 0;
@@ -1155,19 +1248,22 @@ label > input[type=radio] { margin-right: var(--pw-2); }
 }
 .modal-header .close > span,
 .card-header .close > span,
-.alert .close > span { display: block; line-height: 1; margin-top: -2px; }
+.alert .close > span,
+.toast-header .close > span { display: block; line-height: 1; margin-top: -2px; }
 
 .modal-header .close:hover,
 .card-header .close:hover,
-.alert .close:hover { color: var(--pw-ink) !important; background: var(--pw-vellum); }
+.alert .close:hover,
+.toast-header .close:hover { color: var(--pw-ink) !important; background: var(--pw-vellum); }
 
 .modal-header .close:focus-visible,
 .card-header .close:focus-visible,
-.alert .close:focus-visible { outline: 2px solid var(--pw-notice); outline-offset: 2px; }
+.alert .close:focus-visible,
+.toast-header .close:focus-visible { outline: 2px solid var(--pw-notice); outline-offset: 2px; }
 
 @media (max-width: 767.98px) {
     /* No polegar o alvo cresce: 32px é mira de mouse, não de dedo. */
-    .modal-header .close, .card-header .close, .alert .close {
+    .modal-header .close, .card-header .close, .alert .close, .toast-header .close {
         width: var(--pw-tap);
         height: var(--pw-tap);
     }

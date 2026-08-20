@@ -7,6 +7,24 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ## [Unreleased]
 
+### Corrigido
+- **Aviso flutuante (toast) ilegível: azul-escuro sobre ciano.** O AdminLTE pinta o
+  toast inteiro de cor cheia contando com texto branco por cima, e faz isso em
+  `.toast.bg-info` — especificidade maior que o `.bg-info` do sistema visual. Resultado:
+  o fundo continuava ciano enquanto o texto virava tinta escura. Era o que o operador
+  via toda vez que errava um campo.
+  - O toast passa a ser folha branca com faixa de estado à esquerda (azul, verde,
+    vermelho, âmbar), ícone na cor do estado e texto em tinta escura. A cor diz o que é;
+    o texto continua legível. Vale para os três tipos que o `site.js` dispara.
+  - O `X` do toast entra no mesmo conserto de posicionamento dos outros botões de fechar
+    e perde o `color:#fff` com sombra preta que o AdminLTE aplicava.
+  - `flex-basis: auto` no toast: o Bootstrap dá `flex-basis: 350px`, que num contêiner
+    em coluna vira **altura** e estica o aviso até virar painel.
+- **Pílulas `badge bg-secondary text-white`** deixam de ser cinza chapado com texto
+  branco no meio de pílulas lavadas. O `.text-white` entrou no seletor: sem ele, ganhava
+  a cascata e o texto sumiria no fundo claro. Afeta Usuários, Plantas, Equipamentos,
+  Auditoria, Revalidação e o relatório de usuários.
+
 ### Adicionado
 - **Italiano (it-IT) como quarto idioma.** Mesmas 663 chaves, paridade verificada
   contra o `_pt`: mesmo conjunto, mesma ordem, sem duplicadas. Terminologia industrial
